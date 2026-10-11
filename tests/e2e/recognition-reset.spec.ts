@@ -136,7 +136,7 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
     await page.getByRole('button', { name: '翻译全部字幕', exact: true }).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
     expect(fixture.calls.translation).toBe(2);
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence');
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'recognition-reset-desktop-result.json'), JSON.stringify({ media: 'Anonymous generated four-second fixture; no user task changed.', provider: 'Deterministic loopback HTTP ASR/text mocks, no paid API.', calls: fixture.calls, assertions: ['button dismissal and Escape send no recognition request; focus restored', 'successful cached job can explicitly recognize again', 'failure retains original/translation/manual corrections/style/output history/reference preview', 'cancel retains existing content and reference preview', 'success clears translation/per-cue emphasis/preview/selection and derived stage status, keeps global style and previous exported file/history', 'source SHA-256 and previous SRT bytes unchanged', 'success does not automatically translate', 'explicit later translation succeeds'] }, null, 2));
   } finally { await app.close(); await fixture.close(); }

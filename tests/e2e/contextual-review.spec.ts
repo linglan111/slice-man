@@ -22,7 +22,7 @@ import {
 } from "./helpers";
 
 const evidence = resolve(
-  ".trellis/tasks/10-10-ui-segment-reprocessing/evidence",
+  ".trellis/tasks/10-11-subtitle-workspace-layout/evidence",
 );
 const promptSchema = z
   .object({

@@ -111,7 +111,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     await page.getByRole('button', { name: '校对画面字幕：Overlap target', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(page.getByLabel('原文', { exact: true })).toHaveValue('Overlap source');
-    const evidenceDirectory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(evidenceDirectory, { recursive: true });
+    const evidenceDirectory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence'); await mkdir(evidenceDirectory, { recursive: true });
     await page.locator('.preview-panel').screenshot({ path: join(evidenceDirectory, 'inline-cue-editor-anonymous.png') });
     await fillCue(page, '.900', '1.400', 'Overlap edited', 'Overlap corrected'); await save(page);
     await expect(page.getByTestId('live-captions')).toContainText('Overlap correctedOverlap edited');
@@ -151,7 +151,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     await expect(page.locator('.segment-editor')).toHaveCount(0); await expect(page.getByTestId('live-captions')).toBeEmpty();
     expect(mock.counters.recognition).toBe(0); expect(mock.counters.translation).toBe(0);
     expect(createHash('sha256').update(await readFile(input)).digest('hex')).toBe(originalHash);
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'inline-subtitles-result.json'), JSON.stringify({ isolated: true, generatedAnonymousMedia: true, noAIRequests: true, assertions: ['preview/list four-field inline save', 'playback click pauses', 'no edit modal/reference UI', 'gap insertion and final-ms bounds', 'empty/all-delete/re-add', 'overlap bilingual exact target', 'cancel/invalid/stale save and delete drafts', 'selected/emphasis cleanup', 'corrected SRT text and boundaries', 'job-switch draft clearing', 'source hash unchanged'] }, null, 2));
   } finally { await app.close(); await mock.close(); }
 });

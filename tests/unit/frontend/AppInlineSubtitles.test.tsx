@@ -39,6 +39,47 @@ function edited(job: Job, segment: Segment): Job {
 }
 
 describe('inline subtitle editing and manual timeline integration', () => {
+  it('temporarily hides a preview draft during repair and restores its exact unsaved fields', async () => {
+    const job = savedJob(); const { api } = await setup(job);
+    vi.mocked(api.jobs.planReprocess).mockResolvedValue({ success: true, data: { jobId: job.id, revision: job.revision, operation: 'recognize', intervals: [], segmentIds: [], affectedCount: 0 } });
+    fireEvent.click(screen.getByRole('button', { name: '校对画面字幕：人工校对译文。' }));
+    const source = screen.getByLabelText('原文');
+    fireEvent.change(source, { target: { value: 'Unsaved preview draft' } });
+    fireEvent.change(screen.getByLabelText('开始时间（秒）'), { target: { value: '0.250' } });
+    fireEvent.click(screen.getByRole('button', { name: '重新识别片段' }));
+    await screen.findByLabelText('关闭分段处理');
+    expect(document.querySelector('.preview-editor')?.hasAttribute('hidden')).toBe(true);
+    expect(screen.queryByRole('region', { name: '校对字幕' })).toBeNull();
+    expect((source as HTMLTextAreaElement).value).toBe('Unsaved preview draft');
+    fireEvent.click(screen.getByLabelText('关闭分段处理'));
+    expect(screen.getByLabelText('原文')).toBe(source);
+    expect((screen.getByLabelText('开始时间（秒）') as HTMLInputElement).value).toBe('0.250');
+    expect(api.jobs.editSegment).not.toHaveBeenCalled();
+  });
+
+  it('returns from repair to an existing new preview draft without remounting its form', async () => {
+    const job = savedJob(); const { api } = await setup(job);
+    vi.mocked(api.jobs.planReprocess).mockResolvedValue({ success: true, data: { jobId: job.id, revision: job.revision, operation: 'recognize', intervals: [], segmentIds: [], affectedCount: 0 } });
+    fireEvent.click(screen.getByRole('button', { name: '添加画面字幕' }));
+    const source = screen.getByLabelText('原文'); fireEvent.change(source, { target: { value: 'New unsaved draft' } });
+    fireEvent.click(screen.getByRole('button', { name: '重新识别片段' }));
+    await screen.findByLabelText('关闭分段处理');
+    fireEvent.click(screen.getByRole('button', { name: '添加画面字幕' }));
+    expect(screen.queryByLabelText('关闭分段处理')).toBeNull();
+    expect(screen.getByLabelText('原文')).toBe(source);
+    expect((source as HTMLTextAreaElement).value).toBe('New unsaved draft');
+  });
+
+  it('keeps a list draft visible while the preview shows repair controls', async () => {
+    const job = savedJob(); const { api } = await setup(job);
+    vi.mocked(api.jobs.planReprocess).mockResolvedValue({ success: true, data: { jobId: job.id, revision: job.revision, operation: 'recognize', intervals: [], segmentIds: [], affectedCount: 0 } });
+    fireEvent.click(screen.getByLabelText('编辑字幕 1'));
+    fireEvent.click(screen.getByRole('button', { name: '重新识别片段' }));
+    await screen.findByLabelText('关闭分段处理');
+    expect(screen.getByRole('region', { name: '校对字幕' }).closest('.subtitle-panel')).toBeTruthy();
+    expect(screen.getByRole('region', { name: '分段处理' }).closest('.preview-panel')).toBeTruthy();
+  });
+
   it('opens a keyboard-accessible preview form, pauses video and saves captured cue/revision without AI', async () => {
     const job = savedJob(); const { api } = await setup(job);
     expect(screen.getByRole('button', { name: '链接导入设置' }).closest('.sidebar__footer')).toBeTruthy();

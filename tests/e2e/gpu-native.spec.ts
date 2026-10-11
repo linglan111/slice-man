@@ -57,7 +57,7 @@ test('actual CUDA desktop recognition and explicit CPU selection report each rea
     expect(mock.counters.recognition).toBe(0);
     expect(mock.counters.translation).toBe(2);
     const evidence = { device: availability.device, engineVersion: ENGINE_VERSION, model: 'base', modelBytes: 147951465, pinnedSha256: hashes, seed: 'Physically extracted integrity-checked official archives and model inside normal isolated userData; installation readiness reused, every job runs actual native recognition.', ai: 'Loopback HTTP translation mock only; no cloud speech or paid requests.', results };
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence');
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'gpu-desktop-result.json'), JSON.stringify(evidence, null, 2));
     await testInfo.attach('actual-native-backend-evidence', { body: JSON.stringify(evidence, null, 2), contentType: 'application/json' });

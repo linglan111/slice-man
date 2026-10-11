@@ -17,7 +17,6 @@
 .error-message { color: var(--color-danger); font-size: 12px; margin-top: 15px; overflow-wrap: anywhere; }.success-message { color: var(--color-primary); font-size: 12px; margin-top: 15px; }
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #738093; flex-shrink: 0; }.status-dot--ready { background: #a8e2cd; }
 .runtime-summary { display: flex; gap: 7px; align-items: center; margin-top: 13px; font-size: 10px; color: var(--color-muted); }
-.subtitle-list { max-height: 490px; overflow: auto; scrollbar-gutter: stable; }
 .subtitle-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .subtitle-tools .check-label { margin: 0; }
 .subtitle-row--active { background: #243a34; border-radius: 6px; box-shadow: inset 3px 0 var(--color-primary); }

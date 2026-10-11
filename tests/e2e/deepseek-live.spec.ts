@@ -134,13 +134,13 @@ test('live DeepSeek text translation/style over actual local Whisper and real de
     expect(calls.every((call) => !call.path.includes('audio/transcriptions'))).toBe(true);
     const evidence = { model: 'deepseek-flash', officialOrigin: 'https://api.deepseek.com', observationProxy: 'loopback forwarding only; no simulated provider responses', realRecognition: 'whisper.cpp Base CPU', coreWorkflowPassed, totalApiCalls: calls.length, calls, optionalCapabilities: capabilities, exports: outputs.map((path) => path.split(/[\\/]/).pop()), sourcePreserved: true, sessionKeyAbsentAfterRestart, traceRecording: false };
     await testInfo.attach('live-evidence', { body: JSON.stringify(evidence, null, 2), contentType: 'application/json' });
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(resolve(directory, 'deepseek-live-result.json'), JSON.stringify(evidence, null, 2));
   } finally {
     await app?.close(); proxy.closeAllConnections(); await new Promise<void>((closed) => proxy.close(() => closed()));
     delete process.env.DEEPSEEK_E2E_API_KEY;
     await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(resolve(directory, 'deepseek-live-last-attempt.json'), JSON.stringify({ model: 'deepseek-flash', coreWorkflowPassed, sessionKeyAbsentAfterRestart, totalApiCalls: calls.length, calls, optionalCapabilities: capabilities, credentialsCleaned: true }, null, 2));
   }
 });
@@ -199,7 +199,7 @@ test('live DeepSeek compatibility-only Responses and Anthropic desktop probes wi
     expect(calls).toEqual([{ path: '/responses', status: 200, hasBearer: true, hasApiKey: false }, { path: '/anthropic/v1/messages', status: 200, hasBearer: false, hasApiKey: true }]);
     const summary = { model: 'deepseek-flash', officialOrigin: 'https://api.deepseek.com', totalApiCalls: calls.length, calls, mockedResponses: false, credentialsLogged: false, priorAnthropic401Cause: 'Observation proxy injected an empty Authorization header; fixed by forwarding only actual protocol headers.' };
     await testInfo.attach('live-protocol-evidence', { body: JSON.stringify(summary, null, 2), contentType: 'application/json' });
-    await writeFile(resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence/deepseek-live-modes.json'), JSON.stringify(summary, null, 2));
+    await writeFile(resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence/deepseek-live-modes.json'), JSON.stringify(summary, null, 2));
   } finally {
     await app?.close(); proxy.closeAllConnections(); await new Promise<void>((closed) => proxy.close(() => closed()));
     await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });

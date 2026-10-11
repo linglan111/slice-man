@@ -6,7 +6,7 @@
 .review-grade--unreviewed, .review-grade--legacy, .review-grade--stale { color: var(--color-muted); border-color: var(--color-border); background: var(--color-surface); }
 .review-grade--stale { border-style: dashed; }
 .review-grade__recheck { font-size: 9px; }
-.review-toolbar--grades { flex-wrap: nowrap; gap: 10px; margin-bottom: 4px; }
+.review-toolbar--grades { flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
 .review-toolbar--grades select { width: 138px; flex-shrink: 0; margin: 0; padding: 3px 7px; font-size: 11px; }
 .review-toolbar--grades .review-toolbar__select { margin-right: auto; }
 .review-toolbar--grades .text-button { white-space: nowrap; }
@@ -19,8 +19,6 @@
 .review-rubric__example { display: block; font-size: 10px; }
 .review-rubric__head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 @media (max-width: 1150px) {
-  /* Reserve the real heading/filter/batch controls plus a 75px list. */
-  .subtitle-panel:has(.review-summary) { min-height: 230px; }
   .subtitle-panel:has(.review-summary) > .section-heading { margin-bottom: 5px; }
   .subtitle-panel:has(.review-summary) .subtitle-tools { margin-bottom: 3px; }
   .subtitle-tools--selection .text-button { padding-block: 2px; }

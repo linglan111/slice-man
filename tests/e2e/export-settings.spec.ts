@@ -87,7 +87,7 @@ test('export defaults and native directory selection persist across restart; per
     await unlink(directory); await rename(movedDirectory, directory);
     await page.getByRole('button', { name: '保存导出设置', exact: true }).click();
     await expect(page.getByText('导出默认设置已保存。', { exact: true })).toBeVisible();
-    const evidence = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(evidence, { recursive: true });
+    const evidence = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence'); await mkdir(evidence, { recursive: true });
     await page.getByRole('dialog', { name: '导出设置', exact: true }).screenshot({ path: join(evidence, 'export-settings-anonymous.png') });
     await page.getByRole('button', { name: '关闭', exact: true }).click();
     const saved = await page.evaluate(() => window.api.exportSettings.status()); if (!saved.success) throw new Error(saved.error);
@@ -170,7 +170,7 @@ test('actual Electron video export matrix verifies MP4/MKV, original/H264/H265, 
       expect(result).toMatchObject({ width: 640, height: 360, codec: 'hevc', subtitleTracks: 0 }); await assertSubtitlePixels(path); observed.push({ source: 'hevc', selectedCodec: 'original', selectedFormat: format, ...result });
     }
     expect(await hash(input)).toBe(sourceHash); expect(await hash(hevc)).toBe(hevcHash); await assertNoAI(page);
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'export-settings-matrix.json'), JSON.stringify({ fixture: 'Generated anonymous H264/HEVC media and isolated userData', realFFmpeg: true, noAI: true, sourceHashesUnchanged: true, observed }, null, 2));
   } finally { await app.close(); }
 });

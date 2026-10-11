@@ -103,13 +103,23 @@ test('live source captions immediately follow actual playback; translation, edit
     await video.click({ position: { x: controlsBounds.width * .7, y: controlsBounds.height - 23 } });
     await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeGreaterThan(2);
     await expect(captions).toContainText('这是第二句话。');
-    await video.click({ position: { x: controlsBounds.width * .15, y: controlsBounds.height - 23 } });
-    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeLessThan(1);
+    const forwardNativeSeekSeconds = await video.evaluate((element: HTMLVideoElement) => element.currentTime);
+    // The native track has insets: click well inside the edited [.5, 1.5) cue,
+    // rather than assuming 15% of the video element maps to that interval.
+    await video.click({ position: { x: controlsBounds.width * .25, y: controlsBounds.height - 23 } });
+    await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.seeking)).toBe(false);
+    await expect(async () => {
+      const time = await video.evaluate((element: HTMLVideoElement) => element.currentTime);
+      expect(time).toBeGreaterThanOrEqual(.5);
+      expect(time).toBeLessThan(1.5);
+    }).toPass();
+    const backwardNativeSeekSeconds = await video.evaluate((element: HTMLVideoElement) => element.currentTime);
     await expect(captions).toContainText('人工译文 a+b');
     await seekFrame(page, .6);
     await expect(captions).toContainText('人工译文 a+b');
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence');
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence');
     await mkdir(directory, { recursive: true });
+    await writeFile(join(directory, 'native-scrub-positions.json'), JSON.stringify({ forwardNativeSeekSeconds, backwardNativeSeekSeconds, editedCueIntervalSeconds: [.5, 1.5], actualNativeControlsClicked: true }, null, 2));
     await page.locator('.live-video-player').screenshot({ path: join(directory, 'live-captions-anonymous-inline.png') });
     const captionsBounds = await captions.boundingBox();
     const inlineVideoBounds = await video.boundingBox();

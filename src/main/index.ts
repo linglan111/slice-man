@@ -73,7 +73,7 @@ if (app.requestSingleInstanceLock()) {
         height: 960,
         minWidth: 1050,
         minHeight: 700,
-        title: "Slice Man 字幕工作室",
+        title: "Slice Man",
         icon: join(resourceRoot, "icons", "icon.ico"),
         autoHideMenuBar: true,
         webPreferences: {

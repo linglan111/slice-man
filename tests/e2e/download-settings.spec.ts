@@ -44,7 +44,9 @@ test("an actual isolated NTFS write denial rejects a download directory and reta
     hasDenyRule = true;
     await expect(
       writeFile(join(denied, "permission-check"), "probe", { flag: "wx" }),
-    ).rejects.toMatchObject({ code: expect.stringMatching(/^(?:EACCES|EPERM)$/) });
+    ).rejects.toMatchObject({
+      code: expect.stringMatching(/^(?:EACCES|EPERM)$/),
+    });
     const launched = await launchApp(
       info.outputPath("isolated-permission-data"),
       [],
@@ -126,9 +128,7 @@ async function settings(
   videoCodec: string,
   quality = "1080p",
 ): Promise<void> {
-  await page
-    .getByRole("button", { name: "链接导入设置", exact: true })
-    .click();
+  await page.getByRole("button", { name: "链接导入设置", exact: true }).click();
   await page
     .getByLabel("下载容器格式", { exact: true })
     .selectOption(container);
@@ -405,7 +405,9 @@ test("native directory selection, persisted format/codec/resolution matrix, real
         "-f",
         "lavfi",
         "-i",
-        "color=c=0x182b3e:s=1280x720:r=30",
+        // Moving frames keep real software conversion active and flush partial bytes.
+        // A static color fixture can finish before cancellation observes any output.
+        "testsrc2=s=1280x720:r=30",
         "-t",
         "30",
         "-c:v",

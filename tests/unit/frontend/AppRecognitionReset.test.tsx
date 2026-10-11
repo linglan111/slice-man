@@ -12,6 +12,8 @@ beforeAll(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 async function openConfirmation(): Promise<void> {
+  const disclosure = await screen.findByRole('button', { name: /生成、样式与导出/ });
+  if (disclosure.getAttribute('aria-expanded') === 'false') fireEvent.click(disclosure);
   const trigger = await screen.findByRole('button', { name: '重新识别原片' });
   await waitFor(() => expect((trigger as HTMLButtonElement).disabled).toBe(false));
   fireEvent.click(trigger);

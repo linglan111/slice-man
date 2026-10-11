@@ -11,7 +11,7 @@ test('long video seeks beyond buffered data, backwards and through subtitle time
   const mock = await startMockServer();
   const { app, page } = await launchApp(testInfo.outputPath('seek-user-data'), [source], []);
   const observations: SeekObservation[] = [];
-  const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence');
+  const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence');
   await mkdir(directory, { recursive: true });
   try {
     await importVideo(page);

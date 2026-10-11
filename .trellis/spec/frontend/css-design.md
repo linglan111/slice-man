@@ -382,9 +382,11 @@ h4 {
 
 ### Bounded subtitle workspace
 
-- `editor-layout.css` bounds the document; the settings, proofreading list and inline forms scroll locally. Preserve the 110px video-stage and 75px list/form minima.
-- Budget the proofreading panel for its actual heading, grade filter, report summary, add/follow and selected-cue controls. A nominal 200px panel is insufficient when a graded report and selected cues are present; the compact layout reserves 230px and reduces surrounding spacing.
-- Minimum-window regression checks must use the actual Electron inner viewport, with both sidebar states, a banner, a graded report, selected/pending filters and an open processing/editor panel. Assert the list fits its parent panel as well as the viewport; a fixed document with clipped children is not a passing layout.
+- `editor-layout.css` owns viewport layout. Preview and collapsible secondary controls share the left column; proofreading occupies the full-height right column. Keep common proofreading heading/filter/add/follow/selection controls outside the cue scroller. Settings, cues and the active preview form scroll locally; avoid stacking two independent form scrollports inside each other.
+- Use measured pane allocations and the active computed video floor, including normal compact/wide and inline-form states. Reserve at least 75px of cue-list space and 85px of visible preview-form space; sidebar/column/secondary/inline divider limits must agree with actual CSS minima. A nominal outer-panel height or fixed 230px reservation does not prove its controls are usable.
+- Keep persisted dimension preferences separate from disclosure and sidebar-collapse preferences. Clamp effective allocations when native viewport, banners, failed-video controls or visible forms change; passive clamping must not overwrite the user's saved proportions. Measure the welcome shell as well as a populated workspace, and provide dimension reset wherever resizing is exposed.
+- Only one preview operation form is visible at a time. Keep an unsaved subtitle editor mounted while scoped repair temporarily hides it, then restore its draft when repair closes. Right-side row editors can coexist with left-side repair. Hidden forms must not consume flex height; editor save/cancel actions remain reachable with a sticky footer.
+- Minimum/default/large native regression checks use actual Electron inner dimensions, both sidebar/disclosure states, banners, graded/selected controls, portrait/landscape media and long forms. Test pointer/keyboard divider limits, cancel, restart and reset. Assert controls/text against their clipping parent and use actual hit-testing; a fixed document with clipped or covered children is not a passing layout.
 - Keep the shared standards explanation inside the list's scroll region so expanding it does not increase the non-scrolling control budget.
 
 | Question                       | Answer                                    |

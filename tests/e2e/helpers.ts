@@ -392,6 +392,7 @@ export async function configureCloud(
   page: Page,
   profile: string,
 ): Promise<void> {
+  await expandSecondaryControls(page);
   await page.getByLabel("识别方式", { exact: true }).selectOption("cloud");
   await expect(page.getByLabel("语音识别服务", { exact: true })).toBeEnabled();
   await page
@@ -404,6 +405,13 @@ export async function configureCloud(
   await expect(
     page.getByRole("button", { name: "一键生成字幕", exact: true }),
   ).toBeEnabled();
+}
+
+/** Workflows that use generation/style settings deliberately open their disclosure. */
+export async function expandSecondaryControls(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: /生成、样式与导出/ });
+  await expect(toggle).toBeVisible();
+  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
 }
 
 export async function exportFormat(page: Page, format: string): Promise<void> {
@@ -578,7 +586,7 @@ export async function assertReferenceParity(
 
 export async function saveEvidence(page: Page, name: string): Promise<void> {
   const directory = resolve(
-    ".trellis/tasks/10-10-ui-segment-reprocessing/evidence",
+    ".trellis/tasks/10-11-subtitle-workspace-layout/evidence",
   );
   await mkdir(directory, { recursive: true });
   await page.evaluate(() => window.scrollTo(0, 0));

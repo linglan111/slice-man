@@ -18,6 +18,7 @@ export function savedJob(): Job {
 }
 
 export function stubApi(job: Job): { api: AppApi; progress: (next: Job) => void } {
+  if (typeof ResizeObserver === 'undefined') vi.stubGlobal('ResizeObserver', class { observe(): void {} disconnect(): void {} });
   let handler: ((event: ProgressEvent) => void) | undefined;
   const api: AppApi = {
     exportSettings: { status: vi.fn().mockResolvedValue({ success: true, data: { ...SAVED_EXPORT_SETTINGS } }), saveSettings: vi.fn(), chooseDirectory: vi.fn().mockResolvedValue({ success: true, data: null }) },

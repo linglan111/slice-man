@@ -60,7 +60,7 @@ test('default original encoding burns subtitles into actual AV1 MP4 and VP9/VP8 
       expect(jobs.data.every((job) => !job.actualBackend && !job.options.translationProfileId && job.stages.translate.state === 'idle')).toBe(true);
       observed.push({ codec: row.codec, format: row.format, width: 320, height: 180, subtitlePixels: pixels, sourceHashUnchanged: true });
     }
-    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'export-original-web-codecs.json'), JSON.stringify({ generatedAnonymousMedia: true, isolatedUserData: true, realFFmpeg: true, noAI: true, observed }, null, 2));
   } finally { await app.close(); }
 });

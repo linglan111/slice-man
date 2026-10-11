@@ -20,6 +20,7 @@ import {
   addProfile,
   assertReferenceParity,
   exportFormat,
+  expandSecondaryControls,
   FFMPEG,
   frameDifference,
   importVideo,
@@ -32,7 +33,7 @@ import {
 import { downloadFixture } from "./download-helpers";
 
 const evidence = resolve(
-  ".trellis/tasks/10-10-ui-segment-reprocessing/evidence",
+  ".trellis/tasks/10-11-subtitle-workspace-layout/evidence",
 );
 const execute = promisify(execFile);
 
@@ -46,6 +47,7 @@ async function job(page: Page): Promise<Job> {
 }
 
 async function setCloud(page: Page, profile: string): Promise<void> {
+  await expandSecondaryControls(page);
   await page.getByLabel("识别方式", { exact: true }).selectOption("cloud");
   await page
     .getByLabel("语音识别服务", { exact: true })
@@ -91,12 +93,55 @@ async function fixedWorkspace(page: Page): Promise<void> {
   expect(action.y + action.height).toBeLessThanOrEqual(height);
   expect(list.height, "Usable proofreading region").toBeGreaterThan(70);
   expect(list.y + list.height).toBeLessThanOrEqual(height + 1);
+  const geometry = await page.evaluate(() => {
+    const panel = document.querySelector(".subtitle-panel");
+    const previewPanel = document.querySelector(".preview-panel");
+    if (!panel || !previewPanel) throw new Error("Workspace panels absent");
+    const right = panel.getBoundingClientRect();
+    const left = previewPanel.getBoundingClientRect();
+    return {
+      left: left.right,
+      right: right.left,
+      top: right.top,
+      bottom: right.bottom,
+      width: innerWidth,
+      controls: [
+        ...panel.querySelectorAll(
+          ".section-heading button, .review-toolbar select, .review-toolbar button, .subtitle-tools button, .subtitle-tools label",
+        ),
+      ].map((node) => {
+        const rect = node.getBoundingClientRect();
+        return {
+          x: rect.left,
+          right: rect.right,
+          y: rect.top,
+          bottom: rect.bottom,
+        };
+      }),
+      listWidth: panel.querySelector(".subtitle-list")?.clientWidth,
+      listScrollWidth: panel.querySelector(".subtitle-list")?.scrollWidth,
+    };
+  });
+  expect(geometry.left).toBeLessThan(geometry.right);
+  for (const control of geometry.controls) {
+    expect(control.x).toBeGreaterThanOrEqual(geometry.right);
+    expect(control.right).toBeLessThanOrEqual(geometry.width);
+    expect(control.y).toBeGreaterThanOrEqual(geometry.top);
+    expect(control.bottom).toBeLessThanOrEqual(geometry.bottom);
+  }
+  expect(geometry.listScrollWidth).toBeLessThanOrEqual(
+    (geometry.listWidth ?? 0) + 1,
+  );
   if (await page.locator(".preview-editor").count()) {
     const editor = await page.locator(".preview-editor").boundingBox();
     expect(
       editor?.height ?? 0,
       "Inline editing must provide room for a readable text field",
     ).toBeGreaterThanOrEqual(60);
+    const inner = await page
+      .locator(".preview-editor")
+      .evaluate((node) => node.clientHeight);
+    expect(inner, "Readable inner editor viewport").toBeGreaterThanOrEqual(80);
   }
   if (await page.locator(".reprocessing-panel").count()) {
     const panel = await page.locator(".reprocessing-panel").boundingBox();
@@ -249,9 +294,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     await page
       .getByLabel("可疑度筛选", { exact: true })
       .selectOption("pending");
-    await page
-      .getByRole("button", { name: "选择待检查", exact: true })
-      .click();
+    await page.getByRole("button", { name: "选择待检查", exact: true }).click();
     await expect(page.getByLabel("选择字幕 1", { exact: true })).toBeChecked();
     await expect(page.getByLabel("选择字幕 2", { exact: true })).toBeChecked();
     await page
@@ -373,6 +416,9 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
         .update(await readFile(source))
         .digest("hex"),
     ).toBe(sourceHash);
+    const disclosure = page.getByRole("button", { name: /生成、样式与导出/ });
+    await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    await disclosure.click();
     await page.getByRole("button", { name: "收起侧边栏", exact: true }).click();
     await app.close();
     app = undefined;
@@ -380,6 +426,12 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     app = next.app;
     await expect(
       next.page.getByRole("button", { name: "展开侧边栏", exact: true }),
+    ).toBeVisible();
+    await expect(
+      next.page.getByRole("button", { name: /生成、样式与导出/ }),
+    ).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      next.page.getByRole("button", { name: "添加字幕", exact: true }),
     ).toBeVisible();
     const persisted = await job(next.page);
     expect(persisted.options.translationEnabled).toBe(false);
@@ -438,212 +490,258 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
   }
 });
 
-test("fixed preview/proofreading workspace survives default/minimum native windows, portrait media, banners and long inline forms", async ({
-  playwright: _p,
-}, info) => {
-  const mock = await startMockServer();
-  const portrait = info.outputPath("anonymous-portrait.mp4");
-  await execute(
-    FFMPEG,
-    [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-y",
-      "-f",
-      "lavfi",
-      "-i",
-      "color=c=0x294060:s=360x640:r=25",
-      "-f",
-      "lavfi",
-      "-i",
-      "sine=frequency=500:sample_rate=16000:duration=4",
-      "-t",
-      "4",
-      "-c:v",
-      "libx264",
-      "-pix_fmt",
-      "yuv420p",
-      "-c:a",
-      "aac",
-      "-shortest",
-      portrait,
-    ],
-    { windowsHide: true },
-  );
-  const { app, page } = await launchApp(
-    info.outputPath("layout-data"),
-    [portrait],
-    [],
-  );
-  try {
-    await importVideo(page, false);
-    await page.evaluate(async () => {
-      const listed = await window.api.jobs.list();
-      if (!listed.success || !listed.data[0]) throw new Error("Fixture absent");
-      let current = listed.data[0];
-      for (let index = 0; index < 25; index++) {
-        const result = await window.api.jobs.addSegment({
-          jobId: current.id,
-          revision: current.revision,
-          segment: {
-            startMs: index * 140,
-            endMs: index * 140 + 100,
-            sourceText: `Anonymous long subtitle ${index + 1}: ${"校对文本 ".repeat(10)}`,
-          },
-        });
-        if (!result.success) throw new Error(result.error);
-        current = result.data;
-      }
-    });
-    await expect(page.locator(".subtitle-row")).toHaveCount(25);
-    await addProfile(page, "Layout review fixture", "openai", mock.url);
-    await setCloud(page, "Layout review fixture");
-    await page
-      .getByLabel("AI 检查服务（可选）", { exact: true })
-      .selectOption({ label: "Layout review fixture" });
-    mock.behavior.review = "slow";
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
-      .click();
-    await expect.poll(() => mock.counters.review).toBe(1);
-    await page
-      .getByRole("button", { name: "取消当前处理", exact: true })
-      .click();
-    await expect(page.locator(".banner--error")).toContainText("CANCELLED");
-    expect((await job(page)).segments).toHaveLength(25);
-    expect((await job(page)).reviewReport).toBeUndefined();
-    for (const dimensions of [
-      { width: 1440, height: 960 },
-      { width: 1050, height: 700 },
-    ]) {
-      await app.evaluate(({ BrowserWindow }, size) => {
-        const window = BrowserWindow.getAllWindows()[0];
-        if (!window) throw new Error("Native window absent");
-        window.setSize(size.width, size.height);
-      }, dimensions);
-      for (const collapsed of [false, true]) {
-        const toggleName = collapsed ? "收起侧边栏" : "展开侧边栏";
-        const toggle = page.getByRole("button", {
-          name: toggleName,
-          exact: true,
-        });
-        if (await toggle.count()) await toggle.click();
-        await fixedWorkspace(page);
-        const before = await page.locator("video").boundingBox();
-        await page.locator(".subtitle-list").hover();
-        await page.mouse.wheel(0, 800);
-        await expect
-          .poll(() =>
-            page.locator(".subtitle-list").evaluate((node) => node.scrollTop),
-          )
-          .toBeGreaterThan(100);
-        expect(await page.locator("video").boundingBox()).toEqual(before);
-        await page.locator(".work-grid__settings").hover();
-        await page.mouse.wheel(0, 700);
-        await expect
-          .poll(() =>
-            page
-              .locator(".work-grid__settings")
-              .evaluate((node) => node.scrollTop),
-          )
-          .toBeGreaterThan(0);
-        expect(await page.evaluate(() => window.scrollY)).toBe(0);
-        await page
-          .getByRole("button", { name: "添加画面字幕", exact: true })
-          .click();
-        await page
-          .getByLabel("原文", { exact: true })
-          .fill("Long inline editor\n".repeat(100));
-        await page.getByLabel("结束时间（秒）", { exact: true }).fill("4.001");
-        await page
-          .getByRole("button", { name: "保存字幕", exact: true })
-          .click();
-        await expect(
-          page.locator(".segment-editor").getByRole("alert"),
-        ).toBeVisible();
-        await fixedWorkspace(page);
-        await screenshot(
-          page,
-          `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-portrait-inline.png`,
-        );
-        await page.getByLabel("原文", { exact: true }).focus();
-        await page.keyboard.press("Control+A");
-        await page.keyboard.press("Control+C");
-        await page.keyboard.press("End");
-        await page.keyboard.press("Control+V");
-        await expect(page.getByLabel("原文", { exact: true })).toHaveValue(
-          "Long inline editor\n".repeat(200),
-        );
-        await page.getByRole("button", { name: "取消", exact: true }).click();
-        await page
-          .getByRole("button", { name: "重新识别片段", exact: true })
-          .click();
-        await page
-          .getByRole("button", { name: "起止时间", exact: true })
-          .click();
-        await page.getByLabel("片段开始（秒）", { exact: true }).fill("3.85");
-        await page.getByLabel("片段结束（秒）", { exact: true }).fill("3.95");
-        const plan = page.locator(".reprocessing-panel__scope");
-        await expect(plan).toContainText("0 条已有字幕");
-        await plan.scrollIntoViewIfNeeded();
-        await fixedWorkspace(page);
-        const executeButton = page.getByRole("button", {
-          name: "识别并替换片段",
-          exact: true,
-        });
-        await expect(executeButton).toBeEnabled();
-        await executeButton.scrollIntoViewIfNeeded();
-        const actionBounds = await executeButton.boundingBox();
-        const panelBounds = await page
-          .locator(".reprocessing-panel")
-          .boundingBox();
-        if (!actionBounds || !panelBounds)
-          throw new Error("Partial action or local panel missing");
-        expect(actionBounds.y).toBeGreaterThanOrEqual(panelBounds.y);
-        expect(actionBounds.y + actionBounds.height).toBeLessThanOrEqual(
-          panelBounds.y + panelBounds.height + 1,
-        );
-        expect(await page.evaluate(() => window.scrollY)).toBe(0);
-        await screenshot(
-          page,
-          `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-reprocess.png`,
-        );
-        await page.getByLabel("关闭分段处理", { exact: true }).click();
-        await page.locator(".subtitle-list").evaluate((node) => {
-          node.scrollTop = 0;
-        });
-      }
-    }
-    await page.keyboard.press("Alt");
-    expect(
-      await app.evaluate(({ Menu, BrowserWindow }) => ({
-        application: Menu.getApplicationMenu() === null,
-        hidden: BrowserWindow.getAllWindows()[0]?.isMenuBarVisible() === false,
-      })),
-    ).toEqual({ application: true, hidden: true });
-    await writeFile(
-      join(evidence, "layout-and-native-menu.json"),
-      JSON.stringify(
-        {
-          actualNativeWindowSizes: ["1440x960", "1050x700"],
-          portrait: true,
-          bothSidebarStates: true,
-          fixedDocument: true,
-          independentListScroll: true,
-          longInlineForm: true,
-          nativeMenuAbsentAfterAlt: true,
-          standardSelectCopyPaste: true,
-        },
-        null,
-        2,
-      ),
+for (const orientation of ["portrait", "landscape"] as const) {
+  test(`fixed preview/proofreading workspace survives default/minimum/large native windows, ${orientation} media, banners and long inline forms`, async ({
+    playwright: _p,
+  }, info) => {
+    test.setTimeout(240_000);
+    const mock = await startMockServer();
+    const portrait = info.outputPath(
+      `${"Long title 字幕工作区 ".repeat(5)}${orientation}.mp4`,
     );
-  } finally {
-    await app.close();
-    await mock.close();
-  }
-});
+    await execute(
+      FFMPEG,
+      [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        `color=c=0x294060:s=${orientation === "portrait" ? "360x640" : "640x360"}:r=25`,
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=500:sample_rate=16000:duration=4",
+        "-t",
+        "4",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        "-shortest",
+        portrait,
+      ],
+      { windowsHide: true },
+    );
+    const { app, page } = await launchApp(
+      info.outputPath("layout-data"),
+      [portrait],
+      [],
+    );
+    try {
+      await importVideo(page, false);
+      await page.evaluate(async () => {
+        const listed = await window.api.jobs.list();
+        if (!listed.success || !listed.data[0])
+          throw new Error("Fixture absent");
+        let current = listed.data[0];
+        for (let index = 0; index < 25; index++) {
+          const result = await window.api.jobs.addSegment({
+            jobId: current.id,
+            revision: current.revision,
+            segment: {
+              startMs: index * 140,
+              endMs: index * 140 + 100,
+              sourceText: `Anonymous long subtitle ${index + 1}: ${"校对文本 ".repeat(10)}`,
+            },
+          });
+          if (!result.success) throw new Error(result.error);
+          current = result.data;
+        }
+      });
+      await expect(page.locator(".subtitle-row")).toHaveCount(25);
+      await addProfile(page, "Layout review fixture", "openai", mock.url);
+      await setCloud(page, "Layout review fixture");
+      await page
+        .getByLabel("AI 检查服务（可选）", { exact: true })
+        .selectOption({ label: "Layout review fixture" });
+      mock.behavior.review = "graded";
+      await page
+        .getByRole("button", { name: "AI 检查字幕", exact: true })
+        .click();
+      await expect(page.locator(".review-summary")).toBeVisible();
+      await expect(page.locator(".processing-strip")).not.toBeVisible();
+      mock.behavior.review = "slow";
+      await page
+        .getByRole("button", { name: "AI 检查字幕", exact: true })
+        .click();
+      await expect.poll(() => mock.counters.review).toBe(2);
+      await page
+        .getByRole("button", { name: "取消当前处理", exact: true })
+        .click();
+      await expect(page.locator(".banner--error")).toContainText("CANCELLED");
+      expect((await job(page)).segments).toHaveLength(25);
+      expect((await job(page)).reviewReport).toBeDefined();
+      await expect(page.locator(".review-summary")).toBeVisible();
+      await page.getByLabel("选择字幕 1", { exact: true }).check();
+      for (const dimensions of [
+        { width: 1440, height: 960 },
+        { width: 1050, height: 700 },
+        { width: 1920, height: 1080 },
+      ]) {
+        await app.evaluate(({ BrowserWindow }, size) => {
+          const window = BrowserWindow.getAllWindows()[0];
+          if (!window) throw new Error("Native window absent");
+          window.setSize(size.width, size.height);
+        }, dimensions);
+        for (const collapsed of [false, true]) {
+          const toggleName = collapsed ? "收起侧边栏" : "展开侧边栏";
+          const toggle = page.getByRole("button", {
+            name: toggleName,
+            exact: true,
+          });
+          if (await toggle.count()) await toggle.click();
+          for (const secondaryExpanded of [true, false]) {
+            const disclosure = page.getByRole("button", {
+              name: /生成、样式与导出/,
+            });
+            const proofreadingBounds = await page
+              .locator(".subtitle-panel")
+              .boundingBox();
+            if (
+              ((await disclosure.getAttribute("aria-expanded")) === "true") !==
+              secondaryExpanded
+            )
+              await disclosure.click();
+            expect(await page.locator(".subtitle-panel").boundingBox()).toEqual(
+              proofreadingBounds,
+            );
+            await fixedWorkspace(page);
+            const before = await page.locator("video").boundingBox();
+            await page.locator(".subtitle-list").hover();
+            await page.mouse.wheel(0, 800);
+            await expect
+              .poll(() =>
+                page
+                  .locator(".subtitle-list")
+                  .evaluate((node) => node.scrollTop),
+              )
+              .toBeGreaterThan(100);
+            expect(await page.locator("video").boundingBox()).toEqual(before);
+            if (secondaryExpanded) {
+              await page.locator(".work-grid__settings").hover();
+              await page.mouse.wheel(0, 700);
+              await expect
+                .poll(() =>
+                  page
+                    .locator(".work-grid__settings")
+                    .evaluate((node) => node.scrollTop),
+                )
+                .toBeGreaterThan(0);
+            }
+            expect(await page.evaluate(() => window.scrollY)).toBe(0);
+            await page
+              .getByRole("button", { name: "添加画面字幕", exact: true })
+              .click();
+            await page
+              .getByLabel("原文", { exact: true })
+              .fill("Long inline editor\n".repeat(100));
+            await page
+              .getByLabel("结束时间（秒）", { exact: true })
+              .fill("4.001");
+            await page
+              .getByRole("button", { name: "保存字幕", exact: true })
+              .click();
+            await expect(
+              page.locator(".segment-editor").getByRole("alert"),
+            ).toBeVisible();
+            await fixedWorkspace(page);
+            await screenshot(
+              page,
+              `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-${secondaryExpanded ? "settings-open" : "settings-closed"}-${orientation}-inline.png`,
+            );
+            await page.getByLabel("原文", { exact: true }).focus();
+            await page.keyboard.press("Control+A");
+            await page.keyboard.press("Control+C");
+            await page.keyboard.press("End");
+            await page.keyboard.press("Control+V");
+            await expect(page.getByLabel("原文", { exact: true })).toHaveValue(
+              "Long inline editor\n".repeat(200),
+            );
+            await page
+              .getByRole("button", { name: "取消", exact: true })
+              .click();
+            await page
+              .getByRole("button", { name: "重新识别片段", exact: true })
+              .click();
+            await page
+              .getByRole("button", { name: "起止时间", exact: true })
+              .click();
+            await page
+              .getByLabel("片段开始（秒）", { exact: true })
+              .fill("3.85");
+            await page
+              .getByLabel("片段结束（秒）", { exact: true })
+              .fill("3.95");
+            const plan = page.locator(".reprocessing-panel__scope");
+            await expect(plan).toContainText("0 条已有字幕");
+            await plan.scrollIntoViewIfNeeded();
+            await fixedWorkspace(page);
+            const executeButton = page.getByRole("button", {
+              name: "识别并替换片段",
+              exact: true,
+            });
+            await expect(executeButton).toBeEnabled();
+            await executeButton.scrollIntoViewIfNeeded();
+            const actionBounds = await executeButton.boundingBox();
+            const panelBounds = await page
+              .locator(".reprocessing-panel")
+              .boundingBox();
+            if (!actionBounds || !panelBounds)
+              throw new Error("Partial action or local panel missing");
+            expect(actionBounds.y).toBeGreaterThanOrEqual(panelBounds.y);
+            expect(actionBounds.y + actionBounds.height).toBeLessThanOrEqual(
+              panelBounds.y + panelBounds.height + 1,
+            );
+            expect(await page.evaluate(() => window.scrollY)).toBe(0);
+            await screenshot(
+              page,
+              `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-${secondaryExpanded ? "settings-open" : "settings-closed"}-reprocess.png`,
+            );
+            await page.getByLabel("关闭分段处理", { exact: true }).click();
+            await page.locator(".subtitle-list").evaluate((node) => {
+              node.scrollTop = 0;
+            });
+          }
+        }
+      }
+      await page.keyboard.press("Alt");
+      expect(
+        await app.evaluate(({ Menu, BrowserWindow }) => ({
+          application: Menu.getApplicationMenu() === null,
+          hidden:
+            BrowserWindow.getAllWindows()[0]?.isMenuBarVisible() === false,
+        })),
+      ).toEqual({ application: true, hidden: true });
+      await writeFile(
+        join(evidence, `layout-and-native-menu-${orientation}.json`),
+        JSON.stringify(
+          {
+            actualNativeWindowSizes: ["1440x960", "1050x700", "1920x1080"],
+            bothSecondaryStates: true,
+            orientation,
+            longTitle: true,
+            bothSidebarStates: true,
+            fixedDocument: true,
+            independentListScroll: true,
+            longInlineForm: true,
+            nativeMenuAbsentAfterAlt: true,
+            standardSelectCopyPaste: true,
+          },
+          null,
+          2,
+        ),
+      );
+    } finally {
+      await app.close();
+      await mock.close();
+    }
+  });
+}
 
 test("local and URL import persist explicit translation choices and translation-enabled partial processing remains opt-in", async ({
   playwright: _p,
