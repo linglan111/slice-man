@@ -8,6 +8,7 @@
 
 | File                                               | Description                       | When to Read           |
 | -------------------------------------------------- | --------------------------------- | ---------------------- |
+| [subtitle-review-reprocessing.md](./subtitle-review-reprocessing.md) | Import translation mode, scoped recognition and AI text-review lifecycle | Import, repair and review changes |
 | [code-quality.md](./code-quality.md)               | Code quality mandatory rules      | Always                 |
 | [typescript.md](./typescript.md)                   | TypeScript best practices         | Type-related decisions |
 | [git-conventions.md](./git-conventions.md)         | Git commit and branch conventions | Before committing      |

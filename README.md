@@ -1,24 +1,30 @@
 # Slice Man
 
-A Windows x64 Electron desktop application for translated video subtitles. The interface is in Chinese. Users provide their own API credentials.
+A Windows x64 Electron desktop application for original-language and translated video subtitles. The interface is in Chinese. Users provide their own API credentials.
 
 ## Workflow
 
-1. Import a local video, or use **链接导入** to download and automatically import a video URL.
+1. Import a local video, or use **链接导入** to download a video URL. Choose original-language subtitles or subtitles with translation during import; the project remembers this choice.
 2. Choose local Whisper recognition or an OpenAI-compatible speech provider with segment timestamps.
 3. For local recognition, open the one-click installer and choose Base, Small or Large v3 Turbo. CPU processing is supported; optional NVIDIA execution is validated and falls back to CPU when unavailable.
-4. Configure a translation profile using OpenAI Chat Completions/Responses, Anthropic Messages or Gemini format. Recognition, translation and style design can use separate profiles.
-5. Recognize and translate. Correct source/translated text and per-segment times; retranslate selected segments as needed.
+4. When translation is enabled, configure a translation profile using OpenAI Chat Completions/Responses, Anthropic Messages or Gemini format. Recognition, translation, text review and style design can use separate profiles. Original-language projects need no translation profile.
+5. Generate subtitles, then correct source text, optional translated text and per-segment times. Translation is skipped throughout original-language projects, including reruns and repairs.
 6. Choose a built-in template or request a bounded JSON style from AI. Preview the rendered subtitles.
 7. Export burned-in MP4/MKV or standalone SRT/ASS/VTT subtitles.
 
 Video export renders subtitle pixels into the picture. SRT/VTT carry text and timing; ASS can retain the application's supported styling. AI styles support typography, colors, outline/shadow, bilingual layout, literal keyword emphasis and limited fades.
 
-Keys stay in the main process, with locally protected persistence or a session-only option. Local recognition keeps speech processing on the computer. Cloud recognition sends audio to the configured service; translation/style design sends subtitle text.
+Keys stay in the main process, with locally protected persistence or a session-only option. Local recognition keeps speech processing on the computer. Cloud recognition sends audio to the configured service; translation, AI text review and style design send subtitle text.
+
+Use **重新识别片段** or **重新翻译片段** beside **添加画面字幕** to process selected subtitle cues or an explicit time range. Recognition automatically expands to complete intersecting cues; inspect the effective range and affected count before running. Separate selections do not process unrelated gaps. Optional combined translation is available only in translation-enabled projects. The target timeline is replaced only after all requested processing succeeds; failure/cancellation retains prior subtitles. Translation-only keeps source text and timing.
+
+Choose a review text service and use **AI 检查字幕** to jointly inspect chronological dialogue, suspicious timing, source text and active translations. Every inspected cue receives a suspicion grade: **无 / 低 / 中 / 高**. A single versioned rubric defines the rules and examples; the model identifies supported rules and reasons, and the application derives the grade. Low covers minor or weak cues without a clear meaning change; medium requires concrete contextual/meaning/readability concerns; high requires strong evidence of a severe problem, such as reversed negation or a contradictory key quantity. Ordinary topic changes, quotes and spoken ellipsis alone must not be treated as severe errors.
+
+Use the compact grade/pending filter and existing playback, manual editing, ignoring and targeted repair actions. Selected-cue review keeps the same surrounding dialogue as a full scan. Changed context makes dependent grades require rechecking, including previously clear cues. Unchecked and old ungraded reports are distinguishable from “无”. Review uses text/timing only, never source audio, and does not automatically apply corrections; “无” means no obvious suspicion was identified, not proof of spoken accuracy. Reports and acknowledgments persist with the project.
 
 To replace an already-recognized video's source text, choose **重新识别原片** and confirm the replacement. Successful re-recognition replaces existing source corrections/translations and invalidates dependent previews; failure/cancellation retains the previous content. Historical exported files remain. Translate the new source afterward; the rerun action does not automatically translate. Check recognition accuracy against the actual audio, especially in long recordings.
 
-The video preview displays live subtitles as soon as source recognition is available. Available translations take priority, with source fallback and the selected bilingual option. Playback, paused seeks and edits update the current cue. Inline subtitles follow current layout/colors/typography; native fullscreen uses synchronized browser subtitles. Click a windowed caption or its proofreading row to edit timing/source/translation inline. Add/delete controls are available in both locations, and current cues are highlighted/followed like lyrics. Manual edits do not call recognition or translation; inspect the final exported video for exact managed-font ASS appearance.
+The video preview displays live subtitles as soon as source recognition is available. In translation mode, available translations take priority with source fallback and the selected bilingual option. Original-language mode uses source text for preview/fullscreen and all exports even if older translations remain stored. Playback, paused seeks and edits update the current cue. Inline subtitles follow current layout/colors/typography; native fullscreen uses synchronized browser subtitles. Click a windowed caption or its proofreading row to edit timing/source/translation inline. Add/delete controls are available in both locations, and current cues are highlighted/followed like lyrics. Manual edits do not call recognition or translation; inspect the final exported video for exact managed-font ASS appearance.
 
 Open **链接导入设置** in the lower-left sidebar to install the managed download tools and configure the default save folder, video file format, video encoding, resolution and optional proxy. Defaults are Videos/Slice Man, MP4, original video encoding and 1080p. Available formats are MP4/MKV/original, encoding choices are original/H.264/H.265, and resolution limits range from 360p to 2160p or highest available. Lower-resolution sources stay at their actual quality. These source-download preferences are separate from the subtitle burn-in export settings. Explicit encoding may require a cancellable conversion; incompatible original-encoding/container choices report an actionable error rather than changing the codec silently. Original format with a specified encoder uses MKV, shown in the UI. Downloads and conversions must finish and validate before a project is added; existing files are preserved on failure/cancellation.
 
@@ -37,6 +43,7 @@ npm run dev
 The resource setup retrieves pinned, verified media tools and managed CJK fonts. See [development environment](docs/development-environment.md) for versions, native setup, asset sources and measured Whisper behavior.
 
 ```powershell
+npm run icons:generate
 npm run lint
 npm run typecheck
 npm test
@@ -63,4 +70,4 @@ Export currently requires a destination with hard-link support, normally a local
 
 ## Project records
 
-The reviewed requirements, design, implementation plan and test evidence live under `.trellis/tasks/10-07-video-translation-subtitles/`. Cross-layer contracts and native testing rules live under `.trellis/spec/shared/`. The task's final verification report records which checks actually ran and the remaining release acceptance scope.
+The base application's requirements and evidence live under `.trellis/tasks/10-07-video-translation-subtitles/`; UI, optional translation, scoped repair and contextual four-grade review are recorded under `.trellis/tasks/10-10-ui-segment-reprocessing/`. Cross-layer contracts and native testing rules live under `.trellis/spec/shared/`. Task verification reports record which checks actually ran and the remaining release acceptance scope.

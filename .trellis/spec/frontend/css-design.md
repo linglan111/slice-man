@@ -380,6 +380,13 @@ h4 {
 
 ## Quick Reference
 
+### Bounded subtitle workspace
+
+- `editor-layout.css` bounds the document; the settings, proofreading list and inline forms scroll locally. Preserve the 110px video-stage and 75px list/form minima.
+- Budget the proofreading panel for its actual heading, grade filter, report summary, add/follow and selected-cue controls. A nominal 200px panel is insufficient when a graded report and selected cues are present; the compact layout reserves 230px and reduces surrounding spacing.
+- Minimum-window regression checks must use the actual Electron inner viewport, with both sidebar states, a banner, a graded report, selected/pending filters and an open processing/editor panel. Assert the list fits its parent panel as well as the viewport; a fixed document with clipped children is not a passing layout.
+- Keep the shared standards explanation inside the list's scroll region so expanding it does not increase the non-scrolling control budget.
+
 | Question                       | Answer                                    |
 | ------------------------------ | ----------------------------------------- |
 | Where to define colors?        | `tokens.css` as CSS custom properties     |
