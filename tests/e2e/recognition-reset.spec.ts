@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { addProfile, configureCloud, exportFormat, launchApp, makeVideo, renderInternalReference, startMockServer } from './helpers';
+import { addProfile, configureCloud, exportFormat, launchApp, makeVideo, renderInternalReference, startMockServer, importVideo } from './helpers';
 import type { Job } from '../../src/shared/contracts';
 
 async function makeRecognitionFixture(): Promise<{ url: string; calls: { recognition: number; translation: number }; behavior: { recognition: 'original' | 'fresh' | 'auth' | 'slow' }; close: () => Promise<void> }> {
@@ -53,7 +53,7 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
   const { app, page } = await launchApp(testInfo.outputPath('reset-user-data'), [source], [output]);
   try {
     await addProfile(page, 'Recognition reset fixture', 'openai', fixture.url);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await configureCloud(page, 'Recognition reset fixture');
     await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
@@ -136,7 +136,7 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
     await page.getByRole('button', { name: '翻译全部字幕', exact: true }).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
     expect(fixture.calls.translation).toBe(2);
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence');
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'recognition-reset-desktop-result.json'), JSON.stringify({ media: 'Anonymous generated four-second fixture; no user task changed.', provider: 'Deterministic loopback HTTP ASR/text mocks, no paid API.', calls: fixture.calls, assertions: ['button dismissal and Escape send no recognition request; focus restored', 'successful cached job can explicitly recognize again', 'failure retains original/translation/manual corrections/style/output history/reference preview', 'cancel retains existing content and reference preview', 'success clears translation/per-cue emphasis/preview/selection and derived stage status, keeps global style and previous exported file/history', 'source SHA-256 and previous SRT bytes unchanged', 'success does not automatically translate', 'explicit later translation succeeds'] }, null, 2));
   } finally { await app.close(); await fixture.close(); }

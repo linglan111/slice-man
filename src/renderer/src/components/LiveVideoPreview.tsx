@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import type { Job, Segment } from '../../../shared/contracts';
+import { primarySubtitleText } from '../../../shared/subtitle-content';
 import { useVideoClock } from '../hooks/useVideoClock';
 import { activeCaptions, captionLines, captionOpacity, emphasizedParts, nativeCaptionText } from '../lib/live-captions';
 
@@ -18,13 +19,13 @@ export function LiveVideoPreview({ job, source, videoRef, onTimeUpdate, onError,
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const track = nativeTrackRef.current ?? video.addTextTrack('subtitles', '实时字幕', job.options.targetLanguage);
+    const track = nativeTrackRef.current ?? video.addTextTrack('subtitles', '实时字幕', job.options.translationEnabled ? job.options.targetLanguage : job.options.sourceLanguage);
     nativeTrackRef.current = track;
     track.mode = 'disabled';
     let hasPlayableFrame = video.readyState >= 2 && !video.error;
     const installedCues: VTTCue[] = [];
     for (const segment of job.segments) {
-      const cue = new VTTCue(segment.startMs / 1000, segment.endMs / 1000, nativeCaptionText(segment, job.options.bilingual));
+      const cue = new VTTCue(segment.startMs / 1000, segment.endMs / 1000, nativeCaptionText(segment, job.options.bilingual, job.options.translationEnabled));
       cue.id = segment.id;
       track.addCue(cue);
       installedCues.push(cue);
@@ -54,7 +55,7 @@ export function LiveVideoPreview({ job, source, videoRef, onTimeUpdate, onError,
       // Chromium exposes null cues while disabled; keep the references we added.
       for (const cue of installedCues) track.removeCue(cue);
     };
-  }, [videoRef, job.segments, job.options.bilingual, job.options.targetLanguage, source]);
+  }, [videoRef, job.segments, job.options.bilingual, job.options.translationEnabled, job.options.targetLanguage, job.options.sourceLanguage, source]);
 
   const height = clock.rect.height;
   const fontSize = height * style.fontSizeRatio;
@@ -72,12 +73,12 @@ export function LiveVideoPreview({ job, source, videoRef, onTimeUpdate, onError,
     {!isNativeFullscreen && <div className="live-captions" data-testid="live-captions" aria-label="实时字幕" style={clock.rect}>
       <div className="live-captions__stack" style={captionStyle}>{active.map((segment) => {
         const keywords = style.emphasisBySegment.find((item) => item.segmentId === segment.id)?.keywords ?? [];
-        return <button type="button" className="live-captions__cue" key={segment.id} data-cue-id={segment.id} aria-label={`校对画面字幕：${segment.translatedText || segment.sourceText}`} disabled={isBusy || !onEdit} style={{ opacity: captionOpacity(segment, clock.timeMs, style.animation) }} onClick={() => {
+        return <button type="button" className="live-captions__cue" key={segment.id} data-cue-id={segment.id} aria-label={`校对画面字幕：${primarySubtitleText(segment, job.options.translationEnabled)}`} disabled={isBusy || !onEdit} style={{ opacity: captionOpacity(segment, clock.timeMs, style.animation) }} onClick={() => {
           if (isBusy || !onEdit || clock.isSeeking) return;
           videoRef.current?.pause();
           onEdit(segment);
         }}>
-          {captionLines(segment, job.options.bilingual).map((line, index) => <span key={index} className="live-captions__line" style={{ fontSize: line.isSource ? fontSize * style.layout.sourceScale : fontSize }}>
+          {captionLines(segment, job.options.bilingual, job.options.translationEnabled).map((line, index) => <span key={index} className="live-captions__line" style={{ fontSize: line.isSource ? fontSize * style.layout.sourceScale : fontSize }}>
             {emphasizedParts(line.text, line.isSource ? [] : keywords).map((part, partIndex) => <span key={partIndex} style={part.isEmphasized ? { color: style.emphasisColor } : undefined}>{part.text}</span>)}
           </span>)}
         </button>;

@@ -106,7 +106,7 @@ describe('independent export preferences and operation choices', () => {
     vi.mocked(api.jobs.export).mockImplementation(() => new Promise((resolve) => { complete = resolve; }));
     vi.mocked(api.jobs.get).mockResolvedValue({ success: true, data: job });
     render(<App />); await screen.findByLabelText('选择字幕 1');
-    fireEvent.click(screen.getByRole('button', { name: '导出作品 ↗' })); await screen.findByLabelText('视频编码');
+    fireEvent.click(screen.getByRole('button', { name: '导出作品' })); await screen.findByLabelText('视频编码');
     fireEvent.click(screen.getByRole('button', { name: '选择保存位置并导出' }));
     fireEvent.click(screen.getByRole('button', { name: '返回工作区' }));
     fireEvent.click(screen.getByRole('button', { name: '导出设置' })); await screen.findByLabelText('默认视频格式');

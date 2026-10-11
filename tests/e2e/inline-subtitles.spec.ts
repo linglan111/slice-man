@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { addProfile, exportFormat, launchApp, makeVideo, startMockServer } from './helpers';
+import { addProfile, exportFormat, launchApp, makeVideo, startMockServer, importVideo } from './helpers';
 import type { Job } from '../../src/shared/contracts';
 
 async function currentJob(page: Page): Promise<Job> {
@@ -32,13 +32,13 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
   const finalOutput = testInfo.outputPath('after-deletion.srt');
   const { app, page } = await launchApp(testInfo.outputPath('isolated-user-data'), [input, input], [output, finalOutput]);
   try {
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await expect.poll(() => page.locator('video').evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(2);
     await expect(page.getByRole('button', { name: '渲染当前参考画面', exact: true })).toHaveCount(0);
     await expect(page.locator('.reference-preview')).toHaveCount(0);
     await expect(page.locator('.stage-pill')).toHaveCount(3);
     // Empty timeline can be created from proofreading, with validation and cancel.
-    await page.getByRole('button', { name: '＋ 添加字幕', exact: true }).click();
+    await page.getByRole('button', { name: '添加字幕', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.getByRole('button', { name: '保存字幕', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('请填写新字幕');
@@ -48,7 +48,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     expect(first.id).not.toBe('new-draft');
     await seek(page, 1.8); await expect(page.getByTestId('live-captions')).toBeEmpty();
     // Preview insertion uses actual currentTime in a gap, not the rounded label.
-    await page.getByRole('button', { name: '＋ 添加画面字幕', exact: true }).click();
+    await page.getByRole('button', { name: '添加画面字幕', exact: true }).click();
     await expect(page.getByLabel('开始时间（秒）', { exact: true })).toHaveValue('1.800');
     await fillCue(page, '1.800', '2.800', 'Preview source', 'Preview target'); await save(page);
     await expect(page.getByTestId('segment-1')).toContainText('Preview target');
@@ -95,7 +95,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     expect((await currentJob(page)).segments).toHaveLength(2);
     await page.getByRole('button', { name: '取消', exact: true }).click();
     // Overlap creates two literal buttons; bilingual lines address one exact cue.
-    await seek(page, 1); await page.getByRole('button', { name: '＋ 添加字幕', exact: true }).click();
+    await seek(page, 1); await page.getByRole('button', { name: '添加字幕', exact: true }).click();
     await fillCue(page, '0.900', '1.400', 'Overlap source', 'Overlap target'); await save(page);
     await page.getByLabel('双语字幕（译文 + 原文）', { exact: true }).click();
     await expect(page.getByLabel('双语字幕（译文 + 原文）', { exact: true })).toBeChecked();
@@ -111,7 +111,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     await page.getByRole('button', { name: '校对画面字幕：Overlap target', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(page.getByLabel('原文', { exact: true })).toHaveValue('Overlap source');
-    const evidenceDirectory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence'); await mkdir(evidenceDirectory, { recursive: true });
+    const evidenceDirectory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(evidenceDirectory, { recursive: true });
     await page.locator('.preview-panel').screenshot({ path: join(evidenceDirectory, 'inline-cue-editor-anonymous.png') });
     await fillCue(page, '.900', '1.400', 'Overlap edited', 'Overlap corrected'); await save(page);
     await expect(page.getByTestId('live-captions')).toContainText('Overlap correctedOverlap edited');
@@ -130,13 +130,13 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     const afterDelete = await currentJob(page);
     expect(afterDelete.segments.map((cue) => cue.id)).toContain(first.id);
     expect(afterDelete.style.emphasisBySegment).toHaveLength(0); expect(afterDelete.outputs).toContain(output);
-    await expect(page.getByRole('button', { name: '重译选中（0）', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^重译选中/ })).toHaveCount(0);
     await expect(page.getByTestId('live-captions')).not.toContainText('Overlap corrected');
     // Delete all through list, then re-add from preview near the final media ms.
     await page.getByLabel('删除字幕 1', { exact: true }).click(); await expect(page.locator('.subtitle-row')).toHaveCount(1);
     await page.getByLabel('删除字幕 1', { exact: true }).click(); await expect(page.locator('.subtitle-row')).toHaveCount(0);
     await expect(page.getByTestId('live-captions')).toBeEmpty();
-    await seek(page, 3.999); await page.getByRole('button', { name: '＋ 添加画面字幕', exact: true }).click();
+    await seek(page, 3.999); await page.getByRole('button', { name: '添加画面字幕', exact: true }).click();
     await expect(page.getByLabel('开始时间（秒）', { exact: true })).toHaveValue('3.999');
     await expect(page.getByLabel('结束时间（秒）', { exact: true })).toHaveValue('4.000');
     await page.getByLabel('原文', { exact: true }).fill('Last millisecond'); await save(page);
@@ -147,11 +147,11 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     expect(finalSrt).not.toContain('Overlap corrected'); expect(finalSrt).not.toContain('Edited list target');
     // Switching projects discards an unsaved target rather than carrying it over.
     await page.getByLabel('编辑字幕 1', { exact: true }).click(); await page.getByLabel('原文', { exact: true }).fill('Switch draft');
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await expect(page.locator('.segment-editor')).toHaveCount(0); await expect(page.getByTestId('live-captions')).toBeEmpty();
     expect(mock.counters.recognition).toBe(0); expect(mock.counters.translation).toBe(0);
     expect(createHash('sha256').update(await readFile(input)).digest('hex')).toBe(originalHash);
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'inline-subtitles-result.json'), JSON.stringify({ isolated: true, generatedAnonymousMedia: true, noAIRequests: true, assertions: ['preview/list four-field inline save', 'playback click pauses', 'no edit modal/reference UI', 'gap insertion and final-ms bounds', 'empty/all-delete/re-add', 'overlap bilingual exact target', 'cancel/invalid/stale save and delete drafts', 'selected/emphasis cleanup', 'corrected SRT text and boundaries', 'job-switch draft clearing', 'source hash unchanged'] }, null, 2));
   } finally { await app.close(); await mock.close(); }
 });
@@ -162,7 +162,7 @@ test('lyric highlighting and confined auto-follow respect seeks, overlap, gaps, 
   const { app, page } = await launchApp(testInfo.outputPath('isolated-lyrics-data'), [input], []);
   try {
     await addProfile(page, 'Manual translator', 'openai', mock.url);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await expect.poll(() => page.locator('video').evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(2);
     // Dense anonymous cues are fixture setup, not a substitute for UI CRUD above.
     await page.evaluate(async () => {
@@ -212,13 +212,13 @@ test('lyric highlighting and confined auto-follow respect seeks, overlap, gaps, 
     await page.getByRole('button', { name: '翻译全部字幕', exact: true }).click();
     await expect.poll(() => mock.counters.translation).toBe(1);
     await expect(page.getByTestId('live-captions').locator('button')).toBeDisabled();
-    await expect(page.getByRole('button', { name: '＋ 添加画面字幕', exact: true })).toBeDisabled();
-    await expect(page.getByRole('button', { name: '＋ 添加字幕', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '添加画面字幕', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '添加字幕', exact: true })).toBeDisabled();
     await expect(page.getByLabel('删除字幕 1', { exact: true })).toBeDisabled();
     await expect(page.getByLabel('原文', { exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: '保存字幕', exact: true })).toBeDisabled();
     await page.getByRole('button', { name: '取消当前处理', exact: true }).click();
-    await expect(page.getByRole('button', { name: '＋ 添加字幕', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '添加字幕', exact: true })).toBeEnabled();
     await expect(page.getByLabel('原文', { exact: true })).toHaveValue('Busy retained draft');
     expect(mock.counters.recognition).toBe(0);
   } finally { await app.close(); await mock.close(); }

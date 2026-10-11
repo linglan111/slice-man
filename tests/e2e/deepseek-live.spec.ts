@@ -4,7 +4,7 @@ import { rm, writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { exportFormat, frameDifference, inspectVideo, launchApp, makeVideo, readText, renderInternalReference, seedRealCpu } from './helpers';
+import { exportFormat, frameDifference, inspectVideo, launchApp, makeVideo, readText, renderInternalReference, seedRealCpu, importVideo } from './helpers';
 
 // Secrets must never enter Playwright traces, recordings or automatic failure screenshots.
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
@@ -43,7 +43,7 @@ test('live DeepSeek text translation/style over actual local Whisper and real de
   const outputs = ['srt', 'ass', 'vtt', 'mp4'].map((format) => testInfo.outputPath(`deepseek-live.${format}`));
   let app: ElectronApplication | undefined;
   async function profile(page: Page, name: string, protocol: 'openai' | 'anthropic', baseUrl: string, mode: 'chat' | 'responses' = 'chat'): Promise<void> {
-    await page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+    await page.getByRole('button', { name: 'API 服务', exact: true }).click();
     await page.getByRole('button', { name: '添加服务', exact: true }).click();
     await page.getByLabel('配置名称', { exact: true }).fill(name);
     await page.getByLabel('协议', { exact: true }).selectOption(protocol);
@@ -70,7 +70,7 @@ test('live DeepSeek text translation/style over actual local Whisper and real de
     const launched = await launchApp(userData, [input], outputs); app = launched.app;
     const page = launched.page;
     await profile(page, 'DeepSeek live Chat', 'openai', origin);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await page.getByLabel('优先使用 NVIDIA GPU', { exact: true }).click();
     await expect(page.getByLabel('优先使用 NVIDIA GPU', { exact: true })).not.toBeChecked();
     await expect(page.getByLabel('翻译服务', { exact: true })).toBeEnabled();
@@ -89,6 +89,7 @@ test('live DeepSeek text translation/style over actual local Whisper and real de
     await expect(page.locator('.segment-editor')).toHaveCount(0);
     await page.getByLabel('选择字幕 1', { exact: true }).check();
     await page.getByRole('button', { name: '重译选中（1）', exact: true }).click();
+    await page.getByRole('button', { name: '翻译选定片段', exact: true }).click();
     await expect(page.getByRole('button', { name: '重译选中（1）', exact: true })).toBeEnabled({ timeout: 60000 });
     await expect(page.getByTestId('segment-0').locator('.subtitle-row__translation')).toContainText(/[\u3400-\u9fff]/);
     await page.getByLabel('AI 设计描述', { exact: true }).fill('请选择电影感模板，白色字、黑色描边、淡入淡出，底部居中。不要设置任何关键词强调。');
@@ -109,7 +110,7 @@ test('live DeepSeek text translation/style over actual local Whisper and real de
     // One small real request for each further officially documented text mode.
     await profile(page, 'DeepSeek live Responses', 'openai', origin, 'responses');
     await profile(page, 'DeepSeek live Anthropic', 'anthropic', `${origin}/anthropic/v1`);
-    await page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+    await page.getByRole('button', { name: 'API 服务', exact: true }).click();
     for (const name of ['DeepSeek live Responses', 'DeepSeek live Anthropic']) {
       const previousCalls = calls.length;
       const card = page.locator('.profile-card').filter({ has: page.getByText(name, { exact: true }) });
@@ -125,7 +126,7 @@ test('live DeepSeek text translation/style over actual local Whisper and real de
     await app.close(); app = undefined;
     const reopened = await launchApp(userData, [], []); app = reopened.app;
     await expect(reopened.page.getByTestId('segment-0').locator('.subtitle-row__translation')).toContainText(/[\u3400-\u9fff]/);
-    await reopened.page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+    await reopened.page.getByRole('button', { name: 'API 服务', exact: true }).click();
     await expect(reopened.page.locator('.profile-card')).toHaveCount(3);
     for (const card of await reopened.page.locator('.profile-card').all()) await expect(card).toContainText('未配置密钥');
     sessionKeyAbsentAfterRestart = true;
@@ -133,13 +134,13 @@ test('live DeepSeek text translation/style over actual local Whisper and real de
     expect(calls.every((call) => !call.path.includes('audio/transcriptions'))).toBe(true);
     const evidence = { model: 'deepseek-flash', officialOrigin: 'https://api.deepseek.com', observationProxy: 'loopback forwarding only; no simulated provider responses', realRecognition: 'whisper.cpp Base CPU', coreWorkflowPassed, totalApiCalls: calls.length, calls, optionalCapabilities: capabilities, exports: outputs.map((path) => path.split(/[\\/]/).pop()), sourcePreserved: true, sessionKeyAbsentAfterRestart, traceRecording: false };
     await testInfo.attach('live-evidence', { body: JSON.stringify(evidence, null, 2), contentType: 'application/json' });
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(resolve(directory, 'deepseek-live-result.json'), JSON.stringify(evidence, null, 2));
   } finally {
     await app?.close(); proxy.closeAllConnections(); await new Promise<void>((closed) => proxy.close(() => closed()));
     delete process.env.DEEPSEEK_E2E_API_KEY;
     await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(resolve(directory, 'deepseek-live-last-attempt.json'), JSON.stringify({ model: 'deepseek-flash', coreWorkflowPassed, sessionKeyAbsentAfterRestart, totalApiCalls: calls.length, calls, optionalCapabilities: capabilities, credentialsCleaned: true }, null, 2));
   }
 });
@@ -172,7 +173,7 @@ test('live DeepSeek compatibility-only Responses and Anthropic desktop probes wi
   try {
     const launched = await launchApp(userData, [], []); app = launched.app; const page = launched.page;
     for (const mode of ['responses', 'anthropic'] as const) {
-      await page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+      await page.getByRole('button', { name: 'API 服务', exact: true }).click();
       await page.getByRole('button', { name: '添加服务', exact: true }).click();
       await page.getByLabel('配置名称', { exact: true }).fill(`DeepSeek ${mode}`);
       await page.getByLabel('协议', { exact: true }).selectOption(mode === 'responses' ? 'openai' : 'anthropic');
@@ -198,7 +199,7 @@ test('live DeepSeek compatibility-only Responses and Anthropic desktop probes wi
     expect(calls).toEqual([{ path: '/responses', status: 200, hasBearer: true, hasApiKey: false }, { path: '/anthropic/v1/messages', status: 200, hasBearer: false, hasApiKey: true }]);
     const summary = { model: 'deepseek-flash', officialOrigin: 'https://api.deepseek.com', totalApiCalls: calls.length, calls, mockedResponses: false, credentialsLogged: false, priorAnthropic401Cause: 'Observation proxy injected an empty Authorization header; fixed by forwarding only actual protocol headers.' };
     await testInfo.attach('live-protocol-evidence', { body: JSON.stringify(summary, null, 2), contentType: 'application/json' });
-    await writeFile(resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence/deepseek-live-modes.json'), JSON.stringify(summary, null, 2));
+    await writeFile(resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence/deepseek-live-modes.json'), JSON.stringify(summary, null, 2));
   } finally {
     await app?.close(); proxy.closeAllConnections(); await new Promise<void>((closed) => proxy.close(() => closed()));
     await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });

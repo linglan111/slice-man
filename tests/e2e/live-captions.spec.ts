@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { addProfile, configureCloud, FFMPEG, launchApp, makeVideo, startMockServer } from './helpers';
+import { addProfile, configureCloud, FFMPEG, launchApp, makeVideo, startMockServer, importVideo } from './helpers';
 import { installSeekTelemetry } from './seeking-helpers';
 
 const execute = promisify(execFile);
@@ -27,7 +27,7 @@ test('live source captions immediately follow actual playback; translation, edit
   const { app, page } = await launchApp(testInfo.outputPath('live-user-data'), [source, portrait], []);
   try {
     await addProfile(page, 'Live caption mock', 'openai', mock.url);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await configureCloud(page, 'Live caption mock');
     mock.behavior.translation = 'slow';
     await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
@@ -108,13 +108,13 @@ test('live source captions immediately follow actual playback; translation, edit
     await expect(captions).toContainText('人工译文 a+b');
     await seekFrame(page, .6);
     await expect(captions).toContainText('人工译文 a+b');
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence');
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence');
     await mkdir(directory, { recursive: true });
     await page.locator('.live-video-player').screenshot({ path: join(directory, 'live-captions-anonymous-inline.png') });
     const captionsBounds = await captions.boundingBox();
     const inlineVideoBounds = await video.boundingBox();
     expect(captionsBounds?.width).toBeCloseTo(Math.min(inlineVideoBounds?.width ?? 0, (inlineVideoBounds?.height ?? 0) * 640 / 360), 0);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await expect(page.getByTestId('live-captions')).toBeEmpty();
     await expect.poll(() => page.locator('video').evaluate((element: HTMLVideoElement) => element.videoHeight)).toBe(640);
     const portraitBounds = await page.locator('video').boundingBox();

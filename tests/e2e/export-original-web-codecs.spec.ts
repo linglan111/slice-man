@@ -5,7 +5,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
-import { FFMPEG, FFPROBE, launchApp } from './helpers';
+import { FFMPEG, FFPROBE, launchApp, importVideo } from './helpers';
 
 const execute = promisify(execFile);
 
@@ -27,7 +27,7 @@ test('default original encoding burns subtitles into actual AV1 MP4 and VP9/VP8 
   const observed: unknown[] = [];
   try {
     for (const [index, row] of rows.entries()) {
-      await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+      await importVideo(page);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(`anonymous-${row.codec}.${row.format}`);
       await page.evaluate(async () => {
         const listed = await window.api.jobs.list(); if (!listed.success || !listed.data[0]) throw new Error('Fixture absent'); const job = listed.data[0];
@@ -39,7 +39,7 @@ test('default original encoding burns subtitles into actual AV1 MP4 and VP9/VP8 
         if (!styled.success) throw new Error(styled.error);
       });
       await expect(page.getByTestId('segment-0')).toContainText('原编码字幕');
-      await page.getByRole('button', { name: '导出作品 ↗', exact: true }).click();
+      await page.getByRole('button', { name: '导出作品', exact: true }).click();
       await expect(page.getByLabel('视频编码', { exact: true })).toHaveValue('original');
       await expect(page.getByLabel('导出分辨率', { exact: true })).toHaveValue('1080p');
       if (row.format === 'mp4') await expect(page.getByLabel('导出格式', { exact: true })).toHaveValue('mp4');
@@ -60,7 +60,7 @@ test('default original encoding burns subtitles into actual AV1 MP4 and VP9/VP8 
       expect(jobs.data.every((job) => !job.actualBackend && !job.options.translationProfileId && job.stages.translate.state === 'idle')).toBe(true);
       observed.push({ codec: row.codec, format: row.format, width: 320, height: 180, subtitlePixels: pixels, sourceHashUnchanged: true });
     }
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'export-original-web-codecs.json'), JSON.stringify({ generatedAnonymousMedia: true, isolatedUserData: true, realFFmpeg: true, noAI: true, observed }, null, 2));
   } finally { await app.close(); }
 });

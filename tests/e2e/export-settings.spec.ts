@@ -5,7 +5,7 @@ import { readFile, writeFile, stat, readdir, mkdir, rename, unlink } from 'node:
 import { join, dirname, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { FFMPEG, FFPROBE, launchApp, makeVideo } from './helpers';
+import { FFMPEG, FFPROBE, launchApp, makeVideo, importVideo } from './helpers';
 import type { ExportSettings } from '../../src/shared/export-contracts';
 
 const execute = promisify(execFile);
@@ -15,7 +15,7 @@ async function makeSource(path: string, codec: 'h264' | 'h265' | 'mpeg4', size =
 }
 async function hash(path: string): Promise<string> { return createHash('sha256').update(await readFile(path)).digest('hex'); }
 async function seedManualCue(page: Page, endMs = 1800): Promise<void> {
-  await expect(page.getByRole('button', { name: '＋ 导入视频', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '导入视频', exact: true })).toBeEnabled();
   await expect.poll(async () => { const listed = await page.evaluate(() => window.api.jobs.list()); return listed.success ? listed.data.length : 0; }).toBeGreaterThan(0);
   await page.evaluate(async (end) => {
     const listed = await window.api.jobs.list(); if (!listed.success || !listed.data[0]) throw new Error('Fixture job missing');
@@ -26,7 +26,7 @@ async function seedManualCue(page: Page, endMs = 1800): Promise<void> {
   await expect(page.getByTestId('segment-0')).toContainText('最终译文');
 }
 async function openExport(page: Page, subtitle = false): Promise<void> {
-  await page.getByRole('button', { name: subtitle ? '导出字幕文件' : '导出作品 ↗', exact: true }).click();
+  await page.getByRole('button', { name: subtitle ? '导出字幕文件' : '导出作品', exact: true }).click();
   await expect(page.getByLabel('导出格式', { exact: true })).toBeEnabled();
 }
 async function finishExport(page: Page): Promise<void> {
@@ -60,7 +60,7 @@ test('export defaults and native directory selection persist across restart; per
   const userData = info.outputPath('isolated-user-data'); let app: ElectronApplication | undefined;
   try {
     const initial = await launchApp(userData, [input], [], { APP_E2E_EXPORT_DIRECTORIES: JSON.stringify([directory, '']) }); app = initial.app; let page = initial.page;
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click(); await seedManualCue(page);
+    await importVideo(page); await seedManualCue(page);
     await page.getByRole('button', { name: '导出设置', exact: true }).click();
     await expect(page.getByLabel('视频编码', { exact: true })).toHaveValue('original');
     await expect(page.getByLabel('导出分辨率', { exact: true })).toHaveValue('1080p');
@@ -87,7 +87,7 @@ test('export defaults and native directory selection persist across restart; per
     await unlink(directory); await rename(movedDirectory, directory);
     await page.getByRole('button', { name: '保存导出设置', exact: true }).click();
     await expect(page.getByText('导出默认设置已保存。', { exact: true })).toBeVisible();
-    const evidence = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence'); await mkdir(evidence, { recursive: true });
+    const evidence = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(evidence, { recursive: true });
     await page.getByRole('dialog', { name: '导出设置', exact: true }).screenshot({ path: join(evidence, 'export-settings-anonymous.png') });
     await page.getByRole('button', { name: '关闭', exact: true }).click();
     const saved = await page.evaluate(() => window.api.exportSettings.status()); if (!saved.success) throw new Error(saved.error);
@@ -110,7 +110,7 @@ test('export defaults and native directory selection persist across restart; per
     await page.getByLabel('开始时间（秒）', { exact: true }).fill('.234'); await page.getByLabel('结束时间（秒）', { exact: true }).fill('1.678');
     await page.getByLabel('原文', { exact: true }).fill('Corrected original'); await page.getByLabel('译文', { exact: true }).fill('精确校对译文');
     await page.getByRole('button', { name: '保存字幕', exact: true }).click(); await expect(page.locator('.segment-editor')).toHaveCount(0);
-    await page.getByRole('button', { name: '＋ 添加字幕', exact: true }).click();
+    await page.getByRole('button', { name: '添加字幕', exact: true }).click();
     await page.getByLabel('开始时间（秒）', { exact: true }).fill('2'); await page.getByLabel('结束时间（秒）', { exact: true }).fill('3'); await page.getByLabel('原文', { exact: true }).fill('Removed cue');
     await page.getByRole('button', { name: '保存字幕', exact: true }).click(); await expect(page.locator('.segment-editor')).toHaveCount(0);
     await page.getByLabel('删除字幕 2', { exact: true }).click(); await expect(page.locator('.subtitle-row')).toHaveCount(1);
@@ -154,7 +154,7 @@ test('actual Electron video export matrix verifies MP4/MKV, original/H264/H265, 
   const { app, page } = await launchApp(info.outputPath('isolated-matrix-user-data'), [input, hevc], [...outputs, ...hevcOutputs]);
   const observed: unknown[] = [];
   try {
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click(); await seedManualCue(page);
+    await importVideo(page); await seedManualCue(page);
     for (const [index, row] of rows.entries()) {
       await openExport(page); await page.getByLabel('导出格式', { exact: true }).selectOption(row.format);
       await page.getByLabel('视频编码', { exact: true }).selectOption(row.codec); await page.getByLabel('导出分辨率', { exact: true }).selectOption(row.resolution); await page.getByLabel('画质', { exact: true }).selectOption(row.quality);
@@ -162,7 +162,7 @@ test('actual Electron video export matrix verifies MP4/MKV, original/H264/H265, 
       const result = await inspect(path); expect(result).toMatchObject({ width: row.width, height: row.height, codec: row.codec === 'h265' ? 'hevc' : 'h264', subtitleTracks: 0 });
       expect(result.format).toContain(row.format === 'mp4' ? 'mp4' : 'matroska'); await assertSubtitlePixels(path); observed.push({ ...row, ...result });
     }
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click(); await seedManualCue(page);
+    await importVideo(page); await seedManualCue(page);
     for (const [index, format] of ['mp4', 'mkv'].entries()) {
       await openExport(page); await page.getByLabel('导出格式', { exact: true }).selectOption(format);
       await expect(page.getByLabel('视频编码', { exact: true })).toHaveValue('original'); await expect(page.getByLabel('导出分辨率', { exact: true })).toHaveValue('1080p'); await finishExport(page);
@@ -170,7 +170,7 @@ test('actual Electron video export matrix verifies MP4/MKV, original/H264/H265, 
       expect(result).toMatchObject({ width: 640, height: 360, codec: 'hevc', subtitleTracks: 0 }); await assertSubtitlePixels(path); observed.push({ source: 'hevc', selectedCodec: 'original', selectedFormat: format, ...result });
     }
     expect(await hash(input)).toBe(sourceHash); expect(await hash(hevc)).toBe(hevcHash); await assertNoAI(page);
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence'); await mkdir(directory, { recursive: true });
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence'); await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'export-settings-matrix.json'), JSON.stringify({ fixture: 'Generated anonymous H264/HEVC media and isolated userData', realFFmpeg: true, noAI: true, sourceHashesUnchanged: true, observed }, null, 2));
   } finally { await app.close(); }
 });
@@ -183,7 +183,7 @@ test('unsupported original codec, destination/source protection, native save can
   const userData = info.outputPath('isolated-errors-data');
   const { app, page } = await launchApp(userData, [input, long], [unsupported, recovered, existing, input, '', cancelled]);
   try {
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click(); await seedManualCue(page);
+    await importVideo(page); await seedManualCue(page);
     await openExport(page); await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText(/H.264.*H.265/);
     expect(await stat(unsupported).catch(() => undefined)).toBeUndefined();
@@ -200,7 +200,7 @@ test('unsupported original codec, destination/source protection, native save can
     await expect(page.getByRole('button', { name: '选择保存位置并导出', exact: true })).toBeEnabled();
     await expect(page.getByRole('dialog', { name: '导出作品', exact: true })).toBeVisible(); expect(await page.evaluate(() => window.api.jobs.list())).toEqual(before);
     await page.getByRole('button', { name: '返回工作区', exact: true }).click();
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click(); await seedManualCue(page, 14000);
+    await importVideo(page); await seedManualCue(page, 14000);
     await openExport(page); await page.getByLabel('导出格式', { exact: true }).selectOption('mkv'); await page.getByLabel('视频编码', { exact: true }).selectOption('h265');
     await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
     await page.getByRole('button', { name: '返回工作区', exact: true }).click();

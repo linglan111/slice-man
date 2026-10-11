@@ -1,0 +1,31 @@
+.review-grade { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border: 1px solid; border-radius: 4px; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.review-grade--none { color: #b5dfcb; border-color: #426954; background: #253c30; }
+.review-grade--low { color: #bdd9f1; border-color: #47677f; background: #26394a; }
+.review-grade--medium { color: #f0d299; border-color: #816737; background: #443924; }
+.review-grade--high { color: #fac0c0; border-color: #8a5056; background: #4a2c32; }
+.review-grade--unreviewed, .review-grade--legacy, .review-grade--stale { color: var(--color-muted); border-color: var(--color-border); background: var(--color-surface); }
+.review-grade--stale { border-style: dashed; }
+.review-grade__recheck { font-size: 9px; }
+.review-toolbar--grades { flex-wrap: nowrap; gap: 10px; margin-bottom: 4px; }
+.review-toolbar--grades select { width: 138px; flex-shrink: 0; margin: 0; padding: 3px 7px; font-size: 11px; }
+.review-toolbar--grades .review-toolbar__select { margin-right: auto; }
+.review-toolbar--grades .text-button { white-space: nowrap; }
+.review-rubric { padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-surface); }
+.review-rubric h3 { font-size: 12px; }
+.review-rubric p, .review-rubric li { font-size: 11px; color: var(--color-muted); }
+.review-rubric__tier { margin-top: 10px; }
+.review-rubric__tier ul { padding-left: 18px; margin: 5px 0; }
+.review-rubric__tier li + li { margin-top: 5px; }
+.review-rubric__example { display: block; font-size: 10px; }
+.review-rubric__head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+@media (max-width: 1150px) {
+  /* Reserve the real heading/filter/batch controls plus a 75px list. */
+  .subtitle-panel:has(.review-summary) { min-height: 230px; }
+  .subtitle-panel:has(.review-summary) > .section-heading { margin-bottom: 5px; }
+  .subtitle-panel:has(.review-summary) .subtitle-tools { margin-bottom: 3px; }
+  .subtitle-tools--selection .text-button { padding-block: 2px; }
+  .review-summary { margin: 0 0 2px; font-size: 10px; line-height: 1.4; }
+  .review-toolbar--grades { gap: 7px; }
+  .review-toolbar--grades select { width: 112px; font-size: 10px; }
+  .review-toolbar--grades .text-button { font-size: 10px; }
+}

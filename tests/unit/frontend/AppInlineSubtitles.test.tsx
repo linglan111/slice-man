@@ -41,7 +41,7 @@ function edited(job: Job, segment: Segment): Job {
 describe('inline subtitle editing and manual timeline integration', () => {
   it('opens a keyboard-accessible preview form, pauses video and saves captured cue/revision without AI', async () => {
     const job = savedJob(); const { api } = await setup(job);
-    expect(screen.getByRole('button', { name: '↓ 链接导入设置' }).closest('.sidebar__footer')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '链接导入设置' }).closest('.sidebar__footer')).toBeTruthy();
     expect(screen.getByRole('button', { name: '链接导入' }).closest('.sidebar')).toBeTruthy();
     expect(screen.queryByRole('button', { name: '↓ 在线下载' })).toBeNull();
     vi.mocked(api.jobs.editSegment).mockImplementation(async ({ segment }) => ({ success: true, data: edited(job, segment) }));
@@ -103,7 +103,7 @@ describe('inline subtitle editing and manual timeline integration', () => {
     const job = savedJob(); const { api } = await setup(job);
     const video = document.querySelector('video'); if (!video) throw new Error('Video missing');
     video.currentTime = 3.999;
-    fireEvent.click(screen.getByRole('button', { name: '＋ 添加画面字幕' }));
+    fireEvent.click(screen.getByRole('button', { name: '添加画面字幕' }));
     expect((screen.getByLabelText('开始时间（秒）') as HTMLInputElement).value).toBe('3.999');
     expect((screen.getByLabelText('结束时间（秒）') as HTMLInputElement).value).toBe('4.000');
     fireEvent.click(screen.getByRole('button', { name: '保存字幕' }));
@@ -125,8 +125,8 @@ describe('inline subtitle editing and manual timeline integration', () => {
     fireEvent.click(screen.getByLabelText('删除字幕 1'));
     await screen.findByText('字幕将在这里出现');
     expect(api.jobs.removeSegment).toHaveBeenCalledWith({ jobId: job.id, revision: 7, segmentId: 'old-cue' });
-    expect((screen.getByRole('button', { name: '重译选中（0）' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: '＋ 添加字幕' }) as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByRole('button', { name: '重译选中（0）' })).toBeNull();
+    expect((screen.getByRole('button', { name: '添加字幕' }) as HTMLButtonElement).disabled).toBe(false);
     expect(api.jobs.preview).not.toHaveBeenCalled();
   });
 
@@ -140,7 +140,8 @@ describe('inline subtitle editing and manual timeline integration', () => {
     await act(async () => { progress({ ...job, updatedAt: 9 }); });
     fireEvent.click(screen.getByLabelText('编辑字幕 1'));
     vi.mocked(api.jobs.importVideo).mockResolvedValue({ success: true, data: { ...job, id: 'other-job', name: 'Other job' } });
-    fireEvent.click(screen.getByRole('button', { name: '＋ 导入视频' }));
+    fireEvent.click(screen.getByRole('button', { name: '导入视频' }));
+    fireEvent.click(screen.getByRole('button', { name: '选择视频并导入' }));
     await screen.findByRole('heading', { name: 'Other job' });
     expect(screen.queryByRole('region', { name: '校对字幕' })).toBeNull();
   });

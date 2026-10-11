@@ -21,7 +21,7 @@ test("online settings installation integrity/cancel/rollback and native complete
     app = first.app;
     const page = first.page;
     const entry = page.getByRole("button", {
-      name: "↓ 链接导入设置",
+      name: "链接导入设置",
       exact: true,
     });
     await expect(entry).toBeVisible();
@@ -162,7 +162,7 @@ test("online settings installation integrity/cancel/rollback and native complete
       /(?:source|normalized-[a-f0-9-]+)\.mp4/,
     );
     await next.page
-      .getByRole("button", { name: "↓ 链接导入设置", exact: true })
+      .getByRole("button", { name: "链接导入设置", exact: true })
       .click();
     await expect(
       next.page.getByLabel("视频下载清晰度", { exact: true }),

@@ -9,6 +9,8 @@ asar: true
 asarUnpack:
   - node_modules/better-sqlite3/**
 extraResources:
+  - from: resources/icons
+    to: icons
   - from: resources/runtime-smoke.wav
     to: runtime-smoke.wav
   - from: resources/media
@@ -18,12 +20,17 @@ extraResources:
   - from: resources/notices
     to: notices
 win:
+  icon: resources/icons/icon.ico
   target:
     - target: nsis
       arch: x64
-  signAndEditExecutable: false
+  signAndEditExecutable: true
+  signExecutable: false
 nsis:
+  installerIcon: resources/icons/icon.ico
+  uninstallerIcon: resources/icons/icon.ico
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
+forceCodeSigning: false
 npmRebuild: true

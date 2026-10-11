@@ -56,7 +56,7 @@ test("an actual isolated NTFS write denial rejects a download directory and reta
     app = launched.app;
     const page = launched.page;
     await page
-      .getByRole("button", { name: "↓ 链接导入设置", exact: true })
+      .getByRole("button", { name: "链接导入设置", exact: true })
       .click();
     await page
       .getByRole("button", { name: "选择下载位置", exact: true })
@@ -127,7 +127,7 @@ async function settings(
   quality = "1080p",
 ): Promise<void> {
   await page
-    .getByRole("button", { name: "↓ 链接导入设置", exact: true })
+    .getByRole("button", { name: "链接导入设置", exact: true })
     .click();
   await page
     .getByLabel("下载容器格式", { exact: true })
@@ -242,7 +242,7 @@ test("native directory selection, persisted format/codec/resolution matrix, real
     app = first.app;
     const page = first.page;
     await page
-      .getByRole("button", { name: "↓ 链接导入设置", exact: true })
+      .getByRole("button", { name: "链接导入设置", exact: true })
       .click();
     await expect(
       page.getByLabel("视频下载清晰度", { exact: true }),
@@ -459,7 +459,7 @@ test("native directory selection, persisted format/codec/resolution matrix, real
     });
     app = next.app;
     await next.page
-      .getByRole("button", { name: "↓ 链接导入设置", exact: true })
+      .getByRole("button", { name: "链接导入设置", exact: true })
       .click();
     await expect(next.page.getByLabel("下载位置", { exact: true })).toHaveValue(
       target,

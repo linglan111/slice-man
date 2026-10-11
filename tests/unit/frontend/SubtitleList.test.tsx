@@ -6,6 +6,21 @@ import { savedJob } from './app-fixtures';
 
 afterEach(cleanup);
 describe('SubtitleList playback following', () => {
+  it('keeps a replaced silent fragment visible for range repair and requires review before ignoring stale findings', () => {
+    const job = savedJob();
+    job.options.translationEnabled = false;
+    job.reviewReport = { id: 'report', profileId: 'review', providerFingerprint: 'configuration', completedAt: 10, state: 'stale', reviewedSegmentIds: ['removed'], fingerprints: { removed: 'old' }, findings: [{ id: 'old-finding', segmentId: 'removed', startMs: 2000, endMs: 3000, category: 'source', reason: '旧片段疑似异常', status: 'recheck' }] };
+    const onRepairRange = vi.fn(); const onSeek = vi.fn();
+    render(<SubtitleList job={job} selectedIds={[]} activeIds={[]} isBusy={false} isEditing={false} editor={null} onAdd={vi.fn()} onRemove={vi.fn()} onSelect={vi.fn()} onEdit={vi.fn()} onSeek={onSeek} onRetranslate={vi.fn()} onReview={vi.fn()} onRepairRange={onRepairRange} />);
+    fireEvent.change(screen.getByLabelText('可疑度筛选'), { target: { value: 'pending' } });
+    expect(screen.queryByText('没有待检查字幕')).toBeNull();
+    expect(screen.getByText('原片段需复查')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '定位播放' }));
+    expect(onSeek).toHaveBeenCalledExactlyOnceWith(2000);
+    fireEvent.click(screen.getByRole('button', { name: '重新识别原片段' }));
+    expect(onRepairRange).toHaveBeenCalledExactlyOnceWith({ startMs: 2000, endMs: 3000 });
+    expect((screen.getByRole('button', { name: '忽略' }) as HTMLButtonElement).disabled).toBe(true);
+  });
   it('highlights overlap cues, clears gaps and confines following to its own scroller', () => {
     const job = savedJob(); const first = job.segments[0]; if (!first) throw new Error('Fixture cue absent'); job.segments.push({ ...first, id: 'other-cue' });
     const props = { job, selectedIds: [], activeIds: ['old-cue', 'other-cue'], isBusy: false, isEditing: false, editor: null, onAdd: vi.fn(), onRemove: vi.fn(), onSelect: vi.fn(), onEdit: vi.fn(), onSeek: vi.fn(), onRetranslate: vi.fn() };

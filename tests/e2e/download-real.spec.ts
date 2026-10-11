@@ -37,7 +37,7 @@ test("authorized real YouTube and Bilibili complete download/probe/import/decode
     app = launched.app;
     const page = launched.page;
     await page
-      .getByRole("button", { name: "↓ 链接导入设置", exact: true })
+      .getByRole("button", { name: "链接导入设置", exact: true })
       .click();
     await expect(
       page.getByLabel("视频下载清晰度", { exact: true }),

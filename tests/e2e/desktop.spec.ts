@@ -2,7 +2,7 @@ import { test, expect, type ElectronApplication } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, rm, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { addProfile, assertReferenceParity, configureCloud, exportFormat, frameDifference, inspectVideo, launchApp, makeVideo, readText, renderInternalReference, saveEvidence, startMockServer } from './helpers';
+import { addProfile, assertReferenceParity, configureCloud, exportFormat, frameDifference, inspectVideo, launchApp, makeVideo, readText, renderInternalReference, saveEvidence, startMockServer, importVideo } from './helpers';
 
 test('real desktop cloud workflow, all text protocols, corrections, rendering, exports and restart persistence', async ({ playwright: _playwright }, testInfo) => {
   const mock = await startMockServer();
@@ -20,7 +20,7 @@ test('real desktop cloud workflow, all text protocols, corrections, rendering, e
     await addProfile(page, 'OpenAI Responses', 'openai', mock.url, 'responses');
     await addProfile(page, 'Anthropic', 'anthropic', mock.url);
     await addProfile(page, 'Gemini', 'gemini', mock.url);
-    await page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+    await page.getByRole('button', { name: 'API 服务', exact: true }).click();
     for (const name of ['Cloud / Chat', 'OpenAI Responses', 'Anthropic', 'Gemini']) {
       await page.locator('.profile-card').filter({ has: page.getByText(name, { exact: true }) }).getByRole('button', { name: '测试连接', exact: true }).click();
       await expect(page.getByText('连接与文本 JSON 输出测试通过。', { exact: true })).toBeVisible();
@@ -37,7 +37,7 @@ test('real desktop cloud workflow, all text protocols, corrections, rendering, e
     await expect(page.getByRole('dialog', { name: 'API 服务', exact: true })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).not.toBeVisible();
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('中文 视频 input.mp4');
     await expect.poll(() => page.locator('video').evaluate((video: HTMLVideoElement) => video.readyState), { timeout: 15000 }).toBeGreaterThanOrEqual(2);
     await expect.poll(() => page.locator('video').evaluate((video: HTMLVideoElement) => video.videoWidth)).toBe(640);
@@ -69,6 +69,7 @@ test('real desktop cloud workflow, all text protocols, corrections, rendering, e
     await expect(page.locator('.segment-editor')).toHaveCount(0);
     await page.getByLabel('选择字幕 2', { exact: true }).check();
     await page.getByRole('button', { name: '重译选中（1）', exact: true }).click();
+    await page.getByRole('button', { name: '翻译选定片段', exact: true }).click();
     await expect(page.getByTestId('segment-1')).toContainText('已重译：A second sentence.');
     await expect(page.getByTestId('segment-0')).toContainText('已人工校对，世界你好。');
     await page.getByRole('button', { name: '电影感模板', exact: true }).click();
@@ -113,7 +114,7 @@ test('real desktop cloud workflow, all text protocols, corrections, rendering, e
     await expect(restarted.page.getByText(mp4, { exact: true })).toBeVisible();
     await expect(restarted.page.getByLabel('双语字幕（译文 + 原文）', { exact: true })).toBeChecked();
     await expect(restarted.page.getByRole('img', { name: '使用导出渲染器生成的字幕参考画面', exact: true })).not.toBeVisible();
-    await restarted.page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+    await restarted.page.getByRole('button', { name: 'API 服务', exact: true }).click();
     await expect(restarted.page.locator('.profile-card')).toHaveCount(4);
     await expect(restarted.page.locator('.profile-card').first()).toContainText('密钥已配置');
     expect(mock.counters.recognition).toBe(1);
@@ -129,7 +130,7 @@ test('restart recovers interrupted work and missing original media fails without
   try {
     const first = await launchApp(userData, [input], []); app = first.app; const page = first.page;
     await addProfile(page, 'Restart service', 'openai', mock.url);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click(); await configureCloud(page, 'Restart service');
+    await importVideo(page); await configureCloud(page, 'Restart service');
     mock.behavior.translation = 'slow';
     await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
     await expect.poll(() => mock.counters.translation).toBe(1);
@@ -158,12 +159,12 @@ test('editing a provider model invalidates dependent stages while renaming prese
   const { app, page } = await launchApp(testInfo.outputPath('user-data'), [input], []);
   try {
     await addProfile(page, 'Original service', 'openai', mock.url);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await configureCloud(page, 'Original service');
     await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
     await expect(page.getByRole('button', { name: '翻译全部字幕', exact: true })).toBeEnabled();
-    await page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+    await page.getByRole('button', { name: 'API 服务', exact: true }).click();
     await page.getByRole('button', { name: '编辑', exact: true }).click();
     await page.getByLabel('配置名称', { exact: true }).fill('Renamed service');
     await page.getByRole('button', { name: '保存配置', exact: true }).click();
@@ -171,7 +172,7 @@ test('editing a provider model invalidates dependent stages while renaming prese
     await expect(page.locator('.stage-pill').filter({ hasText: '语音识别' })).toContainText('已完成');
     await expect(page.getByTestId('segment-0')).not.toContainText('待重译');
     expect(mock.counters.recognition).toBe(1);
-    await page.getByRole('button', { name: '⚙ API 服务', exact: true }).click();
+    await page.getByRole('button', { name: 'API 服务', exact: true }).click();
     await page.getByRole('button', { name: '编辑', exact: true }).click();
     await page.getByLabel('模型 ID', { exact: true }).fill('another-mock-model');
     await page.getByRole('button', { name: '保存配置', exact: true }).click();
@@ -196,14 +197,15 @@ test('recoverable API failure, retry without repeated recognition, cancel and in
   const { app, page } = await launchApp(testInfo.outputPath('user-data'), [input], []);
   try {
     await addProfile(page, 'Test service', 'openai', mock.url);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await configureCloud(page, 'Test service');
     mock.behavior.translation = 'auth-error';
     await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('AUTH_ERROR');
     await expect(page.getByTestId('segment-0')).toContainText('Hello world.');
     mock.behavior.translation = 'ok';
-    await page.getByRole('button', { name: '重试未完成阶段', exact: true }).click();
+    await expect(page.getByRole('button', { name: '重试未完成阶段', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: '翻译全部字幕', exact: true }).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
     expect(mock.counters.recognition).toBe(1);
     mock.behavior.translation = 'slow';
@@ -214,7 +216,8 @@ test('recoverable API failure, retry without repeated recognition, cancel and in
     await expect(page.getByRole('alert')).toContainText('CANCELLED');
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
     mock.behavior.translation = 'ok';
-    await page.getByRole('button', { name: '重试未完成阶段', exact: true }).click();
+    await expect(page.getByRole('button', { name: '重试未完成阶段', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: '翻译全部字幕', exact: true }).click();
     await expect(page.getByRole('button', { name: '翻译全部字幕', exact: true })).toBeEnabled();
     expect(mock.counters.recognition).toBe(1);
     await page.getByLabel('AI 样式服务（可选）', { exact: true }).selectOption({ label: 'Test service' });
@@ -258,7 +261,7 @@ test('one-click real CPU installation, real Whisper inference and failed/cancell
     expect(await readText(resolve(userData, 'runtime-state.json'))).toBe(stateBefore);
     await page.getByRole('button', { name: '关闭', exact: true }).click();
     await addProfile(page, 'Mock translator', 'openai', mock.url);
-    await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+    await importVideo(page);
     await page.getByLabel('优先使用 NVIDIA GPU', { exact: true }).click();
     await expect(page.getByLabel('优先使用 NVIDIA GPU', { exact: true })).not.toBeChecked();
     await expect(page.getByLabel('翻译服务', { exact: true })).toBeEnabled();

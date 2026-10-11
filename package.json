@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "icons:generate": "node scripts/generate-app-icons.cjs",
     "preview": "electron-vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

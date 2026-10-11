@@ -1,12 +1,13 @@
 import type { Segment, SubtitleStyle } from '../../../shared/contracts';
+import { primarySubtitleText, subtitleText } from '../../../shared/subtitle-content';
 
 export type CaptionLine = { text: string; isSource: boolean };
 export type TextPart = { text: string; isEmphasized: boolean };
 export type VideoRect = { left: number; top: number; width: number; height: number };
 
-export function captionLines(segment: Segment, bilingual: boolean): CaptionLine[] {
-  const lines = [{ text: segment.translatedText || segment.sourceText, isSource: false }];
-  if (bilingual && segment.translatedText) lines.push({ text: segment.sourceText, isSource: true });
+export function captionLines(segment: Segment, bilingual: boolean, translationEnabled = true): CaptionLine[] {
+  const lines = [{ text: primarySubtitleText(segment, translationEnabled), isSource: false }];
+  if (translationEnabled && bilingual && segment.translatedText) lines.push({ text: segment.sourceText, isSource: true });
   return lines;
 }
 
@@ -55,6 +56,6 @@ export function captionOpacity(segment: Segment, timeMs: number, animation: Subt
 }
 
 /** VTTCue parses WebVTT tags; escape text before assigning the native track. */
-export function nativeCaptionText(segment: Segment, bilingual: boolean): string {
-  return captionLines(segment, bilingual).map(({ text }) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n');
+export function nativeCaptionText(segment: Segment, bilingual: boolean, translationEnabled = true): string {
+  return subtitleText(segment, translationEnabled, bilingual).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { addProfile, launchApp, makeVideo, saveEvidence, startMockServer } from './helpers';
+import { addProfile, launchApp, makeVideo, saveEvidence, startMockServer, importVideo } from './helpers';
 import { gpuAvailability, readBackendReceipt, seedVerifiedGpu } from './gpu-helpers';
 import { ENGINE_VERSION } from '../../src/main/services/runtime/manifest';
 import type { Job } from '../../src/shared/contracts';
@@ -27,7 +27,7 @@ test('actual CUDA desktop recognition and explicit CPU selection report each rea
     await addProfile(page, 'Local mock translator', 'openai', mock.url);
     for (const backend of ['gpu', 'cpu'] as const) {
       const previousIds = new Set((await currentJobs(page)).map((job) => job.id));
-      await page.getByRole('button', { name: '＋ 导入视频', exact: true }).click();
+      await importVideo(page);
       await expect(page.getByLabel('识别方式', { exact: true })).toHaveValue('local');
       const preference = page.getByLabel('优先使用 NVIDIA GPU', { exact: true });
       await expect(preference).toBeChecked();
@@ -57,7 +57,7 @@ test('actual CUDA desktop recognition and explicit CPU selection report each rea
     expect(mock.counters.recognition).toBe(0);
     expect(mock.counters.translation).toBe(2);
     const evidence = { device: availability.device, engineVersion: ENGINE_VERSION, model: 'base', modelBytes: 147951465, pinnedSha256: hashes, seed: 'Physically extracted integrity-checked official archives and model inside normal isolated userData; installation readiness reused, every job runs actual native recognition.', ai: 'Loopback HTTP translation mock only; no cloud speech or paid requests.', results };
-    const directory = resolve('.trellis/tasks/10-07-video-translation-subtitles/evidence');
+    const directory = resolve('.trellis/tasks/10-10-ui-segment-reprocessing/evidence');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'gpu-desktop-result.json'), JSON.stringify(evidence, null, 2));
     await testInfo.attach('actual-native-backend-evidence', { body: JSON.stringify(evidence, null, 2), contentType: 'application/json' });

@@ -27,6 +27,7 @@ export function stubApi(job: Job): { api: AppApi; progress: (next: Job) => void 
     onDownloadStatus: vi.fn(() => vi.fn()),
     jobs: {
       list: vi.fn().mockResolvedValue({ success: true, data: [job] }), get: vi.fn(), importVideo: vi.fn(), updateOptions: vi.fn(), recognize: vi.fn(), recognizeAgain: vi.fn(), translate: vi.fn(),
+      planReprocess: vi.fn(), recognizePartial: vi.fn(), translatePartial: vi.fn(), reviewSubtitles: vi.fn(), acknowledgeFinding: vi.fn(),
       editSegment: vi.fn(), addSegment: vi.fn(), removeSegment: vi.fn(), setStyle: vi.fn(), designStyle: vi.fn(), preview: vi.fn(), playback: vi.fn().mockResolvedValue({ success: true, data: { url: '' } }), export: vi.fn(), cancel: vi.fn(),
     },
     onProgress: vi.fn((nextHandler) => { handler = nextHandler; return vi.fn(); }),

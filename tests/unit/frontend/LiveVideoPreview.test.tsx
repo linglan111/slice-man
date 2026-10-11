@@ -47,6 +47,22 @@ function seek(video: HTMLVideoElement, seconds: number): void {
 }
 
 describe('live video caption rendering and lifecycle', () => {
+  it('uses original text in windowed and reused native tracks when translation is disabled without erasing stored translations', () => {
+    const videoRef = createRef<HTMLVideoElement>();
+    const job = fixtureJob();
+    job.segments[0] = { ...job.segments[0], id: 'first', startMs: 100, endMs: 1800, sourceText: 'Source only', translatedText: 'Stored translation', translationStale: false };
+    const props = { source: 'app-media://local/anonymous', videoRef, onTimeUpdate: vi.fn(), onError: vi.fn() };
+    const { rerender } = render(<LiveVideoPreview job={job} {...props} />);
+    const video = videoRef.current;
+    if (!video) throw new Error('Video missing');
+    seek(video, .5);
+    expect(screen.getByTestId('live-captions').textContent).toBe('Stored translation');
+    rerender(<LiveVideoPreview job={{ ...job, options: { ...job.options, translationEnabled: false, bilingual: true } }} {...props} />);
+    expect(screen.getByTestId('live-captions').textContent).toBe('Source only');
+    expect(track.cues.map((cue) => cue.text)).toEqual(['Source only', 'Second']);
+    expect(addTrack).toHaveBeenCalledOnce();
+    expect(job.segments[0].translatedText).toBe('Stored translation');
+  });
   it('renders literal source, follows actual seek/pause time and fits portrait content', () => {
     const videoRef = createRef<HTMLVideoElement>();
     render(<LiveVideoPreview job={fixtureJob()} source="app-media://local/anonymous" videoRef={videoRef} onTimeUpdate={vi.fn()} onError={vi.fn()} />);

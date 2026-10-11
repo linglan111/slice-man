@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { DownloadStatus, Job } from "../../../shared/contracts";
 import { Modal } from "./Modal";
+import { ImportOptions, type ImportChoice } from './ImportOptions';
 
 export function OnlineImportDialog({
   onClose,
@@ -10,6 +11,7 @@ export function OnlineImportDialog({
   onImported: (job: Job) => void;
 }): ReactNode {
   const [url, setUrl] = useState("");
+  const [choice, setChoice] = useState<ImportChoice>({ translationEnabled: false, targetLanguage: 'zh-CN' });
   const [status, setStatus] = useState<DownloadStatus>();
   const [error, setError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
@@ -36,7 +38,7 @@ export function OnlineImportDialog({
     setError("");
     setIsRunning(true);
     try {
-      const result = await window.api.download.importUrl({ url });
+      const result = await window.api.download.importUrl({ url, options: choice });
       if (result.success) onImported(result.data);
       else setError(result.error);
     } catch {
@@ -63,6 +65,7 @@ export function OnlineImportDialog({
         支持 yt-dlp 可处理的公开视频链接，如
         YouTube、Bilibili。完整下载并验证后自动导入；视频保存在设置的下载位置，可继续识别、校对和导出。
       </p>
+      <ImportOptions value={choice} onChange={setChoice} isBusy={isBusy} />
       {status && !status.ready && (
         <p>请先关闭此窗口，在左下角「链接导入设置」中一键安装。</p>
       )}
