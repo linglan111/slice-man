@@ -103,8 +103,10 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     const controlsBounds = await page.locator('video').boundingBox(); if (!controlsBounds) throw new Error('Video bounds absent');
     const lowestCue = await page.getByTestId('live-captions').locator('button').evaluateAll((cues) => Math.max(...cues.map((cue) => cue.getBoundingClientRect().bottom)));
     expect(lowestCue, 'Every clickable overlap cue stays above the native control row').toBeLessThanOrEqual(controlsBounds.y + controlsBounds.height - 63);
-    await page.locator('video').hover();
-    await page.locator('video').click({ position: { x: controlsBounds.width * .55, y: controlsBounds.height - 23 } });
+    const nativeTimelinePosition = { x: controlsBounds.width * .55, y: controlsBounds.height - 23 };
+    // Clickable bilingual captions may cover the center; reveal controls where the actual timeline click occurs.
+    await page.locator('video').hover({ position: nativeTimelinePosition });
+    await page.locator('video').click({ position: nativeTimelinePosition });
     await expect.poll(() => page.locator('video').evaluate((video: HTMLVideoElement) => video.currentTime)).toBeGreaterThan(1.8);
     await expect(page.locator('.segment-editor')).toHaveCount(0);
     await seek(page, 1);
