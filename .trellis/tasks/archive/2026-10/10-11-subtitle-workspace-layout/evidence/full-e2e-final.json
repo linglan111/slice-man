@@ -1,0 +1,1269 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "F:\\Code\\slice man\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--reporter=list,html,json"
+    ],
+    "configFile": "F:\\Code\\slice man\\playwright.config.ts",
+    "rootDir": "F:/Code/slice man/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "F:/Code/slice man/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "F:/Code/slice man/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "html"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "contextual-review.spec.ts",
+      "file": "contextual-review.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "all cues receive four fixed context grades across batch boundaries; grade repair and neighbour changes retain honest stale/legacy states",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4556,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:26:57.179Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "fedf34afe34b33e1f754-c5c0270ee24a63909798",
+          "file": "contextual-review.spec.ts",
+          "line": 130,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "deepseek-live.spec.ts",
+      "file": "deepseek-live.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "live DeepSeek text translation/style over actual local Whisper and real desktop media export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit live gate and session-only user key are required.",
+                  "location": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                    "line": 12,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:57.926Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit live gate and session-only user key are required.",
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                        "line": 12,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d5f3bb211d695fcf0b5b-b97d59f60f40c5027985",
+          "file": "deepseek-live.spec.ts",
+          "line": 14,
+          "column": 5
+        },
+        {
+          "title": "live DeepSeek compatibility-only Responses and Anthropic desktop probes with exact auth forwarding",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit live gate and session-only user key are required.",
+                  "location": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                    "line": 12,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:57.926Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit live gate and session-only user key are required.",
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                        "line": 12,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d5f3bb211d695fcf0b5b-de0f50f1c991dc88c499",
+          "file": "deepseek-live.spec.ts",
+          "line": 148,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "desktop.spec.ts",
+      "file": "desktop.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "real desktop cloud workflow, all text protocols, corrections, rendering, exports and restart persistence",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7409,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:01.759Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence-summary",
+                      "contentType": "application/json",
+                      "body": "eyJtb2NrZWRBSSI6dHJ1ZSwicmVhbE1lZGlhIjp0cnVlLCJpbnB1dEhhc2hQcmVzZXJ2ZWQiOnRydWUsInJlY29nbml0aW9uIjoxLCJ0cmFuc2xhdGlvbiI6NSwic3R5bGUiOjEsImNvbm5lY3Rpb24iOjUsInJldmlldyI6MH0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-622e00749ff57713e34e",
+          "file": "desktop.spec.ts",
+          "line": 7,
+          "column": 5
+        },
+        {
+          "title": "restart recovers interrupted work and missing original media fails without losing corrected subtitles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2554,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:09.173Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-c65345564ee10a9dbcdf",
+          "file": "desktop.spec.ts",
+          "line": 126,
+          "column": 5
+        },
+        {
+          "title": "editing a provider model invalidates dependent stages while renaming preserves completed work",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2118,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:11.731Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-3d54bab316cb46fcb03e",
+          "file": "desktop.spec.ts",
+          "line": 159,
+          "column": 5
+        },
+        {
+          "title": "recoverable API failure, retry without repeated recognition, cancel and invalid AI style preserve edits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1887,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:13.853Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-94c83b8029bf1335a60d",
+          "file": "desktop.spec.ts",
+          "line": 197,
+          "column": 5
+        },
+        {
+          "title": "one-click real CPU installation, real Whisper inference and failed/cancelled updates retain working runtime",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7610,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:15.744Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "native-evidence",
+                      "contentType": "text/plain",
+                      "body": "UmVhbCBDUFUgYXJjaGl2ZS9tb2RlbCBkb3dubG9hZGVkIGZyb20gbG9vcGJhY2sgZml4dHVyZSB3aXRoIHBpbm5lZCBpbnRlZ3JpdHkgY2hlY2tzOyBnZW51aW5lIHJ1bnRpbWUgc21va2UgdGVzdCBhbmQgYWN0dWFsIHdoaXNwZXIuY3BwIEJhc2Ugc3BlZWNoIGluZmVyZW5jZS4gQUkgdHJhbnNsYXRpb24gbW9ja2VkOyBHUFUgZGVsaWJlcmF0ZWx5IGRpc2FibGVkIGluIHRoaXMgY2FzZS4="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-115c69678ee86c002742",
+          "file": "desktop.spec.ts",
+          "line": 237,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "download-real.spec.ts",
+      "file": "download-real.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "authorized real YouTube and Bilibili complete download/probe/import/decoded playback via production Electron UI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicitly gated live user-supplied video downloads",
+                  "location": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\download-real.spec.ts",
+                    "line": 13,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:23.367Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicitly gated live user-supplied video downloads",
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\download-real.spec.ts",
+                        "line": 13,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "8670f3dc2cea2f42250e-3b713b1a05beef0fa019",
+          "file": "download-real.spec.ts",
+          "line": 10,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "download-settings.spec.ts",
+      "file": "download-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "an actual isolated NTFS write denial rejects a download directory and retains saved defaults and existing files",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1082,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:23.376Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "native-permission-result",
+                      "contentType": "application/json",
+                      "body": "eyJhY3R1YWxOVEZTV3JpdGVEZW5pZWQiOnRydWUsIm5hdGl2ZURpYWxvZ1NlbGVjdGlvbkZpeHR1cmUiOnRydWUsInByZXZpb3VzU2V0dGluZ3NQcmVzZXJ2ZWQiOnRydWUsInVuc2F2ZWREcmFmdFByZXNlcnZlZCI6dHJ1ZSwiZXhpc3RpbmdGaWxlUHJlc2VydmVkIjp0cnVlLCJvd25lZFByb2JlQ2xlYW5lZCI6dHJ1ZX0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3fdb0e2c8e763d9860f6-4ed1cb81080f25aebe79",
+          "file": "download-settings.spec.ts",
+          "line": 17,
+          "column": 5
+        },
+        {
+          "title": "native directory selection, persisted format/codec/resolution matrix, real transforms, no upscale and cancellation preserve existing files",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 31348,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:24.463Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "container-codec-results",
+                      "contentType": "application/json",
+                      "body": "eyJyZXN1bHRzIjpbeyJjb250YWluZXIiOiJtcDQiLCJyZXF1ZXN0ZWRDb2RlYyI6Im9yaWdpbmFsIiwiY29kZWMiOiJ2cDkiLCJ3aWR0aCI6NjQwLCJoZWlnaHQiOjQ4MCwiZm9ybWF0IjoibW92LG1wNCxtNGEsM2dwLDNnMixtajIifSx7ImNvbnRhaW5lciI6Im1wNCIsInJlcXVlc3RlZENvZGVjIjoiaDI2NCIsImNvZGVjIjoiaDI2NCIsIndpZHRoIjo2NDAsImhlaWdodCI6NDgwLCJmb3JtYXQiOiJtb3YsbXA0LG00YSwzZ3AsM2cyLG1qMiJ9LHsiY29udGFpbmVyIjoibXA0IiwicmVxdWVzdGVkQ29kZWMiOiJoMjY1IiwiY29kZWMiOiJoZXZjIiwid2lkdGgiOjY0MCwiaGVpZ2h0Ijo0ODAsImZvcm1hdCI6Im1vdixtcDQsbTRhLDNncCwzZzIsbWoyIn0seyJjb250YWluZXIiOiJta3YiLCJyZXF1ZXN0ZWRDb2RlYyI6Im9yaWdpbmFsIiwiY29kZWMiOiJ2cDkiLCJ3aWR0aCI6NjQwLCJoZWlnaHQiOjQ4MCwiZm9ybWF0IjoibWF0cm9za2Esd2VibSJ9LHsiY29udGFpbmVyIjoibWt2IiwicmVxdWVzdGVkQ29kZWMiOiJoMjY0IiwiY29kZWMiOiJoMjY0Iiwid2lkdGgiOjY0MCwiaGVpZ2h0Ijo0ODAsImZvcm1hdCI6Im1hdHJvc2thLHdlYm0ifSx7ImNvbnRhaW5lciI6Im1rdiIsInJlcXVlc3RlZENvZGVjIjoiaDI2NSIsImNvZGVjIjoiaGV2YyIsIndpZHRoIjo2NDAsImhlaWdodCI6NDgwLCJmb3JtYXQiOiJtYXRyb3NrYSx3ZWJtIn0seyJjb250YWluZXIiOiJvcmlnaW5hbCIsInJlcXVlc3RlZENvZGVjIjoib3JpZ2luYWwiLCJjb2RlYyI6InZwOSIsIndpZHRoIjo2NDAsImhlaWdodCI6NDgwLCJmb3JtYXQiOiJtYXRyb3NrYSx3ZWJtIn0seyJjb250YWluZXIiOiJvcmlnaW5hbCIsInJlcXVlc3RlZENvZGVjIjoiaDI2NCIsImNvZGVjIjoiaDI2NCIsIndpZHRoIjo2NDAsImhlaWdodCI6NDgwLCJmb3JtYXQiOiJtYXRyb3NrYSx3ZWJtIn0seyJjb250YWluZXIiOiJvcmlnaW5hbCIsInJlcXVlc3RlZENvZGVjIjoiaDI2NSIsImNvZGVjIjoiaGV2YyIsIndpZHRoIjo2NDAsImhlaWdodCI6NDgwLCJmb3JtYXQiOiJtYXRyb3NrYSx3ZWJtIn1dLCJuYXRpdmVEaXJlY3RvcnlQaWNrZXJGaXh0dXJlIjp0cnVlLCJpbnZhbGlkRGlyZWN0b3J5UHJlc2VydmVzU2V0dGluZ3MiOnRydWUsImFub255bW91c0hUVFBNZWRpYSI6dHJ1ZSwicmVhbEZGbXBlZyI6dHJ1ZSwiZG93bnNjYWxlIjp0cnVlLCJub1Vwc2NhbGUiOnRydWUsImNvbnZlcnNpb25DYW5jZWwiOnRydWUsInNhbWVOYW1lRmlsZVByZXNlcnZlZCI6dHJ1ZSwic2V0dGluZ3NSZXN0YXJ0Ijp0cnVlLCJwYWlkQUkiOjB9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3fdb0e2c8e763d9860f6-af468f379f13716123ff",
+          "file": "download-settings.spec.ts",
+          "line": 192,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "download.spec.ts",
+      "file": "download.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "online settings installation integrity/cancel/rollback and native completed download import playback persist through Electron",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11075,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:27:55.821Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "download-contract-results",
+                      "contentType": "application/json",
+                      "body": "eyJyZWFsTmF0aXZlVG9vbHMiOnRydWUsImFub255bW91c0hUVFBGaXh0dXJlIjp0cnVlLCJwYWlkQUlSZXF1ZXN0cyI6MCwiaW50ZWdyaXR5Ijp0cnVlLCJpbnN0YWxsQ2FuY2VsIjp0cnVlLCJmYWlsZWRVcGRhdGVSb2xsYmFjayI6dHJ1ZSwiZG93bmxvYWRDYW5jZWwiOnRydWUsIm5vUGFydGlhbEpvYiI6dHJ1ZSwiaW1wb3J0ZWRQbGF5YmFjayI6dHJ1ZSwic2V0dGluZ3NSZXN0YXJ0Ijp0cnVlfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29cf83cb0d33ef5cc857-f1ffbf4e2dc3f02ffc22",
+          "file": "download.spec.ts",
+          "line": 7,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "export-original-web-codecs.spec.ts",
+      "file": "export-original-web-codecs.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "default original encoding burns subtitles into actual AV1 MP4 and VP9/VP8 MKV without upscaling or AI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4835,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:06.906Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "abe98f7eddc3862afe43-004ee27e1074217244ff",
+          "file": "export-original-web-codecs.spec.ts",
+          "line": 12,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "export-settings.spec.ts",
+      "file": "export-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "export defaults and native directory selection persist across restart; per-export overrides stay local and separate subtitle files use current CRUD",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4241,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:11.751Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8194676c0870470315ed-4be787de904c83e325f2",
+          "file": "export-settings.spec.ts",
+          "line": 54,
+          "column": 5
+        },
+        {
+          "title": "actual Electron video export matrix verifies MP4/MKV, original/H264/H265, every resolution and quality, subtitle pixels and no upscaling",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11114,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:15.996Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8194676c0870470315ed-788fdf54806dce40ae41",
+          "file": "export-settings.spec.ts",
+          "line": 139,
+          "column": 5
+        },
+        {
+          "title": "unsupported original codec, destination/source protection, native save cancellation and actual encode cancellation preserve existing bytes and subtitles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8905,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:27.115Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8194676c0870470315ed-91a9c9fec516d6f581d4",
+          "file": "export-settings.spec.ts",
+          "line": 178,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "gpu-native.spec.ts",
+      "file": "gpu-native.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "actual CUDA desktop recognition and explicit CPU selection report each real inference backend",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11286,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:36.029Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "actual-native-backend-evidence",
+                      "contentType": "application/json",
+                      "body": "ewogICJkZXZpY2UiOiB7CiAgICAibmFtZSI6ICJOVklESUEgR2VGb3JjZSBSVFggNTA3MCIsCiAgICAiZHJpdmVyIjogIjYxMC43NCIKICB9LAogICJlbmdpbmVWZXJzaW9uIjogIjEuOC4zIiwKICAibW9kZWwiOiAiYmFzZSIsCiAgIm1vZGVsQnl0ZXMiOiAxNDc5NTE0NjUsCiAgInBpbm5lZFNoYTI1NiI6IHsKICAgICJjcHUiOiAiZDgyNGIxZTM3NTk5Zjg4MmIzOTZlNzNmMWVlMGJmZDVkMDUyOWY3MDAzMTRjNDgzMTFkY2JkMDBiODAzMzIxZCIsCiAgICAiZ3B1IjogImMxMmE1NjMzMzNkM2MzNzA3YmU3MDc1NGRjMGU4N2MxY2I1OGFhNjMzM2E4NzA1NWJiY2Y5YjUyNDQ4OGRmYjAiLAogICAgIm1vZGVsIjogIjYwZWQ1YmMzZGQxNGVlYTg1NjQ5M2QzMzQzNDliNDA1NzgyZGRjYWYwMDI4ZDRiNWRmNDA4ODM0NWZiYTJlZmUiCiAgfSwKICAic2VlZCI6ICJQaHlzaWNhbGx5IGV4dHJhY3RlZCBpbnRlZ3JpdHktY2hlY2tlZCBvZmZpY2lhbCBhcmNoaXZlcyBhbmQgbW9kZWwgaW5zaWRlIG5vcm1hbCBpc29sYXRlZCB1c2VyRGF0YTsgaW5zdGFsbGF0aW9uIHJlYWRpbmVzcyByZXVzZWQsIGV2ZXJ5IGpvYiBydW5zIGFjdHVhbCBuYXRpdmUgcmVjb2duaXRpb24uIiwKICAiYWkiOiAiTG9vcGJhY2sgSFRUUCB0cmFuc2xhdGlvbiBtb2NrIG9ubHk7IG5vIGNsb3VkIHNwZWVjaCBvciBwYWlkIHJlcXVlc3RzLiIsCiAgInJlc3VsdHMiOiBbCiAgICB7CiAgICAgICJiYWNrZW5kIjogImdwdSIsCiAgICAgICJ3YWxsVGltZU1zIjogMTQ3NSwKICAgICAgInNlZ21lbnRzIjogMSwKICAgICAgInJlY2VpcHQiOiB7CiAgICAgICAgImJhY2tlbmQiOiAiZ3B1IiwKICAgICAgICAiZ3B1RXhlY3V0aW9uVmVyaWZpZWQiOiB0cnVlLAogICAgICAgICJzdGRlcnJQcm9vZiI6ICJ3aGlzcGVyX21vZGVsX2xvYWQ6ICAgICAgICBDVURBMCB0b3RhbCBzaXplID0gICAxNDcuMzcgTUJcbndoaXNwZXJfYmFja2VuZF9pbml0X2dwdTogdXNpbmcgQ1VEQTAgYmFja2VuZCIKICAgICAgfQogICAgfSwKICAgIHsKICAgICAgImJhY2tlbmQiOiAiY3B1IiwKICAgICAgIndhbGxUaW1lTXMiOiAxNDEzLAogICAgICAic2VnbWVudHMiOiAxLAogICAgICAicmVjZWlwdCI6IHsKICAgICAgICAiYmFja2VuZCI6ICJjcHUiLAogICAgICAgICJncHVFeGVjdXRpb25WZXJpZmllZCI6IGZhbHNlLAogICAgICAgICJzdGRlcnJQcm9vZiI6ICIiCiAgICAgIH0KICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "81fb6d56d98666e9166e-75cf5d14e451511acbf3",
+          "file": "gpu-native.spec.ts",
+          "line": 15,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "inline-subtitles.spec.ts",
+      "file": "inline-subtitles.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "inline timeline CRUD from preview and list preserves drafts, exact cue targeting and corrected exports without AI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4106,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:47.325Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6379efd6e2cdc1c5c7c9-86e4a602854698c72d2e",
+          "file": "inline-subtitles.spec.ts",
+          "line": 27,
+          "column": 5
+        },
+        {
+          "title": "lyric highlighting and confined auto-follow respect seeks, overlap, gaps, toggle, manual browsing and inline typing; busy edits stay disabled",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3826,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:51.436Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6379efd6e2cdc1c5c7c9-387c62b11bad84abdce8",
+          "file": "inline-subtitles.spec.ts",
+          "line": 159,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "live-captions.spec.ts",
+      "file": "live-captions.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "live source captions immediately follow actual playback; translation, edits, bilingual layout and native fullscreen refresh without rendering",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4032,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:55.272Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "edb2768c74a763b1a920-6c8a520560888659a7d9",
+          "file": "live-captions.spec.ts",
+          "line": 21,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "pane-resizing.spec.ts",
+      "file": "pane-resizing.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "pointer/keyboard pane resizing clamps real geometry, retains translated inline tools, survives restart and resets",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10020,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:28:59.313Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0a47c4b4705920209777-d48a861cc4c072a2450a",
+          "file": "pane-resizing.spec.ts",
+          "line": 177,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "recognition-reset.spec.ts",
+      "file": "recognition-reset.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "explicit recognition confirmation preserves old corrections on dismissal, failure and cancellation; success replaces content without automatic translation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2776,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:09.341Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "840319d3854a5d93fe51-a8c90d1e2a3397d38f81",
+          "file": "recognition-reset.spec.ts",
+          "line": 48,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "seeking.spec.ts",
+      "file": "seeking.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "long video seeks beyond buffered data, backwards and through subtitle time buttons decode the actual target frame",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5312,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:12.125Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "range-response",
+                      "contentType": "application/json",
+                      "body": "eyJzdGF0dXMiOjIwNiwiY29udGVudFJhbmdlIjoiYnl0ZXMgMC0zMS82Nzk5MjEwIiwiYWNjZXB0UmFuZ2VzIjoiYnl0ZXMiLCJsZW5ndGgiOiIzMiIsInJlY2VpdmVkQnl0ZXMiOjMyfQ=="
+                    },
+                    {
+                      "name": "before-seek-buffer",
+                      "contentType": "application/json",
+                      "body": "eyJidWZmZXJlZCI6W1swLDUuNzgzXV0sInNlZWthYmxlIjpbWzAsNzUuMDA4XV19"
+                    },
+                    {
+                      "name": "decoded-seek-evidence",
+                      "contentType": "application/json",
+                      "body": "ewogICJzb3VyY2UiOiAiQW5vbnltb3VzIGdlbmVyYXRlZCB0ZXN0c3JjMi90aW1lLWJhbmQtY29sb3IgZml4dHVyZSwgbm8gdXNlciBtZWRpYSBvciB1c2VyIGRhdGEuIiwKICAiZHVyYXRpb25TZWNvbmRzIjogNzUuMDA4LAogICJzb3VyY2VCeXRlcyI6IDMyMzYzNjM1LAogICJ0cmFuc3BvcnQiOiB7CiAgICAic3RhdHVzIjogMjA2LAogICAgImNvbnRlbnRSYW5nZSI6ICJieXRlcyAwLTMxLzY3OTkyMTAiLAogICAgImFjY2VwdFJhbmdlcyI6ICJieXRlcyIsCiAgICAibGVuZ3RoIjogIjMyIiwKICAgICJyZWNlaXZlZEJ5dGVzIjogMzIKICB9LAogICJvYnNlcnZhdGlvbnMiOiBbCiAgICB7CiAgICAgICJ0YXJnZXRTZWNvbmRzIjogMzgsCiAgICAgICJidWZmZXJlZEJlZm9yZSI6IFsKICAgICAgICBbCiAgICAgICAgICAwLAogICAgICAgICAgNS43ODMKICAgICAgICBdCiAgICAgIF0sCiAgICAgICJ0YXJnZXRXYXNCdWZmZXJlZCI6IGZhbHNlLAogICAgICAiY3VycmVudFRpbWUiOiAzOCwKICAgICAgImRlY29kZWRGcmFtZVRpbWUiOiAzOCwKICAgICAgInNlZWtlZEV2ZW50cyI6IDEsCiAgICAgICJyZ2IiOiBbCiAgICAgICAgMjYsCiAgICAgICAgMzUsCiAgICAgICAgMjU1CiAgICAgIF0KICAgIH0sCiAgICB7CiAgICAgICJ0YXJnZXRTZWNvbmRzIjogNzIsCiAgICAgICJidWZmZXJlZEJlZm9yZSI6IFsKICAgICAgICBbCiAgICAgICAgICAwLAogICAgICAgICAgNS43ODMKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDM2LjE0OSwKICAgICAgICAgIDQxLjkzMwogICAgICAgIF0KICAgICAgXSwKICAgICAgInRhcmdldFdhc0J1ZmZlcmVkIjogZmFsc2UsCiAgICAgICJjdXJyZW50VGltZSI6IDcyLAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDcyLAogICAgICAic2Vla2VkRXZlbnRzIjogMSwKICAgICAgInJnYiI6IFsKICAgICAgICAyNTMsCiAgICAgICAgMjUzLAogICAgICAgIDAKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgInRhcmdldFNlY29uZHMiOiAxOCwKICAgICAgImJ1ZmZlcmVkQmVmb3JlIjogWwogICAgICAgIFsKICAgICAgICAgIDAsCiAgICAgICAgICA1Ljc4MwogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgMzYuMTQ5LAogICAgICAgICAgNDEuOTMzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICA1NS44MzMzMzMsCiAgICAgICAgICA3NS4wMDgKICAgICAgICBdCiAgICAgIF0sCiAgICAgICJ0YXJnZXRXYXNCdWZmZXJlZCI6IGZhbHNlLAogICAgICAiY3VycmVudFRpbWUiOiAxOCwKICAgICAgImRlY29kZWRGcmFtZVRpbWUiOiAxOCwKICAgICAgInNlZWtlZEV2ZW50cyI6IDEsCiAgICAgICJyZ2IiOiBbCiAgICAgICAgMjcsCiAgICAgICAgMTI2LAogICAgICAgIDAKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgInRhcmdldFNlY29uZHMiOiAyLAogICAgICAiYnVmZmVyZWRCZWZvcmUiOiBbCiAgICAgICAgWwogICAgICAgICAgMCwKICAgICAgICAgIDUuNzgzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICAxNi45MTY2NjcsCiAgICAgICAgICAyMi4wNTEKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDM2LjE0OSwKICAgICAgICAgIDQxLjkzMwogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgNTUuODMzMzMzLAogICAgICAgICAgNzUuMDA4CiAgICAgICAgXQogICAgICBdLAogICAgICAidGFyZ2V0V2FzQnVmZmVyZWQiOiB0cnVlLAogICAgICAiY3VycmVudFRpbWUiOiAyLAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDIsCiAgICAgICJzZWVrZWRFdmVudHMiOiAxLAogICAgICAicmdiIjogWwogICAgICAgIDI0OCwKICAgICAgICAzNiwKICAgICAgICAwCiAgICAgIF0KICAgIH0sCiAgICB7CiAgICAgICJ0YXJnZXRTZWNvbmRzIjogNjgsCiAgICAgICJidWZmZXJlZEJlZm9yZSI6IFsKICAgICAgICBbCiAgICAgICAgICAwLAogICAgICAgICAgNS43ODMKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDE2LjkxNjY2NywKICAgICAgICAgIDIyLjA1MQogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgMzYuMTQ5LAogICAgICAgICAgNDEuOTMzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICA1NS44MzMzMzMsCiAgICAgICAgICA3NS4wMDgKICAgICAgICBdCiAgICAgIF0sCiAgICAgICJ0YXJnZXRXYXNCdWZmZXJlZCI6IHRydWUsCiAgICAgICJjdXJyZW50VGltZSI6IDY4LAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDY4LAogICAgICAic2Vla2VkRXZlbnRzIjogMSwKICAgICAgInJnYiI6IFsKICAgICAgICAyNTMsCiAgICAgICAgMjUzLAogICAgICAgIDAKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgInRhcmdldFNlY29uZHMiOiAyLAogICAgICAiYnVmZmVyZWRCZWZvcmUiOiBbCiAgICAgICAgWwogICAgICAgICAgMCwKICAgICAgICAgIDUuNzgzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICAxNi45MTY2NjcsCiAgICAgICAgICAyMi4wNTEKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDM2LjE0OSwKICAgICAgICAgIDQxLjkzMwogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgNTUuODMzMzMzLAogICAgICAgICAgNzUuMDA4CiAgICAgICAgXQogICAgICBdLAogICAgICAidGFyZ2V0V2FzQnVmZmVyZWQiOiB0cnVlLAogICAgICAiY3VycmVudFRpbWUiOiAyLAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDIsCiAgICAgICJzZWVrZWRFdmVudHMiOiAxLAogICAgICAicmdiIjogWwogICAgICAgIDI0OCwKICAgICAgICAzNiwKICAgICAgICAwCiAgICAgIF0KICAgIH0KICBdLAogICJwbGF5YmFja0FkdmFuY2VkQWZ0ZXJTdWJ0aXRsZUp1bXAiOiB0cnVlLAogICJwcm92aWRlciI6ICJMb29wYmFjayBtb2NrZWQgcmVjb2duaXRpb24gYW5kIHRyYW5zbGF0aW9uLCBubyBuYXRpdmUgaW5mZXJlbmNlIG9yIHBhaWQgQVBJLiIKfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ab5c40bba5e2a34a6f0f-5990745adca909ee559b",
+          "file": "seeking.spec.ts",
+          "line": 7,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "single-instance.spec.ts",
+      "file": "single-instance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "a second process activates the primary without interrupting its job; isolated data can run separately",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2147,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:17.445Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2d764b709433987906d-9cf19e33865bcdb0715d",
+          "file": "single-instance.spec.ts",
+          "line": 6,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "subtitle-workspace.spec.ts",
+      "file": "subtitle-workspace.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "source-only creation, cue/time partial repairs, AI text review, restart and exports use real IPC without translation requests",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7549,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:19.603Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-0968422b79367ea5a239",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 162,
+          "column": 5
+        },
+        {
+          "title": "fixed preview/proofreading workspace survives default/minimum/large native windows, portrait media, banners and long inline forms",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11147,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:27.156Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-2acbeb02d35e20f7ffd5",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 494,
+          "column": 7
+        },
+        {
+          "title": "fixed preview/proofreading workspace survives default/minimum/large native windows, landscape media, banners and long inline forms",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11031,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:38.309Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-14af91fa1529a4f4bb92",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 494,
+          "column": 7
+        },
+        {
+          "title": "local and URL import persist explicit translation choices and translation-enabled partial processing remains opt-in",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8576,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:29:49.344Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-64e94c26c6f78b5201eb",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 746,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-11T03:26:56.274Z",
+    "duration": 181685.73,
+    "expected": 25,
+    "skipped": 3,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

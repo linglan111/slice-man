@@ -1,0 +1,47 @@
+{
+  "viewport": 661,
+  "body": 661,
+  "scrollY": 0,
+  "player": {
+    "height": 108,
+    "bottom": 305.375,
+    "top": 197.375,
+    "clientHeight": 108,
+    "scrollHeight": 108
+  },
+  "list": {
+    "height": 262.84375,
+    "bottom": 640,
+    "top": 377.15625,
+    "clientHeight": 263,
+    "scrollHeight": 483
+  },
+  "panel": {
+    "height": 85,
+    "bottom": 464.375,
+    "top": 379.375,
+    "clientHeight": 83,
+    "scrollHeight": 264
+  },
+  "previewPanel": {
+    "height": 198.765625,
+    "bottom": 354.140625,
+    "top": 155.375,
+    "clientHeight": 197,
+    "scrollHeight": 316
+  },
+  "subtitlePanel": {
+    "height": 493.625,
+    "bottom": 649,
+    "top": 155.375,
+    "clientHeight": 492,
+    "scrollHeight": 492
+  },
+  "content": {
+    "height": 493.625,
+    "bottom": 649,
+    "top": 155.375,
+    "clientHeight": 494,
+    "scrollHeight": 494
+  }
+}

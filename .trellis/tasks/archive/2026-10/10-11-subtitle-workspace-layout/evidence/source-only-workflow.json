@@ -1,0 +1,29 @@
+{
+  "provider": "Deterministic loopback HTTP ASR/text responses; real Electron IPC and FFmpeg crop, no paid API",
+  "counters": {
+    "recognition": 7,
+    "translation": 0,
+    "style": 0,
+    "connection": 0,
+    "review": 4
+  },
+  "originalSourceHash": "ddc1cd8b84a2a433cadb0d5be8fc57cc068bc613b65f80dec28af6d3c26353a5",
+  "sourceUnchanged": true,
+  "outputs": [
+    "F:\\Code\\slice man\\.trellis\\tasks\\10-11-subtitle-workspace-layout\\evidence\\source-only-proof\\source-only.srt",
+    "F:\\Code\\slice man\\.trellis\\tasks\\10-11-subtitle-workspace-layout\\evidence\\source-only-proof\\source-only.ass",
+    "F:\\Code\\slice man\\.trellis\\tasks\\10-11-subtitle-workspace-layout\\evidence\\source-only-proof\\source-only.vtt",
+    "F:\\Code\\slice man\\.trellis\\tasks\\10-11-subtitle-workspace-layout\\evidence\\source-only-proof\\source-only.mp4",
+    "F:\\Code\\slice man\\.trellis\\tasks\\10-11-subtitle-workspace-layout\\evidence\\source-only-proof\\source-only.mkv"
+  ],
+  "assertions": [
+    "cancelled import creates no job",
+    "explicit source mode requires no translation profile",
+    "windowed and native fullscreen source captions",
+    "selected and expanded time-range replacement retains other cues",
+    "AI review makes no ASR/translation calls",
+    "ignore persists and filters pending list",
+    "stored translations hidden from source-mode text exports",
+    "sidebar preference survives process restart"
+  ]
+}

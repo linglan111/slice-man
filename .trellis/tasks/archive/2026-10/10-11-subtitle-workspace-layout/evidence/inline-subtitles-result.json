@@ -1,0 +1,18 @@
+{
+  "isolated": true,
+  "generatedAnonymousMedia": true,
+  "noAIRequests": true,
+  "assertions": [
+    "preview/list four-field inline save",
+    "playback click pauses",
+    "no edit modal/reference UI",
+    "gap insertion and final-ms bounds",
+    "empty/all-delete/re-add",
+    "overlap bilingual exact target",
+    "cancel/invalid/stale save and delete drafts",
+    "selected/emphasis cleanup",
+    "corrected SRT text and boundaries",
+    "job-switch draft clearing",
+    "source hash unchanged"
+  ]
+}

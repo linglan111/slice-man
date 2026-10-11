@@ -1,0 +1,240 @@
+{
+  "model": "Deterministic loopback HTTP assessments; actual Electron preload/IPC/SQLite/FFmpeg crop, no paid API",
+  "rubricVersion": "contextual-review-v1",
+  "cueCount": 34,
+  "initialGrades": {
+    "none": 30,
+    "low": 1,
+    "medium": 2,
+    "high": 1
+  },
+  "suppliedContexts": [
+    {
+      "selectedIds": [
+        "d2acb736-0cbc-4cdb-baeb-68a99ca62e69",
+        "21465030-495f-4db9-a132-9e22da24d7dd",
+        "101c6a15-fbed-4bea-b56f-acc790dc812e",
+        "860dad8b-ea85-49af-80c7-2e2ab8823c40",
+        "914d03ed-98fe-49c3-8fa5-3beea3d6cc5b",
+        "270e8e26-cb3d-410d-9fdb-dcb9b40b2251",
+        "c036073b-9fab-4a2e-8b41-de98bf09a16c",
+        "b1de1e5d-e911-4b96-a9d5-82e95fa32e69",
+        "0a990280-5f87-47f5-9f71-bba546c69816",
+        "511d58f6-bebc-46b3-97e4-f2f58236c16c",
+        "19972685-761d-4c72-a1d9-f71487a96a4b",
+        "dfd824f1-3ac6-49d6-8341-7a88853cf31c",
+        "01e0e769-c8d0-4653-a628-bd8d2c412f23",
+        "d1a0a6c3-f7d7-48ab-9e55-e9905db6f27c",
+        "f83d3eb2-5432-415f-8cf2-063b1cb0a84e",
+        "4461a2db-3e58-49a5-8e57-ed9253abaf7d",
+        "96a5e6c3-e001-472b-9b0c-0bc896846a9d",
+        "9209384c-262b-4098-b029-900b8021caa7",
+        "5f8b9331-b63d-44e2-90ac-11f051b54633",
+        "ed73b339-1880-4296-ab5b-7e94fdab631f",
+        "add6c1cf-19de-49d3-a9ab-3a91f13ea521",
+        "be35791e-044b-478f-87ed-a23f4e630867",
+        "4fb9b4dc-c4c8-4d55-9da5-64e791c3af89",
+        "4423f256-bde6-41a6-b1d6-d5262202c361",
+        "5a5c3cae-1108-4c13-bb6e-254c3051a963",
+        "9cad7851-7f78-4c07-ab26-797933f91b74",
+        "7c702357-ffb7-4524-b410-d084e22a254f",
+        "928847e8-5dda-4a5f-8535-4812fb1261d1",
+        "a2fadee6-deba-4cda-88db-2eac32df5350",
+        "46053d1b-2db5-41b7-8c99-255a4038b4e5"
+      ],
+      "contextIds": [
+        "d2acb736-0cbc-4cdb-baeb-68a99ca62e69",
+        "21465030-495f-4db9-a132-9e22da24d7dd",
+        "101c6a15-fbed-4bea-b56f-acc790dc812e",
+        "860dad8b-ea85-49af-80c7-2e2ab8823c40",
+        "914d03ed-98fe-49c3-8fa5-3beea3d6cc5b",
+        "270e8e26-cb3d-410d-9fdb-dcb9b40b2251",
+        "c036073b-9fab-4a2e-8b41-de98bf09a16c",
+        "b1de1e5d-e911-4b96-a9d5-82e95fa32e69",
+        "0a990280-5f87-47f5-9f71-bba546c69816",
+        "511d58f6-bebc-46b3-97e4-f2f58236c16c",
+        "19972685-761d-4c72-a1d9-f71487a96a4b",
+        "dfd824f1-3ac6-49d6-8341-7a88853cf31c",
+        "01e0e769-c8d0-4653-a628-bd8d2c412f23",
+        "d1a0a6c3-f7d7-48ab-9e55-e9905db6f27c",
+        "f83d3eb2-5432-415f-8cf2-063b1cb0a84e",
+        "4461a2db-3e58-49a5-8e57-ed9253abaf7d",
+        "96a5e6c3-e001-472b-9b0c-0bc896846a9d",
+        "9209384c-262b-4098-b029-900b8021caa7",
+        "5f8b9331-b63d-44e2-90ac-11f051b54633",
+        "ed73b339-1880-4296-ab5b-7e94fdab631f",
+        "add6c1cf-19de-49d3-a9ab-3a91f13ea521",
+        "be35791e-044b-478f-87ed-a23f4e630867",
+        "4fb9b4dc-c4c8-4d55-9da5-64e791c3af89",
+        "4423f256-bde6-41a6-b1d6-d5262202c361",
+        "5a5c3cae-1108-4c13-bb6e-254c3051a963",
+        "9cad7851-7f78-4c07-ab26-797933f91b74",
+        "7c702357-ffb7-4524-b410-d084e22a254f",
+        "928847e8-5dda-4a5f-8535-4812fb1261d1",
+        "a2fadee6-deba-4cda-88db-2eac32df5350",
+        "46053d1b-2db5-41b7-8c99-255a4038b4e5",
+        "97acacb4-7f4f-4883-aa23-3bebd4d32805",
+        "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7"
+      ]
+    },
+    {
+      "selectedIds": [
+        "97acacb4-7f4f-4883-aa23-3bebd4d32805",
+        "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7",
+        "94f0ac49-b0e2-496a-be87-f327b3da7768",
+        "1670cf5a-42b2-4762-b0f7-876034b4e6f0"
+      ],
+      "contextIds": [
+        "a2fadee6-deba-4cda-88db-2eac32df5350",
+        "46053d1b-2db5-41b7-8c99-255a4038b4e5",
+        "97acacb4-7f4f-4883-aa23-3bebd4d32805",
+        "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7",
+        "94f0ac49-b0e2-496a-be87-f327b3da7768",
+        "1670cf5a-42b2-4762-b0f7-876034b4e6f0"
+      ]
+    }
+  ],
+  "crossBatchNeighbourText": true,
+  "currentGradeFilterCounts": true,
+  "selectedHighOnlyRepair": true,
+  "otherCuesPreserved": true,
+  "neighbourEditStalesPreviouslyClearAndFlagged": true,
+  "unrelatedContextStaysCurrent": true,
+  "legacyNeverMeansNone": true,
+  "minimumLayout": {
+    "selectedMinimumLayout": {
+      "viewport": 661,
+      "body": 661,
+      "scrollY": 0,
+      "player": {
+        "height": 108,
+        "bottom": 305.375,
+        "top": 197.375,
+        "clientHeight": 108,
+        "scrollHeight": 108
+      },
+      "list": {
+        "height": 262.84375,
+        "bottom": 640,
+        "top": 377.15625,
+        "clientHeight": 263,
+        "scrollHeight": 483
+      },
+      "panel": {
+        "height": 85,
+        "bottom": 464.375,
+        "top": 379.375,
+        "clientHeight": 83,
+        "scrollHeight": 264
+      },
+      "previewPanel": {
+        "height": 198.765625,
+        "bottom": 354.140625,
+        "top": 155.375,
+        "clientHeight": 197,
+        "scrollHeight": 316
+      },
+      "subtitlePanel": {
+        "height": 493.625,
+        "bottom": 649,
+        "top": 155.375,
+        "clientHeight": 492,
+        "scrollHeight": 492
+      },
+      "content": {
+        "height": 493.625,
+        "bottom": 649,
+        "top": 155.375,
+        "clientHeight": 494,
+        "scrollHeight": 494
+      }
+    },
+    "pendingMinimumLayout": {
+      "viewport": 661,
+      "body": 661,
+      "scrollY": 0,
+      "player": {
+        "height": 148.15625,
+        "bottom": 345.53125,
+        "top": 197.375,
+        "clientHeight": 148,
+        "scrollHeight": 148
+      },
+      "list": {
+        "height": 337.84375,
+        "bottom": 640,
+        "top": 302.15625,
+        "clientHeight": 338,
+        "scrollHeight": 3005
+      },
+      "previewPanel": {
+        "height": 278.15625,
+        "bottom": 433.53125,
+        "top": 155.375,
+        "clientHeight": 276,
+        "scrollHeight": 276
+      },
+      "subtitlePanel": {
+        "height": 493.625,
+        "bottom": 649,
+        "top": 155.375,
+        "clientHeight": 492,
+        "scrollHeight": 492
+      },
+      "content": {
+        "height": 493.625,
+        "bottom": 649,
+        "top": 155.375,
+        "clientHeight": 494,
+        "scrollHeight": 494
+      }
+    },
+    "helpMinimumLayout": {
+      "viewport": 661,
+      "body": 661,
+      "scrollY": 0,
+      "player": {
+        "height": 148.15625,
+        "bottom": 345.53125,
+        "top": 197.375,
+        "clientHeight": 148,
+        "scrollHeight": 148
+      },
+      "list": {
+        "height": 337.84375,
+        "bottom": 640,
+        "top": 302.15625,
+        "clientHeight": 338,
+        "scrollHeight": 4034
+      },
+      "previewPanel": {
+        "height": 278.15625,
+        "bottom": 433.53125,
+        "top": 155.375,
+        "clientHeight": 276,
+        "scrollHeight": 276
+      },
+      "subtitlePanel": {
+        "height": 493.625,
+        "bottom": 649,
+        "top": 155.375,
+        "clientHeight": 492,
+        "scrollHeight": 492
+      },
+      "content": {
+        "height": 493.625,
+        "bottom": 649,
+        "top": 155.375,
+        "clientHeight": 494,
+        "scrollHeight": 494
+      }
+    }
+  },
+  "counters": {
+    "recognition": 1,
+    "translation": 0,
+    "style": 0,
+    "connection": 0,
+    "review": 4
+  }
+}

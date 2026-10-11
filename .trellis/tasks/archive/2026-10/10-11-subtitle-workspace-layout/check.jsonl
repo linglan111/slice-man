@@ -1,0 +1,7 @@
+{"file":".trellis/spec/frontend/quality.md","reason":"Independent code quality review"}
+{"file":".trellis/spec/frontend/components.md","reason":"Control accessibility and scroll ownership review"}
+{"file":".trellis/spec/frontend/css-design.md","reason":"Check layout conflicts and responsive behavior"}
+{"file":".trellis/spec/shared/subtitle-contracts.md","reason":"Full workflow regression invariants"}
+{"file":".trellis/spec/shared/subtitle-review-reprocessing.md","reason":"Review and partial repair regression contracts"}
+{"file":".trellis/spec/shared/native-runtime-testing.md","reason":"Native E2E, fixtures and evidence limitations"}
+{"file": ".trellis/tasks/10-11-subtitle-workspace-layout/research/regression-matrix.md", "reason": "Full existing workflow inventory and native layout evidence requirements"}

@@ -1,0 +1,15 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 640
+PlayResY: 360
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
+Style: Default,Noto Sans CJK SC,16.20,&HFFFFFF&,&HFFFFFF&,&H111111&,&H59000000,0,0,0,0,100,100,0,0,1,0.72,0,2,45,45,29,1
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+Dialogue: 0,0:00:00.10,0:00:01.80,Default,,0,0,0,,{\fad(120,120)\xshad0.00\yshad0.72}Repaired source passage.
+Dialogue: 0,0:00:02.00,0:00:02.10,Default,,0,0,0,,{\fad(50,50)\xshad0.00\yshad0.72}Repaired source passage.

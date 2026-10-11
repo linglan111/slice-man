@@ -1,0 +1,16 @@
+{
+  "actualNativeWindowSizes": [
+    "1440x960",
+    "1050x700",
+    "1920x1080"
+  ],
+  "bothSecondaryStates": true,
+  "orientation": "portrait",
+  "longTitle": true,
+  "bothSidebarStates": true,
+  "fixedDocument": true,
+  "independentListScroll": true,
+  "longInlineForm": true,
+  "nativeMenuAbsentAfterAlt": true,
+  "standardSelectCopyPaste": true
+}

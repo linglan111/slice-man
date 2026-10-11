@@ -1,0 +1,7 @@
+{"file":".trellis/spec/frontend/index.md","reason":"Frontend layer conventions and relevant spec discovery"}
+{"file":".trellis/spec/frontend/components.md","reason":"Semantic disclosure controls, scrolling and empty states"}
+{"file":".trellis/spec/frontend/css-design.md","reason":"Maintainable layout and style ownership"}
+{"file":".trellis/spec/frontend/react-pitfalls.md","reason":"State lifecycle and preference persistence"}
+{"file":".trellis/spec/frontend/live-subtitle-preview.md","reason":"Preserve captions and media clock behavior"}
+{"file":".trellis/spec/shared/subtitle-review-reprocessing.md","reason":"Keep review and partial-processing interactions intact"}
+{"file":".trellis/spec/shared/native-runtime-testing.md","reason":"Real Electron testing and honest provider/hardware evidence"}

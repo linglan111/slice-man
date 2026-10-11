@@ -1,0 +1,9 @@
+{
+  "forwardNativeSeekSeconds": 2.893328,
+  "backwardNativeSeekSeconds": 0.919118,
+  "editedCueIntervalSeconds": [
+    0.5,
+    1.5
+  ],
+  "actualNativeControlsClicked": true
+}

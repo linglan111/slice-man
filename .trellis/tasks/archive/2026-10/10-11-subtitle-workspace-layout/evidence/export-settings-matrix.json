@@ -1,0 +1,91 @@
+{
+  "fixture": "Generated anonymous H264/HEVC media and isolated userData",
+  "realFFmpeg": true,
+  "noAI": true,
+  "sourceHashesUnchanged": true,
+  "observed": [
+    {
+      "format": "mov,mp4,m4a,3gp,3g2,mj2",
+      "codec": "h264",
+      "resolution": "1080p",
+      "quality": "balanced",
+      "width": 1920,
+      "height": 1080,
+      "subtitleTracks": 0
+    },
+    {
+      "format": "matroska,webm",
+      "codec": "h264",
+      "resolution": "original",
+      "quality": "small",
+      "width": 1920,
+      "height": 1080,
+      "subtitleTracks": 0
+    },
+    {
+      "format": "mov,mp4,m4a,3gp,3g2,mj2",
+      "codec": "h264",
+      "resolution": "360p",
+      "quality": "high",
+      "width": 640,
+      "height": 360,
+      "subtitleTracks": 0
+    },
+    {
+      "format": "matroska,webm",
+      "codec": "h264",
+      "resolution": "480p",
+      "quality": "balanced",
+      "width": 852,
+      "height": 480,
+      "subtitleTracks": 0
+    },
+    {
+      "format": "mov,mp4,m4a,3gp,3g2,mj2",
+      "codec": "hevc",
+      "resolution": "720p",
+      "quality": "small",
+      "width": 1280,
+      "height": 720,
+      "subtitleTracks": 0
+    },
+    {
+      "format": "matroska,webm",
+      "codec": "hevc",
+      "resolution": "1440p",
+      "quality": "high",
+      "width": 1920,
+      "height": 1080,
+      "subtitleTracks": 0
+    },
+    {
+      "format": "mov,mp4,m4a,3gp,3g2,mj2",
+      "codec": "h264",
+      "resolution": "2160p",
+      "quality": "balanced",
+      "width": 1920,
+      "height": 1080,
+      "subtitleTracks": 0
+    },
+    {
+      "source": "hevc",
+      "selectedCodec": "original",
+      "selectedFormat": "mp4",
+      "width": 640,
+      "height": 360,
+      "codec": "hevc",
+      "format": "mov,mp4,m4a,3gp,3g2,mj2",
+      "subtitleTracks": 0
+    },
+    {
+      "source": "hevc",
+      "selectedCodec": "original",
+      "selectedFormat": "mkv",
+      "width": 640,
+      "height": 360,
+      "codec": "hevc",
+      "format": "matroska,webm",
+      "subtitleTracks": 0
+    }
+  ]
+}

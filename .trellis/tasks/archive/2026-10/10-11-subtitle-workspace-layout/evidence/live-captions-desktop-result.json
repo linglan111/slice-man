@@ -1,0 +1,22 @@
+{
+  "fixture": "Anonymous generated landscape/portrait media, isolated userData",
+  "providers": "Loopback HTTP mocks; no paid requests or user media/database",
+  "recognitionCalls": 1,
+  "translationCalls": 2,
+  "verified": [
+    "source during pending translation",
+    "frame timestamp seeks forward/back/gap",
+    "translation/bilingual/text/timing/style updates",
+    "literal HTML and keyword punctuation",
+    "start-inclusive/end-exclusive",
+    "subtitle time-button and playback/pause",
+    "actual native progress-bar clicks forward/back",
+    "native fullscreen track activation/no duplicate inline overlay/one reused track",
+    "portrait geometry and job-switch caption clearing",
+    "no reference render required"
+  ],
+  "limitations": [
+    "CSS/system font rendering is approximate; ASS/libass remains exact reference",
+    "native fullscreen typography is browser controlled"
+  ]
+}

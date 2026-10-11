@@ -1,0 +1,32 @@
+{
+  "generatedAnonymousMedia": true,
+  "isolatedUserData": true,
+  "realFFmpeg": true,
+  "noAI": true,
+  "observed": [
+    {
+      "codec": "av1",
+      "format": "mp4",
+      "width": 320,
+      "height": 180,
+      "subtitlePixels": 61,
+      "sourceHashUnchanged": true
+    },
+    {
+      "codec": "vp9",
+      "format": "mkv",
+      "width": 320,
+      "height": 180,
+      "subtitlePixels": 49,
+      "sourceHashUnchanged": true
+    },
+    {
+      "codec": "vp8",
+      "format": "mkv",
+      "width": 320,
+      "height": 180,
+      "subtitlePixels": 58,
+      "sourceHashUnchanged": true
+    }
+  ]
+}

@@ -1,0 +1,1343 @@
+{
+  "config": {
+    "argv": [
+      "C:\\nvm4w\\nodejs\\node.exe",
+      "F:\\Code\\slice man\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--reporter=list,html,json"
+    ],
+    "configFile": "F:\\Code\\slice man\\playwright.config.ts",
+    "rootDir": "F:/Code/slice man/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "F:/Code/slice man/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "F:/Code/slice man/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "html"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "contextual-review.spec.ts",
+      "file": "contextual-review.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "all cues receive four fixed context grades across batch boundaries; grade repair and neighbour changes retain honest stale/legacy states",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4518,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:21:40.159Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "fedf34afe34b33e1f754-c5c0270ee24a63909798",
+          "file": "contextual-review.spec.ts",
+          "line": 130,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "deepseek-live.spec.ts",
+      "file": "deepseek-live.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "live DeepSeek text translation/style over actual local Whisper and real desktop media export",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit live gate and session-only user key are required.",
+                  "location": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                    "line": 12,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:25:10.913Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit live gate and session-only user key are required.",
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                        "line": 12,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d5f3bb211d695fcf0b5b-b97d59f60f40c5027985",
+          "file": "deepseek-live.spec.ts",
+          "line": 14,
+          "column": 5
+        },
+        {
+          "title": "live DeepSeek compatibility-only Responses and Anthropic desktop probes with exact auth forwarding",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicit live gate and session-only user key are required.",
+                  "location": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                    "line": 12,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:25:10.913Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicit live gate and session-only user key are required.",
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\deepseek-live.spec.ts",
+                        "line": 12,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "d5f3bb211d695fcf0b5b-de0f50f1c991dc88c499",
+          "file": "deepseek-live.spec.ts",
+          "line": 148,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "desktop.spec.ts",
+      "file": "desktop.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "real desktop cloud workflow, all text protocols, corrections, rendering, exports and restart persistence",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7331,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:21:44.701Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence-summary",
+                      "contentType": "application/json",
+                      "body": "eyJtb2NrZWRBSSI6dHJ1ZSwicmVhbE1lZGlhIjp0cnVlLCJpbnB1dEhhc2hQcmVzZXJ2ZWQiOnRydWUsInJlY29nbml0aW9uIjoxLCJ0cmFuc2xhdGlvbiI6NSwic3R5bGUiOjEsImNvbm5lY3Rpb24iOjUsInJldmlldyI6MH0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-622e00749ff57713e34e",
+          "file": "desktop.spec.ts",
+          "line": 7,
+          "column": 5
+        },
+        {
+          "title": "restart recovers interrupted work and missing original media fails without losing corrected subtitles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2741,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:21:52.037Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-c65345564ee10a9dbcdf",
+          "file": "desktop.spec.ts",
+          "line": 126,
+          "column": 5
+        },
+        {
+          "title": "editing a provider model invalidates dependent stages while renaming preserves completed work",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2043,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:21:54.782Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-3d54bab316cb46fcb03e",
+          "file": "desktop.spec.ts",
+          "line": 159,
+          "column": 5
+        },
+        {
+          "title": "recoverable API failure, retry without repeated recognition, cancel and invalid AI style preserve edits",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2001,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:21:56.829Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-94c83b8029bf1335a60d",
+          "file": "desktop.spec.ts",
+          "line": 197,
+          "column": 5
+        },
+        {
+          "title": "one-click real CPU installation, real Whisper inference and failed/cancelled updates retain working runtime",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7408,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:21:58.834Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "native-evidence",
+                      "contentType": "text/plain",
+                      "body": "UmVhbCBDUFUgYXJjaGl2ZS9tb2RlbCBkb3dubG9hZGVkIGZyb20gbG9vcGJhY2sgZml4dHVyZSB3aXRoIHBpbm5lZCBpbnRlZ3JpdHkgY2hlY2tzOyBnZW51aW5lIHJ1bnRpbWUgc21va2UgdGVzdCBhbmQgYWN0dWFsIHdoaXNwZXIuY3BwIEJhc2Ugc3BlZWNoIGluZmVyZW5jZS4gQUkgdHJhbnNsYXRpb24gbW9ja2VkOyBHUFUgZGVsaWJlcmF0ZWx5IGRpc2FibGVkIGluIHRoaXMgY2FzZS4="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "12cc77c408bab7a1d6ba-115c69678ee86c002742",
+          "file": "desktop.spec.ts",
+          "line": 237,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "download-real.spec.ts",
+      "file": "download-real.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "authorized real YouTube and Bilibili complete download/probe/import/decoded playback via production Electron UI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "Explicitly gated live user-supplied video downloads",
+                  "location": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\download-real.spec.ts",
+                    "line": 13,
+                    "column": 8
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:22:06.256Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "Explicitly gated live user-supplied video downloads",
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\download-real.spec.ts",
+                        "line": 13,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "8670f3dc2cea2f42250e-3b713b1a05beef0fa019",
+          "file": "download-real.spec.ts",
+          "line": 10,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "download-settings.spec.ts",
+      "file": "download-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "an actual isolated NTFS write denial rejects a download directory and retains saved defaults and existing files",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1034,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:22:06.264Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "native-permission-result",
+                      "contentType": "application/json",
+                      "body": "eyJhY3R1YWxOVEZTV3JpdGVEZW5pZWQiOnRydWUsIm5hdGl2ZURpYWxvZ1NlbGVjdGlvbkZpeHR1cmUiOnRydWUsInByZXZpb3VzU2V0dGluZ3NQcmVzZXJ2ZWQiOnRydWUsInVuc2F2ZWREcmFmdFByZXNlcnZlZCI6dHJ1ZSwiZXhpc3RpbmdGaWxlUHJlc2VydmVkIjp0cnVlLCJvd25lZFByb2JlQ2xlYW5lZCI6dHJ1ZX0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3fdb0e2c8e763d9860f6-4ed1cb81080f25aebe79",
+          "file": "download-settings.spec.ts",
+          "line": 17,
+          "column": 5
+        },
+        {
+          "title": "native directory selection, persisted format/codec/resolution matrix, real transforms, no upscale and cancellation preserve existing files",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 43911,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at F:\\Code\\slice man\\tests\\e2e\\download-settings.spec.ts:439:8",
+                    "location": {
+                      "file": "F:\\Code\\slice man\\tests\\e2e\\download-settings.spec.ts",
+                      "column": 8,
+                      "line": 439
+                    },
+                    "snippet": "  437 |         { timeout: 15000, intervals: [50, 100, 250] },\n  438 |       )\n> 439 |       .toBe(true);\n      |        ^\n  440 |     await page.getByRole(\"button\", { name: \"取消下载\", exact: true }).click();\n  441 |     await expect(page.getByRole(\"alert\")).toContainText(\"取消\");\n  442 |     expect("
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\download-settings.spec.ts",
+                        "column": 8,
+                        "line": 439
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n  437 |         { timeout: 15000, intervals: [50, 100, 250] },\n  438 |       )\n> 439 |       .toBe(true);\n      |        ^\n  440 |     await page.getByRole(\"button\", { name: \"取消下载\", exact: true }).click();\n  441 |     await expect(page.getByRole(\"alert\")).toContainText(\"取消\");\n  442 |     expect(\n    at F:\\Code\\slice man\\tests\\e2e\\download-settings.spec.ts:439:8"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:22:07.303Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "F:\\Code\\slice man\\test-results\\download-settings-native-d-df075-ion-preserve-existing-files\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "F:\\Code\\slice man\\test-results\\download-settings-native-d-df075-ion-preserve-existing-files\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "F:\\Code\\slice man\\test-results\\download-settings-native-d-df075-ion-preserve-existing-files\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\download-settings.spec.ts",
+                    "column": 8,
+                    "line": 439
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "3fdb0e2c8e763d9860f6-af468f379f13716123ff",
+          "file": "download-settings.spec.ts",
+          "line": 192,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "download.spec.ts",
+      "file": "download.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "online settings installation integrity/cancel/rollback and native completed download import playback persist through Electron",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10007,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:22:51.618Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "download-contract-results",
+                      "contentType": "application/json",
+                      "body": "eyJyZWFsTmF0aXZlVG9vbHMiOnRydWUsImFub255bW91c0hUVFBGaXh0dXJlIjp0cnVlLCJwYWlkQUlSZXF1ZXN0cyI6MCwiaW50ZWdyaXR5Ijp0cnVlLCJpbnN0YWxsQ2FuY2VsIjp0cnVlLCJmYWlsZWRVcGRhdGVSb2xsYmFjayI6dHJ1ZSwiZG93bmxvYWRDYW5jZWwiOnRydWUsIm5vUGFydGlhbEpvYiI6dHJ1ZSwiaW1wb3J0ZWRQbGF5YmFjayI6dHJ1ZSwic2V0dGluZ3NSZXN0YXJ0Ijp0cnVlfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "29cf83cb0d33ef5cc857-f1ffbf4e2dc3f02ffc22",
+          "file": "download.spec.ts",
+          "line": 7,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "export-original-web-codecs.spec.ts",
+      "file": "export-original-web-codecs.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "default original encoding burns subtitles into actual AV1 MP4 and VP9/VP8 MKV without upscaling or AI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4883,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:01.646Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "abe98f7eddc3862afe43-004ee27e1074217244ff",
+          "file": "export-original-web-codecs.spec.ts",
+          "line": 12,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "export-settings.spec.ts",
+      "file": "export-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "export defaults and native directory selection persist across restart; per-export overrides stay local and separate subtitle files use current CRUD",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4246,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:06.540Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8194676c0870470315ed-4be787de904c83e325f2",
+          "file": "export-settings.spec.ts",
+          "line": 54,
+          "column": 5
+        },
+        {
+          "title": "actual Electron video export matrix verifies MP4/MKV, original/H264/H265, every resolution and quality, subtitle pixels and no upscaling",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11057,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:10.790Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8194676c0870470315ed-788fdf54806dce40ae41",
+          "file": "export-settings.spec.ts",
+          "line": 139,
+          "column": 5
+        },
+        {
+          "title": "unsupported original codec, destination/source protection, native save cancellation and actual encode cancellation preserve existing bytes and subtitles",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8582,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:21.852Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8194676c0870470315ed-91a9c9fec516d6f581d4",
+          "file": "export-settings.spec.ts",
+          "line": 178,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "gpu-native.spec.ts",
+      "file": "gpu-native.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "actual CUDA desktop recognition and explicit CPU selection report each real inference backend",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 13494,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:30.445Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "actual-native-backend-evidence",
+                      "contentType": "application/json",
+                      "body": "ewogICJkZXZpY2UiOiB7CiAgICAibmFtZSI6ICJOVklESUEgR2VGb3JjZSBSVFggNTA3MCIsCiAgICAiZHJpdmVyIjogIjYxMC43NCIKICB9LAogICJlbmdpbmVWZXJzaW9uIjogIjEuOC4zIiwKICAibW9kZWwiOiAiYmFzZSIsCiAgIm1vZGVsQnl0ZXMiOiAxNDc5NTE0NjUsCiAgInBpbm5lZFNoYTI1NiI6IHsKICAgICJjcHUiOiAiZDgyNGIxZTM3NTk5Zjg4MmIzOTZlNzNmMWVlMGJmZDVkMDUyOWY3MDAzMTRjNDgzMTFkY2JkMDBiODAzMzIxZCIsCiAgICAiZ3B1IjogImMxMmE1NjMzMzNkM2MzNzA3YmU3MDc1NGRjMGU4N2MxY2I1OGFhNjMzM2E4NzA1NWJiY2Y5YjUyNDQ4OGRmYjAiLAogICAgIm1vZGVsIjogIjYwZWQ1YmMzZGQxNGVlYTg1NjQ5M2QzMzQzNDliNDA1NzgyZGRjYWYwMDI4ZDRiNWRmNDA4ODM0NWZiYTJlZmUiCiAgfSwKICAic2VlZCI6ICJQaHlzaWNhbGx5IGV4dHJhY3RlZCBpbnRlZ3JpdHktY2hlY2tlZCBvZmZpY2lhbCBhcmNoaXZlcyBhbmQgbW9kZWwgaW5zaWRlIG5vcm1hbCBpc29sYXRlZCB1c2VyRGF0YTsgaW5zdGFsbGF0aW9uIHJlYWRpbmVzcyByZXVzZWQsIGV2ZXJ5IGpvYiBydW5zIGFjdHVhbCBuYXRpdmUgcmVjb2duaXRpb24uIiwKICAiYWkiOiAiTG9vcGJhY2sgSFRUUCB0cmFuc2xhdGlvbiBtb2NrIG9ubHk7IG5vIGNsb3VkIHNwZWVjaCBvciBwYWlkIHJlcXVlc3RzLiIsCiAgInJlc3VsdHMiOiBbCiAgICB7CiAgICAgICJiYWNrZW5kIjogImdwdSIsCiAgICAgICJ3YWxsVGltZU1zIjogMzUwNywKICAgICAgInNlZ21lbnRzIjogMSwKICAgICAgInJlY2VpcHQiOiB7CiAgICAgICAgImJhY2tlbmQiOiAiZ3B1IiwKICAgICAgICAiZ3B1RXhlY3V0aW9uVmVyaWZpZWQiOiB0cnVlLAogICAgICAgICJzdGRlcnJQcm9vZiI6ICJ3aGlzcGVyX21vZGVsX2xvYWQ6ICAgICAgICBDVURBMCB0b3RhbCBzaXplID0gICAxNDcuMzcgTUJcbndoaXNwZXJfYmFja2VuZF9pbml0X2dwdTogdXNpbmcgQ1VEQTAgYmFja2VuZCIKICAgICAgfQogICAgfSwKICAgIHsKICAgICAgImJhY2tlbmQiOiAiY3B1IiwKICAgICAgIndhbGxUaW1lTXMiOiAxNDE2LAogICAgICAic2VnbWVudHMiOiAxLAogICAgICAicmVjZWlwdCI6IHsKICAgICAgICAiYmFja2VuZCI6ICJjcHUiLAogICAgICAgICJncHVFeGVjdXRpb25WZXJpZmllZCI6IGZhbHNlLAogICAgICAgICJzdGRlcnJQcm9vZiI6ICIiCiAgICAgIH0KICAgIH0KICBdCn0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "81fb6d56d98666e9166e-75cf5d14e451511acbf3",
+          "file": "gpu-native.spec.ts",
+          "line": 15,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "inline-subtitles.spec.ts",
+      "file": "inline-subtitles.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "inline timeline CRUD from preview and list preserves drafts, exact cue targeting and corrected exports without AI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4013,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:43.952Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6379efd6e2cdc1c5c7c9-86e4a602854698c72d2e",
+          "file": "inline-subtitles.spec.ts",
+          "line": 27,
+          "column": 5
+        },
+        {
+          "title": "lyric highlighting and confined auto-follow respect seeks, overlap, gaps, toggle, manual browsing and inline typing; busy edits stay disabled",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5026,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:47.971Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6379efd6e2cdc1c5c7c9-387c62b11bad84abdce8",
+          "file": "inline-subtitles.spec.ts",
+          "line": 159,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "live-captions.spec.ts",
+      "file": "live-captions.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "live source captions immediately follow actual playback; translation, edits, bilingual layout and native fullscreen refresh without rendering",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 18543,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('live-captions')\nExpected substring: \u001b[32m\"人工译文 a+b\"\u001b[39m\nReceived string:    \u001b[31m\"\"\u001b[39m\nTimeout: 15000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" getByTestId('live-captions') with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('live-captions')\u001b[22m\n\u001b[2m    - locator resolved to <div aria-label=\"实时字幕\" class=\"live-captions\" data-testid=\"live-captions\">…</div>\u001b[22m\n\u001b[2m    - unexpected value \"这是第二句话。A second sentence.\"\u001b[22m\n\u001b[2m    32 × locator resolved to <div aria-label=\"实时字幕\" class=\"live-captions\" data-testid=\"live-captions\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('live-captions')\nExpected substring: \u001b[32m\"人工译文 a+b\"\u001b[39m\nReceived string:    \u001b[31m\"\"\u001b[39m\nTimeout: 15000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" getByTestId('live-captions') with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('live-captions')\u001b[22m\n\u001b[2m    - locator resolved to <div aria-label=\"实时字幕\" class=\"live-captions\" data-testid=\"live-captions\">…</div>\u001b[22m\n\u001b[2m    - unexpected value \"这是第二句话。A second sentence.\"\u001b[22m\n\u001b[2m    32 × locator resolved to <div aria-label=\"实时字幕\" class=\"live-captions\" data-testid=\"live-captions\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"\"\u001b[22m\n\n    at F:\\Code\\slice man\\tests\\e2e\\live-captions.spec.ts:108:28",
+                    "location": {
+                      "file": "F:\\Code\\slice man\\tests\\e2e\\live-captions.spec.ts",
+                      "column": 28,
+                      "line": 108
+                    },
+                    "snippet": "  106 |     await video.click({ position: { x: controlsBounds.width * .15, y: controlsBounds.height - 23 } });\n  107 |     await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeLessThan(1);\n> 108 |     await expect(captions).toContainText('人工译文 a+b');\n      |                            ^\n  109 |     await seekFrame(page, .6);\n  110 |     await expect(captions).toContainText('人工译文 a+b');\n  111 |     const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence');"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "F:\\Code\\slice man\\tests\\e2e\\live-captions.spec.ts",
+                        "column": 28,
+                        "line": 108
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('live-captions')\nExpected substring: \u001b[32m\"人工译文 a+b\"\u001b[39m\nReceived string:    \u001b[31m\"\"\u001b[39m\nTimeout: 15000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" getByTestId('live-captions') with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('live-captions')\u001b[22m\n\u001b[2m    - locator resolved to <div aria-label=\"实时字幕\" class=\"live-captions\" data-testid=\"live-captions\">…</div>\u001b[22m\n\u001b[2m    - unexpected value \"这是第二句话。A second sentence.\"\u001b[22m\n\u001b[2m    32 × locator resolved to <div aria-label=\"实时字幕\" class=\"live-captions\" data-testid=\"live-captions\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"\"\u001b[22m\n\n\n  106 |     await video.click({ position: { x: controlsBounds.width * .15, y: controlsBounds.height - 23 } });\n  107 |     await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime)).toBeLessThan(1);\n> 108 |     await expect(captions).toContainText('人工译文 a+b');\n      |                            ^\n  109 |     await seekFrame(page, .6);\n  110 |     await expect(captions).toContainText('人工译文 a+b');\n  111 |     const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence');\n    at F:\\Code\\slice man\\tests\\e2e\\live-captions.spec.ts:108:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:23:53.007Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "F:\\Code\\slice man\\test-results\\live-captions-live-source--4d04b-n-refresh-without-rendering\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "F:\\Code\\slice man\\test-results\\live-captions-live-source--4d04b-n-refresh-without-rendering\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "F:\\Code\\slice man\\test-results\\live-captions-live-source--4d04b-n-refresh-without-rendering\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "F:\\Code\\slice man\\tests\\e2e\\live-captions.spec.ts",
+                    "column": 28,
+                    "line": 108
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "edb2768c74a763b1a920-6c8a520560888659a7d9",
+          "file": "live-captions.spec.ts",
+          "line": 21,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "pane-resizing.spec.ts",
+      "file": "pane-resizing.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "pointer/keyboard pane resizing clamps real geometry, retains translated inline tools, survives restart and resets",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10200,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:24:11.939Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "0a47c4b4705920209777-d48a861cc4c072a2450a",
+          "file": "pane-resizing.spec.ts",
+          "line": 162,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "recognition-reset.spec.ts",
+      "file": "recognition-reset.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "explicit recognition confirmation preserves old corrections on dismissal, failure and cancellation; success replaces content without automatic translation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2816,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:24:22.161Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "840319d3854a5d93fe51-a8c90d1e2a3397d38f81",
+          "file": "recognition-reset.spec.ts",
+          "line": 48,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "seeking.spec.ts",
+      "file": "seeking.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "long video seeks beyond buffered data, backwards and through subtitle time buttons decode the actual target frame",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5427,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:24:24.986Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "range-response",
+                      "contentType": "application/json",
+                      "body": "eyJzdGF0dXMiOjIwNiwiY29udGVudFJhbmdlIjoiYnl0ZXMgMC0zMS82Nzk5MjEwIiwiYWNjZXB0UmFuZ2VzIjoiYnl0ZXMiLCJsZW5ndGgiOiIzMiIsInJlY2VpdmVkQnl0ZXMiOjMyfQ=="
+                    },
+                    {
+                      "name": "before-seek-buffer",
+                      "contentType": "application/json",
+                      "body": "eyJidWZmZXJlZCI6W1swLDUuNzgzXV0sInNlZWthYmxlIjpbWzAsNzUuMDA4XV19"
+                    },
+                    {
+                      "name": "decoded-seek-evidence",
+                      "contentType": "application/json",
+                      "body": "ewogICJzb3VyY2UiOiAiQW5vbnltb3VzIGdlbmVyYXRlZCB0ZXN0c3JjMi90aW1lLWJhbmQtY29sb3IgZml4dHVyZSwgbm8gdXNlciBtZWRpYSBvciB1c2VyIGRhdGEuIiwKICAiZHVyYXRpb25TZWNvbmRzIjogNzUuMDA4LAogICJzb3VyY2VCeXRlcyI6IDMyMzYzNjM1LAogICJ0cmFuc3BvcnQiOiB7CiAgICAic3RhdHVzIjogMjA2LAogICAgImNvbnRlbnRSYW5nZSI6ICJieXRlcyAwLTMxLzY3OTkyMTAiLAogICAgImFjY2VwdFJhbmdlcyI6ICJieXRlcyIsCiAgICAibGVuZ3RoIjogIjMyIiwKICAgICJyZWNlaXZlZEJ5dGVzIjogMzIKICB9LAogICJvYnNlcnZhdGlvbnMiOiBbCiAgICB7CiAgICAgICJ0YXJnZXRTZWNvbmRzIjogMzgsCiAgICAgICJidWZmZXJlZEJlZm9yZSI6IFsKICAgICAgICBbCiAgICAgICAgICAwLAogICAgICAgICAgNS43ODMKICAgICAgICBdCiAgICAgIF0sCiAgICAgICJ0YXJnZXRXYXNCdWZmZXJlZCI6IGZhbHNlLAogICAgICAiY3VycmVudFRpbWUiOiAzOCwKICAgICAgImRlY29kZWRGcmFtZVRpbWUiOiAzOCwKICAgICAgInNlZWtlZEV2ZW50cyI6IDEsCiAgICAgICJyZ2IiOiBbCiAgICAgICAgMjYsCiAgICAgICAgMzUsCiAgICAgICAgMjU1CiAgICAgIF0KICAgIH0sCiAgICB7CiAgICAgICJ0YXJnZXRTZWNvbmRzIjogNzIsCiAgICAgICJidWZmZXJlZEJlZm9yZSI6IFsKICAgICAgICBbCiAgICAgICAgICAwLAogICAgICAgICAgNS43ODMKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDM2LjE0OSwKICAgICAgICAgIDQxLjkzMwogICAgICAgIF0KICAgICAgXSwKICAgICAgInRhcmdldFdhc0J1ZmZlcmVkIjogZmFsc2UsCiAgICAgICJjdXJyZW50VGltZSI6IDcyLAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDcyLAogICAgICAic2Vla2VkRXZlbnRzIjogMSwKICAgICAgInJnYiI6IFsKICAgICAgICAyNTMsCiAgICAgICAgMjUzLAogICAgICAgIDAKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgInRhcmdldFNlY29uZHMiOiAxOCwKICAgICAgImJ1ZmZlcmVkQmVmb3JlIjogWwogICAgICAgIFsKICAgICAgICAgIDAsCiAgICAgICAgICA1Ljc4MwogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgMzYuMTQ5LAogICAgICAgICAgNDEuOTMzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICA1NS44MzMzMzMsCiAgICAgICAgICA3NS4wMDgKICAgICAgICBdCiAgICAgIF0sCiAgICAgICJ0YXJnZXRXYXNCdWZmZXJlZCI6IGZhbHNlLAogICAgICAiY3VycmVudFRpbWUiOiAxOCwKICAgICAgImRlY29kZWRGcmFtZVRpbWUiOiAxOCwKICAgICAgInNlZWtlZEV2ZW50cyI6IDEsCiAgICAgICJyZ2IiOiBbCiAgICAgICAgMjcsCiAgICAgICAgMTI2LAogICAgICAgIDAKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgInRhcmdldFNlY29uZHMiOiAyLAogICAgICAiYnVmZmVyZWRCZWZvcmUiOiBbCiAgICAgICAgWwogICAgICAgICAgMCwKICAgICAgICAgIDUuNzgzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICAxNi45MTY2NjcsCiAgICAgICAgICAyMS4zMjgKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDM2LjE0OSwKICAgICAgICAgIDQxLjkzMwogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgNTUuODMzMzMzLAogICAgICAgICAgNzUuMDA4CiAgICAgICAgXQogICAgICBdLAogICAgICAidGFyZ2V0V2FzQnVmZmVyZWQiOiB0cnVlLAogICAgICAiY3VycmVudFRpbWUiOiAyLAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDIsCiAgICAgICJzZWVrZWRFdmVudHMiOiAxLAogICAgICAicmdiIjogWwogICAgICAgIDI0OCwKICAgICAgICAzNiwKICAgICAgICAwCiAgICAgIF0KICAgIH0sCiAgICB7CiAgICAgICJ0YXJnZXRTZWNvbmRzIjogNjgsCiAgICAgICJidWZmZXJlZEJlZm9yZSI6IFsKICAgICAgICBbCiAgICAgICAgICAwLAogICAgICAgICAgNS43ODMKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDE2LjkxNjY2NywKICAgICAgICAgIDIxLjMyOAogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgMzYuMTQ5LAogICAgICAgICAgNDEuOTMzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICA1NS44MzMzMzMsCiAgICAgICAgICA3NS4wMDgKICAgICAgICBdCiAgICAgIF0sCiAgICAgICJ0YXJnZXRXYXNCdWZmZXJlZCI6IHRydWUsCiAgICAgICJjdXJyZW50VGltZSI6IDY4LAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDY4LAogICAgICAic2Vla2VkRXZlbnRzIjogMSwKICAgICAgInJnYiI6IFsKICAgICAgICAyNTMsCiAgICAgICAgMjUzLAogICAgICAgIDAKICAgICAgXQogICAgfSwKICAgIHsKICAgICAgInRhcmdldFNlY29uZHMiOiAyLAogICAgICAiYnVmZmVyZWRCZWZvcmUiOiBbCiAgICAgICAgWwogICAgICAgICAgMCwKICAgICAgICAgIDUuNzgzCiAgICAgICAgXSwKICAgICAgICBbCiAgICAgICAgICAxNi45MTY2NjcsCiAgICAgICAgICAyMS4zMjgKICAgICAgICBdLAogICAgICAgIFsKICAgICAgICAgIDM2LjE0OSwKICAgICAgICAgIDQxLjkzMwogICAgICAgIF0sCiAgICAgICAgWwogICAgICAgICAgNTUuODMzMzMzLAogICAgICAgICAgNzUuMDA4CiAgICAgICAgXQogICAgICBdLAogICAgICAidGFyZ2V0V2FzQnVmZmVyZWQiOiB0cnVlLAogICAgICAiY3VycmVudFRpbWUiOiAyLAogICAgICAiZGVjb2RlZEZyYW1lVGltZSI6IDIsCiAgICAgICJzZWVrZWRFdmVudHMiOiAxLAogICAgICAicmdiIjogWwogICAgICAgIDI0OCwKICAgICAgICAzNiwKICAgICAgICAwCiAgICAgIF0KICAgIH0KICBdLAogICJwbGF5YmFja0FkdmFuY2VkQWZ0ZXJTdWJ0aXRsZUp1bXAiOiB0cnVlLAogICJwcm92aWRlciI6ICJMb29wYmFjayBtb2NrZWQgcmVjb2duaXRpb24gYW5kIHRyYW5zbGF0aW9uLCBubyBuYXRpdmUgaW5mZXJlbmNlIG9yIHBhaWQgQVBJLiIKfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ab5c40bba5e2a34a6f0f-5990745adca909ee559b",
+          "file": "seeking.spec.ts",
+          "line": 7,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "single-instance.spec.ts",
+      "file": "single-instance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "a second process activates the primary without interrupting its job; isolated data can run separately",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2183,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:24:30.421Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d2d764b709433987906d-9cf19e33865bcdb0715d",
+          "file": "single-instance.spec.ts",
+          "line": 6,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "subtitle-workspace.spec.ts",
+      "file": "subtitle-workspace.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "source-only creation, cue/time partial repairs, AI text review, restart and exports use real IPC without translation requests",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7596,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:24:32.620Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-0968422b79367ea5a239",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 162,
+          "column": 5
+        },
+        {
+          "title": "fixed preview/proofreading workspace survives default/minimum/large native windows, portrait media, banners and long inline forms",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11053,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:24:40.220Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-2acbeb02d35e20f7ffd5",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 494,
+          "column": 7
+        },
+        {
+          "title": "fixed preview/proofreading workspace survives default/minimum/large native windows, landscape media, banners and long inline forms",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 240000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11133,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:24:51.277Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-14af91fa1529a4f4bb92",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 494,
+          "column": 7
+        },
+        {
+          "title": "local and URL import persist explicit translation choices and translation-enabled partial processing remains opt-in",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8493,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-11T03:25:02.415Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "bc9e67ca2f03f85a843d-64e94c26c6f78b5201eb",
+          "file": "subtitle-workspace.spec.ts",
+          "line": 746,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-11T03:21:39.564Z",
+    "duration": 211382.60700000002,
+    "expected": 23,
+    "skipped": 3,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

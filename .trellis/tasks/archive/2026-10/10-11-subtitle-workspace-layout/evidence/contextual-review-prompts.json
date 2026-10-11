@@ -1,0 +1,1202 @@
+[
+  {
+    "selected": [
+      {
+        "id": "d2acb736-0cbc-4cdb-baeb-68a99ca62e69"
+      },
+      {
+        "id": "21465030-495f-4db9-a132-9e22da24d7dd"
+      },
+      {
+        "id": "101c6a15-fbed-4bea-b56f-acc790dc812e"
+      },
+      {
+        "id": "860dad8b-ea85-49af-80c7-2e2ab8823c40"
+      },
+      {
+        "id": "914d03ed-98fe-49c3-8fa5-3beea3d6cc5b"
+      },
+      {
+        "id": "270e8e26-cb3d-410d-9fdb-dcb9b40b2251"
+      },
+      {
+        "id": "c036073b-9fab-4a2e-8b41-de98bf09a16c"
+      },
+      {
+        "id": "b1de1e5d-e911-4b96-a9d5-82e95fa32e69"
+      },
+      {
+        "id": "0a990280-5f87-47f5-9f71-bba546c69816"
+      },
+      {
+        "id": "511d58f6-bebc-46b3-97e4-f2f58236c16c"
+      },
+      {
+        "id": "19972685-761d-4c72-a1d9-f71487a96a4b"
+      },
+      {
+        "id": "dfd824f1-3ac6-49d6-8341-7a88853cf31c"
+      },
+      {
+        "id": "01e0e769-c8d0-4653-a628-bd8d2c412f23"
+      },
+      {
+        "id": "d1a0a6c3-f7d7-48ab-9e55-e9905db6f27c"
+      },
+      {
+        "id": "f83d3eb2-5432-415f-8cf2-063b1cb0a84e"
+      },
+      {
+        "id": "4461a2db-3e58-49a5-8e57-ed9253abaf7d"
+      },
+      {
+        "id": "96a5e6c3-e001-472b-9b0c-0bc896846a9d"
+      },
+      {
+        "id": "9209384c-262b-4098-b029-900b8021caa7"
+      },
+      {
+        "id": "5f8b9331-b63d-44e2-90ac-11f051b54633"
+      },
+      {
+        "id": "ed73b339-1880-4296-ab5b-7e94fdab631f"
+      },
+      {
+        "id": "add6c1cf-19de-49d3-a9ab-3a91f13ea521"
+      },
+      {
+        "id": "be35791e-044b-478f-87ed-a23f4e630867"
+      },
+      {
+        "id": "4fb9b4dc-c4c8-4d55-9da5-64e791c3af89"
+      },
+      {
+        "id": "4423f256-bde6-41a6-b1d6-d5262202c361"
+      },
+      {
+        "id": "5a5c3cae-1108-4c13-bb6e-254c3051a963"
+      },
+      {
+        "id": "9cad7851-7f78-4c07-ab26-797933f91b74"
+      },
+      {
+        "id": "7c702357-ffb7-4524-b410-d084e22a254f"
+      },
+      {
+        "id": "928847e8-5dda-4a5f-8535-4812fb1261d1"
+      },
+      {
+        "id": "a2fadee6-deba-4cda-88db-2eac32df5350"
+      },
+      {
+        "id": "46053d1b-2db5-41b7-8c99-255a4038b4e5"
+      }
+    ],
+    "context": [
+      {
+        "id": "d2acb736-0cbc-4cdb-baeb-68a99ca62e69",
+        "sourceText": "NONE: Stable chronological dialogue cue 1.",
+        "startMs": 0,
+        "endMs": 100,
+        "translatedText": ""
+      },
+      {
+        "id": "21465030-495f-4db9-a132-9e22da24d7dd",
+        "sourceText": "LOW: The train leaves at station platform.",
+        "startMs": 110,
+        "endMs": 210,
+        "translatedText": ""
+      },
+      {
+        "id": "101c6a15-fbed-4bea-b56f-acc790dc812e",
+        "sourceText": "MEDIUM: The previous train sentence has an unclear phrase.",
+        "startMs": 220,
+        "endMs": 320,
+        "translatedText": ""
+      },
+      {
+        "id": "860dad8b-ea85-49af-80c7-2e2ab8823c40",
+        "sourceText": "HIGH: This very long subtitle has too much text for its one hundred millisecond appearance.",
+        "startMs": 330,
+        "endMs": 430,
+        "translatedText": ""
+      },
+      {
+        "id": "914d03ed-98fe-49c3-8fa5-3beea3d6cc5b",
+        "sourceText": "NONE: Stable chronological dialogue cue 5.",
+        "startMs": 440,
+        "endMs": 540,
+        "translatedText": ""
+      },
+      {
+        "id": "270e8e26-cb3d-410d-9fdb-dcb9b40b2251",
+        "sourceText": "NONE: Stable chronological dialogue cue 6.",
+        "startMs": 550,
+        "endMs": 650,
+        "translatedText": ""
+      },
+      {
+        "id": "c036073b-9fab-4a2e-8b41-de98bf09a16c",
+        "sourceText": "NONE: Stable chronological dialogue cue 7.",
+        "startMs": 660,
+        "endMs": 760,
+        "translatedText": ""
+      },
+      {
+        "id": "b1de1e5d-e911-4b96-a9d5-82e95fa32e69",
+        "sourceText": "NONE: Stable chronological dialogue cue 8.",
+        "startMs": 770,
+        "endMs": 870,
+        "translatedText": ""
+      },
+      {
+        "id": "0a990280-5f87-47f5-9f71-bba546c69816",
+        "sourceText": "NONE: Stable chronological dialogue cue 9.",
+        "startMs": 880,
+        "endMs": 980,
+        "translatedText": ""
+      },
+      {
+        "id": "511d58f6-bebc-46b3-97e4-f2f58236c16c",
+        "sourceText": "NONE: Stable chronological dialogue cue 10.",
+        "startMs": 990,
+        "endMs": 1090,
+        "translatedText": ""
+      },
+      {
+        "id": "19972685-761d-4c72-a1d9-f71487a96a4b",
+        "sourceText": "NONE: Stable chronological dialogue cue 11.",
+        "startMs": 1100,
+        "endMs": 1200,
+        "translatedText": ""
+      },
+      {
+        "id": "dfd824f1-3ac6-49d6-8341-7a88853cf31c",
+        "sourceText": "NONE: Stable chronological dialogue cue 12.",
+        "startMs": 1210,
+        "endMs": 1310,
+        "translatedText": ""
+      },
+      {
+        "id": "01e0e769-c8d0-4653-a628-bd8d2c412f23",
+        "sourceText": "NONE: Stable chronological dialogue cue 13.",
+        "startMs": 1320,
+        "endMs": 1420,
+        "translatedText": ""
+      },
+      {
+        "id": "d1a0a6c3-f7d7-48ab-9e55-e9905db6f27c",
+        "sourceText": "NONE: Stable chronological dialogue cue 14.",
+        "startMs": 1430,
+        "endMs": 1530,
+        "translatedText": ""
+      },
+      {
+        "id": "f83d3eb2-5432-415f-8cf2-063b1cb0a84e",
+        "sourceText": "NONE: Stable chronological dialogue cue 15.",
+        "startMs": 1540,
+        "endMs": 1640,
+        "translatedText": ""
+      },
+      {
+        "id": "4461a2db-3e58-49a5-8e57-ed9253abaf7d",
+        "sourceText": "NONE: Stable chronological dialogue cue 16.",
+        "startMs": 1650,
+        "endMs": 1750,
+        "translatedText": ""
+      },
+      {
+        "id": "96a5e6c3-e001-472b-9b0c-0bc896846a9d",
+        "sourceText": "NONE: Stable chronological dialogue cue 17.",
+        "startMs": 1760,
+        "endMs": 1860,
+        "translatedText": ""
+      },
+      {
+        "id": "9209384c-262b-4098-b029-900b8021caa7",
+        "sourceText": "NONE: Stable chronological dialogue cue 18.",
+        "startMs": 1870,
+        "endMs": 1970,
+        "translatedText": ""
+      },
+      {
+        "id": "5f8b9331-b63d-44e2-90ac-11f051b54633",
+        "sourceText": "NONE: Stable chronological dialogue cue 19.",
+        "startMs": 1980,
+        "endMs": 2080,
+        "translatedText": ""
+      },
+      {
+        "id": "ed73b339-1880-4296-ab5b-7e94fdab631f",
+        "sourceText": "NONE: Stable chronological dialogue cue 20.",
+        "startMs": 2090,
+        "endMs": 2190,
+        "translatedText": ""
+      },
+      {
+        "id": "add6c1cf-19de-49d3-a9ab-3a91f13ea521",
+        "sourceText": "NONE: Stable chronological dialogue cue 21.",
+        "startMs": 2200,
+        "endMs": 2300,
+        "translatedText": ""
+      },
+      {
+        "id": "be35791e-044b-478f-87ed-a23f4e630867",
+        "sourceText": "NONE: Stable chronological dialogue cue 22.",
+        "startMs": 2310,
+        "endMs": 2410,
+        "translatedText": ""
+      },
+      {
+        "id": "4fb9b4dc-c4c8-4d55-9da5-64e791c3af89",
+        "sourceText": "NONE: Stable chronological dialogue cue 23.",
+        "startMs": 2420,
+        "endMs": 2520,
+        "translatedText": ""
+      },
+      {
+        "id": "4423f256-bde6-41a6-b1d6-d5262202c361",
+        "sourceText": "NONE: Stable chronological dialogue cue 24.",
+        "startMs": 2530,
+        "endMs": 2630,
+        "translatedText": ""
+      },
+      {
+        "id": "5a5c3cae-1108-4c13-bb6e-254c3051a963",
+        "sourceText": "NONE: Stable chronological dialogue cue 25.",
+        "startMs": 2640,
+        "endMs": 2740,
+        "translatedText": ""
+      },
+      {
+        "id": "9cad7851-7f78-4c07-ab26-797933f91b74",
+        "sourceText": "NONE: Stable chronological dialogue cue 26.",
+        "startMs": 2750,
+        "endMs": 2850,
+        "translatedText": ""
+      },
+      {
+        "id": "7c702357-ffb7-4524-b410-d084e22a254f",
+        "sourceText": "NONE: Stable chronological dialogue cue 27.",
+        "startMs": 2860,
+        "endMs": 2960,
+        "translatedText": ""
+      },
+      {
+        "id": "928847e8-5dda-4a5f-8535-4812fb1261d1",
+        "sourceText": "NONE: Stable chronological dialogue cue 28.",
+        "startMs": 2970,
+        "endMs": 3070,
+        "translatedText": ""
+      },
+      {
+        "id": "a2fadee6-deba-4cda-88db-2eac32df5350",
+        "sourceText": "NONE: Stable chronological dialogue cue 29.",
+        "startMs": 3080,
+        "endMs": 3180,
+        "translatedText": ""
+      },
+      {
+        "id": "46053d1b-2db5-41b7-8c99-255a4038b4e5",
+        "sourceText": "BOUNDARY: The letter was posted yesterday.",
+        "startMs": 3190,
+        "endMs": 3290,
+        "translatedText": ""
+      },
+      {
+        "id": "97acacb4-7f4f-4883-aa23-3bebd4d32805",
+        "sourceText": "MEDIUM: Therefore the letter arrived before it was posted.",
+        "startMs": 3300,
+        "endMs": 3400,
+        "translatedText": ""
+      },
+      {
+        "id": "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7",
+        "sourceText": "NONE: Stable chronological dialogue cue 32.",
+        "startMs": 3410,
+        "endMs": 3510,
+        "translatedText": ""
+      }
+    ],
+    "rubric": {
+      "version": "contextual-review-v1",
+      "rules": [
+        {
+          "ruleId": "source.minor_wording",
+          "example": "明确的同音错字或多余标点",
+          "counterexample": "陌生人名、方言与口语习惯本身不是错误",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "轻微错字、标点或措辞问题，意思仍明确"
+        },
+        {
+          "ruleId": "source.weak_coherence",
+          "example": "连接词略显生硬，但语意可理解",
+          "counterexample": "话题切换、引语、幽默、省略本身不构成高风险",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "只有较弱的衔接疑点，没有具体含义冲突"
+        },
+        {
+          "ruleId": "source.context_inconsistency",
+          "example": "同一对象在相邻句被赋予互相冲突的行为",
+          "counterexample": "单句低相关、视角变化或引用他人观点不能证明矛盾",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "指出与具体相邻字幕的矛盾，需试听确认"
+        },
+        {
+          "ruleId": "source.suspected_omission",
+          "example": "相邻句连续列举，当前句缺少使句意成立的成分",
+          "counterexample": "视频里的空白间隔、自然停顿或口语省略不证明漏字",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "有具体衔接证据的疑似漏词或断句，无法据此证明漏识别"
+        },
+        {
+          "ruleId": "source.meaning_problem",
+          "example": "当前句出现无法合理解析的词组，邻句可提供解释线索",
+          "counterexample": "专业术语、专名、笑话不能仅因不熟悉被判错",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "具体词句导致明显理解障碍，但未达到持续崩坏证据"
+        },
+        {
+          "ruleId": "source.sustained_breakdown",
+          "example": "目标句成为无意义词串，前后两句明确延续同一说明",
+          "counterexample": "一条不相关字幕、话题变化、引用、幽默、省略或专名绝不能单独评高",
+          "category": "source",
+          "riskLevel": "high",
+          "description": "严重语义崩坏；必须有目标句及至少两条前后相邻字幕共同支持同一具体解释"
+        },
+        {
+          "ruleId": "translation.minor_wording",
+          "example": "略生硬但忠实的译法",
+          "counterexample": "合理意译与不同表达习惯不构成错误",
+          "category": "translation",
+          "riskLevel": "low",
+          "description": "译文意思保留，仅有轻微措辞或标点问题"
+        },
+        {
+          "ruleId": "translation.meaning_problem",
+          "example": "译文遗漏一个影响理解的条件",
+          "counterexample": "仅因逐字不对应不能认为意译错误",
+          "category": "translation",
+          "riskLevel": "medium",
+          "description": "明确指出原文与已有译文的具体意义、遗漏或可读性问题"
+        },
+        {
+          "ruleId": "translation.negation_contradiction",
+          "example": "原文明确禁止进入，译文变成允许进入",
+          "counterexample": "反问、引用、双重否定或上下文反转需谨慎，证据不足降级",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "有强文本证据表明关键否定、允许/禁止或肯定关系被颠倒"
+        },
+        {
+          "ruleId": "translation.key_numeric_contradiction",
+          "example": "字幕数量从 12 变为 120",
+          "counterexample": "1000m 与 1km、日期格式或无关数字不是矛盾",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "原文和已有译文的关键数量、价格、日期等明确矛盾，排除单位换算与格式变化"
+        },
+        {
+          "ruleId": "timing.minor_flow",
+          "example": "很短间隔可能使阅读衔接略生硬",
+          "counterexample": "自然停顿、换人说话或叠加字幕本身不算异常",
+          "category": "timing",
+          "riskLevel": "low",
+          "description": "时轴略影响阅读节奏，含义与阅读仍基本可用"
+        },
+        {
+          "ruleId": "timing.readability_concern",
+          "example": "较长一句在不足一秒内显示",
+          "counterexample": "短词或歌词闪现不能直接认为错误",
+          "category": "timing",
+          "riskLevel": "medium",
+          "description": "具体的显示时间/文本量关系导致明显阅读困难，需播放确认"
+        },
+        {
+          "ruleId": "timing.severe_readability",
+          "example": "40个字符只显示400ms",
+          "counterexample": "短口语/词语闪现、源文与译文合理差异不能单独评高",
+          "category": "timing",
+          "riskLevel": "high",
+          "description": "明确严重不可读：主字幕文本至少20个非空Unicode字符，且显示不超过500ms或每秒至少45字符"
+        }
+      ]
+    },
+    "translationEnabled": false
+  },
+  {
+    "selected": [
+      {
+        "id": "97acacb4-7f4f-4883-aa23-3bebd4d32805"
+      },
+      {
+        "id": "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7"
+      },
+      {
+        "id": "94f0ac49-b0e2-496a-be87-f327b3da7768"
+      },
+      {
+        "id": "1670cf5a-42b2-4762-b0f7-876034b4e6f0"
+      }
+    ],
+    "context": [
+      {
+        "id": "a2fadee6-deba-4cda-88db-2eac32df5350",
+        "sourceText": "NONE: Stable chronological dialogue cue 29.",
+        "startMs": 3080,
+        "endMs": 3180,
+        "translatedText": ""
+      },
+      {
+        "id": "46053d1b-2db5-41b7-8c99-255a4038b4e5",
+        "sourceText": "BOUNDARY: The letter was posted yesterday.",
+        "startMs": 3190,
+        "endMs": 3290,
+        "translatedText": ""
+      },
+      {
+        "id": "97acacb4-7f4f-4883-aa23-3bebd4d32805",
+        "sourceText": "MEDIUM: Therefore the letter arrived before it was posted.",
+        "startMs": 3300,
+        "endMs": 3400,
+        "translatedText": ""
+      },
+      {
+        "id": "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7",
+        "sourceText": "NONE: Stable chronological dialogue cue 32.",
+        "startMs": 3410,
+        "endMs": 3510,
+        "translatedText": ""
+      },
+      {
+        "id": "94f0ac49-b0e2-496a-be87-f327b3da7768",
+        "sourceText": "NONE: Stable chronological dialogue cue 33.",
+        "startMs": 3520,
+        "endMs": 3620,
+        "translatedText": ""
+      },
+      {
+        "id": "1670cf5a-42b2-4762-b0f7-876034b4e6f0",
+        "sourceText": "NONE: Stable chronological dialogue cue 34.",
+        "startMs": 3630,
+        "endMs": 3730,
+        "translatedText": ""
+      }
+    ],
+    "rubric": {
+      "version": "contextual-review-v1",
+      "rules": [
+        {
+          "ruleId": "source.minor_wording",
+          "example": "明确的同音错字或多余标点",
+          "counterexample": "陌生人名、方言与口语习惯本身不是错误",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "轻微错字、标点或措辞问题，意思仍明确"
+        },
+        {
+          "ruleId": "source.weak_coherence",
+          "example": "连接词略显生硬，但语意可理解",
+          "counterexample": "话题切换、引语、幽默、省略本身不构成高风险",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "只有较弱的衔接疑点，没有具体含义冲突"
+        },
+        {
+          "ruleId": "source.context_inconsistency",
+          "example": "同一对象在相邻句被赋予互相冲突的行为",
+          "counterexample": "单句低相关、视角变化或引用他人观点不能证明矛盾",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "指出与具体相邻字幕的矛盾，需试听确认"
+        },
+        {
+          "ruleId": "source.suspected_omission",
+          "example": "相邻句连续列举，当前句缺少使句意成立的成分",
+          "counterexample": "视频里的空白间隔、自然停顿或口语省略不证明漏字",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "有具体衔接证据的疑似漏词或断句，无法据此证明漏识别"
+        },
+        {
+          "ruleId": "source.meaning_problem",
+          "example": "当前句出现无法合理解析的词组，邻句可提供解释线索",
+          "counterexample": "专业术语、专名、笑话不能仅因不熟悉被判错",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "具体词句导致明显理解障碍，但未达到持续崩坏证据"
+        },
+        {
+          "ruleId": "source.sustained_breakdown",
+          "example": "目标句成为无意义词串，前后两句明确延续同一说明",
+          "counterexample": "一条不相关字幕、话题变化、引用、幽默、省略或专名绝不能单独评高",
+          "category": "source",
+          "riskLevel": "high",
+          "description": "严重语义崩坏；必须有目标句及至少两条前后相邻字幕共同支持同一具体解释"
+        },
+        {
+          "ruleId": "translation.minor_wording",
+          "example": "略生硬但忠实的译法",
+          "counterexample": "合理意译与不同表达习惯不构成错误",
+          "category": "translation",
+          "riskLevel": "low",
+          "description": "译文意思保留，仅有轻微措辞或标点问题"
+        },
+        {
+          "ruleId": "translation.meaning_problem",
+          "example": "译文遗漏一个影响理解的条件",
+          "counterexample": "仅因逐字不对应不能认为意译错误",
+          "category": "translation",
+          "riskLevel": "medium",
+          "description": "明确指出原文与已有译文的具体意义、遗漏或可读性问题"
+        },
+        {
+          "ruleId": "translation.negation_contradiction",
+          "example": "原文明确禁止进入，译文变成允许进入",
+          "counterexample": "反问、引用、双重否定或上下文反转需谨慎，证据不足降级",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "有强文本证据表明关键否定、允许/禁止或肯定关系被颠倒"
+        },
+        {
+          "ruleId": "translation.key_numeric_contradiction",
+          "example": "字幕数量从 12 变为 120",
+          "counterexample": "1000m 与 1km、日期格式或无关数字不是矛盾",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "原文和已有译文的关键数量、价格、日期等明确矛盾，排除单位换算与格式变化"
+        },
+        {
+          "ruleId": "timing.minor_flow",
+          "example": "很短间隔可能使阅读衔接略生硬",
+          "counterexample": "自然停顿、换人说话或叠加字幕本身不算异常",
+          "category": "timing",
+          "riskLevel": "low",
+          "description": "时轴略影响阅读节奏，含义与阅读仍基本可用"
+        },
+        {
+          "ruleId": "timing.readability_concern",
+          "example": "较长一句在不足一秒内显示",
+          "counterexample": "短词或歌词闪现不能直接认为错误",
+          "category": "timing",
+          "riskLevel": "medium",
+          "description": "具体的显示时间/文本量关系导致明显阅读困难，需播放确认"
+        },
+        {
+          "ruleId": "timing.severe_readability",
+          "example": "40个字符只显示400ms",
+          "counterexample": "短口语/词语闪现、源文与译文合理差异不能单独评高",
+          "category": "timing",
+          "riskLevel": "high",
+          "description": "明确严重不可读：主字幕文本至少20个非空Unicode字符，且显示不超过500ms或每秒至少45字符"
+        }
+      ]
+    },
+    "translationEnabled": false
+  },
+  {
+    "selected": [
+      {
+        "id": "d2acb736-0cbc-4cdb-baeb-68a99ca62e69"
+      },
+      {
+        "id": "21465030-495f-4db9-a132-9e22da24d7dd"
+      },
+      {
+        "id": "101c6a15-fbed-4bea-b56f-acc790dc812e"
+      },
+      {
+        "id": "02e8f214-a092-4cf8-abc2-8377963d71b8"
+      },
+      {
+        "id": "914d03ed-98fe-49c3-8fa5-3beea3d6cc5b"
+      },
+      {
+        "id": "270e8e26-cb3d-410d-9fdb-dcb9b40b2251"
+      },
+      {
+        "id": "c036073b-9fab-4a2e-8b41-de98bf09a16c"
+      },
+      {
+        "id": "b1de1e5d-e911-4b96-a9d5-82e95fa32e69"
+      },
+      {
+        "id": "0a990280-5f87-47f5-9f71-bba546c69816"
+      },
+      {
+        "id": "511d58f6-bebc-46b3-97e4-f2f58236c16c"
+      },
+      {
+        "id": "19972685-761d-4c72-a1d9-f71487a96a4b"
+      },
+      {
+        "id": "dfd824f1-3ac6-49d6-8341-7a88853cf31c"
+      },
+      {
+        "id": "01e0e769-c8d0-4653-a628-bd8d2c412f23"
+      },
+      {
+        "id": "d1a0a6c3-f7d7-48ab-9e55-e9905db6f27c"
+      },
+      {
+        "id": "f83d3eb2-5432-415f-8cf2-063b1cb0a84e"
+      },
+      {
+        "id": "4461a2db-3e58-49a5-8e57-ed9253abaf7d"
+      },
+      {
+        "id": "96a5e6c3-e001-472b-9b0c-0bc896846a9d"
+      },
+      {
+        "id": "9209384c-262b-4098-b029-900b8021caa7"
+      },
+      {
+        "id": "5f8b9331-b63d-44e2-90ac-11f051b54633"
+      },
+      {
+        "id": "ed73b339-1880-4296-ab5b-7e94fdab631f"
+      },
+      {
+        "id": "add6c1cf-19de-49d3-a9ab-3a91f13ea521"
+      },
+      {
+        "id": "be35791e-044b-478f-87ed-a23f4e630867"
+      },
+      {
+        "id": "4fb9b4dc-c4c8-4d55-9da5-64e791c3af89"
+      },
+      {
+        "id": "4423f256-bde6-41a6-b1d6-d5262202c361"
+      },
+      {
+        "id": "5a5c3cae-1108-4c13-bb6e-254c3051a963"
+      },
+      {
+        "id": "9cad7851-7f78-4c07-ab26-797933f91b74"
+      },
+      {
+        "id": "7c702357-ffb7-4524-b410-d084e22a254f"
+      },
+      {
+        "id": "928847e8-5dda-4a5f-8535-4812fb1261d1"
+      },
+      {
+        "id": "a2fadee6-deba-4cda-88db-2eac32df5350"
+      },
+      {
+        "id": "46053d1b-2db5-41b7-8c99-255a4038b4e5"
+      }
+    ],
+    "context": [
+      {
+        "id": "d2acb736-0cbc-4cdb-baeb-68a99ca62e69",
+        "sourceText": "NONE: Stable chronological dialogue cue 1.",
+        "startMs": 0,
+        "endMs": 100,
+        "translatedText": ""
+      },
+      {
+        "id": "21465030-495f-4db9-a132-9e22da24d7dd",
+        "sourceText": "LOW: The train leaves at station platform.",
+        "startMs": 110,
+        "endMs": 210,
+        "translatedText": ""
+      },
+      {
+        "id": "101c6a15-fbed-4bea-b56f-acc790dc812e",
+        "sourceText": "MEDIUM: The previous train sentence has an unclear phrase.",
+        "startMs": 220,
+        "endMs": 320,
+        "translatedText": ""
+      },
+      {
+        "id": "02e8f214-a092-4cf8-abc2-8377963d71b8",
+        "sourceText": "Repaired source passage.",
+        "startMs": 330,
+        "endMs": 430,
+        "translatedText": ""
+      },
+      {
+        "id": "914d03ed-98fe-49c3-8fa5-3beea3d6cc5b",
+        "sourceText": "NONE: Stable chronological dialogue cue 5.",
+        "startMs": 440,
+        "endMs": 540,
+        "translatedText": ""
+      },
+      {
+        "id": "270e8e26-cb3d-410d-9fdb-dcb9b40b2251",
+        "sourceText": "NONE: Stable chronological dialogue cue 6.",
+        "startMs": 550,
+        "endMs": 650,
+        "translatedText": ""
+      },
+      {
+        "id": "c036073b-9fab-4a2e-8b41-de98bf09a16c",
+        "sourceText": "NONE: Stable chronological dialogue cue 7.",
+        "startMs": 660,
+        "endMs": 760,
+        "translatedText": ""
+      },
+      {
+        "id": "b1de1e5d-e911-4b96-a9d5-82e95fa32e69",
+        "sourceText": "NONE: Stable chronological dialogue cue 8.",
+        "startMs": 770,
+        "endMs": 870,
+        "translatedText": ""
+      },
+      {
+        "id": "0a990280-5f87-47f5-9f71-bba546c69816",
+        "sourceText": "NONE: Stable chronological dialogue cue 9.",
+        "startMs": 880,
+        "endMs": 980,
+        "translatedText": ""
+      },
+      {
+        "id": "511d58f6-bebc-46b3-97e4-f2f58236c16c",
+        "sourceText": "NONE: Stable chronological dialogue cue 10.",
+        "startMs": 990,
+        "endMs": 1090,
+        "translatedText": ""
+      },
+      {
+        "id": "19972685-761d-4c72-a1d9-f71487a96a4b",
+        "sourceText": "NONE: Stable chronological dialogue cue 11.",
+        "startMs": 1100,
+        "endMs": 1200,
+        "translatedText": ""
+      },
+      {
+        "id": "dfd824f1-3ac6-49d6-8341-7a88853cf31c",
+        "sourceText": "NONE: Stable chronological dialogue cue 12.",
+        "startMs": 1210,
+        "endMs": 1310,
+        "translatedText": ""
+      },
+      {
+        "id": "01e0e769-c8d0-4653-a628-bd8d2c412f23",
+        "sourceText": "NONE: Stable chronological dialogue cue 13.",
+        "startMs": 1320,
+        "endMs": 1420,
+        "translatedText": ""
+      },
+      {
+        "id": "d1a0a6c3-f7d7-48ab-9e55-e9905db6f27c",
+        "sourceText": "NONE: Stable chronological dialogue cue 14.",
+        "startMs": 1430,
+        "endMs": 1530,
+        "translatedText": ""
+      },
+      {
+        "id": "f83d3eb2-5432-415f-8cf2-063b1cb0a84e",
+        "sourceText": "NONE: Stable chronological dialogue cue 15.",
+        "startMs": 1540,
+        "endMs": 1640,
+        "translatedText": ""
+      },
+      {
+        "id": "4461a2db-3e58-49a5-8e57-ed9253abaf7d",
+        "sourceText": "NONE: Stable chronological dialogue cue 16.",
+        "startMs": 1650,
+        "endMs": 1750,
+        "translatedText": ""
+      },
+      {
+        "id": "96a5e6c3-e001-472b-9b0c-0bc896846a9d",
+        "sourceText": "NONE: Stable chronological dialogue cue 17.",
+        "startMs": 1760,
+        "endMs": 1860,
+        "translatedText": ""
+      },
+      {
+        "id": "9209384c-262b-4098-b029-900b8021caa7",
+        "sourceText": "NONE: Stable chronological dialogue cue 18.",
+        "startMs": 1870,
+        "endMs": 1970,
+        "translatedText": ""
+      },
+      {
+        "id": "5f8b9331-b63d-44e2-90ac-11f051b54633",
+        "sourceText": "NONE: Stable chronological dialogue cue 19.",
+        "startMs": 1980,
+        "endMs": 2080,
+        "translatedText": ""
+      },
+      {
+        "id": "ed73b339-1880-4296-ab5b-7e94fdab631f",
+        "sourceText": "NONE: Stable chronological dialogue cue 20.",
+        "startMs": 2090,
+        "endMs": 2190,
+        "translatedText": ""
+      },
+      {
+        "id": "add6c1cf-19de-49d3-a9ab-3a91f13ea521",
+        "sourceText": "NONE: Stable chronological dialogue cue 21.",
+        "startMs": 2200,
+        "endMs": 2300,
+        "translatedText": ""
+      },
+      {
+        "id": "be35791e-044b-478f-87ed-a23f4e630867",
+        "sourceText": "NONE: Stable chronological dialogue cue 22.",
+        "startMs": 2310,
+        "endMs": 2410,
+        "translatedText": ""
+      },
+      {
+        "id": "4fb9b4dc-c4c8-4d55-9da5-64e791c3af89",
+        "sourceText": "NONE: Stable chronological dialogue cue 23.",
+        "startMs": 2420,
+        "endMs": 2520,
+        "translatedText": ""
+      },
+      {
+        "id": "4423f256-bde6-41a6-b1d6-d5262202c361",
+        "sourceText": "NONE: Stable chronological dialogue cue 24.",
+        "startMs": 2530,
+        "endMs": 2630,
+        "translatedText": ""
+      },
+      {
+        "id": "5a5c3cae-1108-4c13-bb6e-254c3051a963",
+        "sourceText": "NONE: Stable chronological dialogue cue 25.",
+        "startMs": 2640,
+        "endMs": 2740,
+        "translatedText": ""
+      },
+      {
+        "id": "9cad7851-7f78-4c07-ab26-797933f91b74",
+        "sourceText": "NONE: Stable chronological dialogue cue 26.",
+        "startMs": 2750,
+        "endMs": 2850,
+        "translatedText": ""
+      },
+      {
+        "id": "7c702357-ffb7-4524-b410-d084e22a254f",
+        "sourceText": "NONE: Stable chronological dialogue cue 27.",
+        "startMs": 2860,
+        "endMs": 2960,
+        "translatedText": ""
+      },
+      {
+        "id": "928847e8-5dda-4a5f-8535-4812fb1261d1",
+        "sourceText": "NONE: Stable chronological dialogue cue 28.",
+        "startMs": 2970,
+        "endMs": 3070,
+        "translatedText": ""
+      },
+      {
+        "id": "a2fadee6-deba-4cda-88db-2eac32df5350",
+        "sourceText": "NONE: Stable chronological dialogue cue 29.",
+        "startMs": 3080,
+        "endMs": 3180,
+        "translatedText": ""
+      },
+      {
+        "id": "46053d1b-2db5-41b7-8c99-255a4038b4e5",
+        "sourceText": "BOUNDARY: The letter was posted yesterday.",
+        "startMs": 3190,
+        "endMs": 3290,
+        "translatedText": ""
+      },
+      {
+        "id": "97acacb4-7f4f-4883-aa23-3bebd4d32805",
+        "sourceText": "MEDIUM: Therefore the letter arrived before it was posted.",
+        "startMs": 3300,
+        "endMs": 3400,
+        "translatedText": ""
+      },
+      {
+        "id": "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7",
+        "sourceText": "NONE: Stable chronological dialogue cue 32.",
+        "startMs": 3410,
+        "endMs": 3510,
+        "translatedText": ""
+      }
+    ],
+    "rubric": {
+      "version": "contextual-review-v1",
+      "rules": [
+        {
+          "ruleId": "source.minor_wording",
+          "example": "明确的同音错字或多余标点",
+          "counterexample": "陌生人名、方言与口语习惯本身不是错误",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "轻微错字、标点或措辞问题，意思仍明确"
+        },
+        {
+          "ruleId": "source.weak_coherence",
+          "example": "连接词略显生硬，但语意可理解",
+          "counterexample": "话题切换、引语、幽默、省略本身不构成高风险",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "只有较弱的衔接疑点，没有具体含义冲突"
+        },
+        {
+          "ruleId": "source.context_inconsistency",
+          "example": "同一对象在相邻句被赋予互相冲突的行为",
+          "counterexample": "单句低相关、视角变化或引用他人观点不能证明矛盾",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "指出与具体相邻字幕的矛盾，需试听确认"
+        },
+        {
+          "ruleId": "source.suspected_omission",
+          "example": "相邻句连续列举，当前句缺少使句意成立的成分",
+          "counterexample": "视频里的空白间隔、自然停顿或口语省略不证明漏字",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "有具体衔接证据的疑似漏词或断句，无法据此证明漏识别"
+        },
+        {
+          "ruleId": "source.meaning_problem",
+          "example": "当前句出现无法合理解析的词组，邻句可提供解释线索",
+          "counterexample": "专业术语、专名、笑话不能仅因不熟悉被判错",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "具体词句导致明显理解障碍，但未达到持续崩坏证据"
+        },
+        {
+          "ruleId": "source.sustained_breakdown",
+          "example": "目标句成为无意义词串，前后两句明确延续同一说明",
+          "counterexample": "一条不相关字幕、话题变化、引用、幽默、省略或专名绝不能单独评高",
+          "category": "source",
+          "riskLevel": "high",
+          "description": "严重语义崩坏；必须有目标句及至少两条前后相邻字幕共同支持同一具体解释"
+        },
+        {
+          "ruleId": "translation.minor_wording",
+          "example": "略生硬但忠实的译法",
+          "counterexample": "合理意译与不同表达习惯不构成错误",
+          "category": "translation",
+          "riskLevel": "low",
+          "description": "译文意思保留，仅有轻微措辞或标点问题"
+        },
+        {
+          "ruleId": "translation.meaning_problem",
+          "example": "译文遗漏一个影响理解的条件",
+          "counterexample": "仅因逐字不对应不能认为意译错误",
+          "category": "translation",
+          "riskLevel": "medium",
+          "description": "明确指出原文与已有译文的具体意义、遗漏或可读性问题"
+        },
+        {
+          "ruleId": "translation.negation_contradiction",
+          "example": "原文明确禁止进入，译文变成允许进入",
+          "counterexample": "反问、引用、双重否定或上下文反转需谨慎，证据不足降级",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "有强文本证据表明关键否定、允许/禁止或肯定关系被颠倒"
+        },
+        {
+          "ruleId": "translation.key_numeric_contradiction",
+          "example": "字幕数量从 12 变为 120",
+          "counterexample": "1000m 与 1km、日期格式或无关数字不是矛盾",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "原文和已有译文的关键数量、价格、日期等明确矛盾，排除单位换算与格式变化"
+        },
+        {
+          "ruleId": "timing.minor_flow",
+          "example": "很短间隔可能使阅读衔接略生硬",
+          "counterexample": "自然停顿、换人说话或叠加字幕本身不算异常",
+          "category": "timing",
+          "riskLevel": "low",
+          "description": "时轴略影响阅读节奏，含义与阅读仍基本可用"
+        },
+        {
+          "ruleId": "timing.readability_concern",
+          "example": "较长一句在不足一秒内显示",
+          "counterexample": "短词或歌词闪现不能直接认为错误",
+          "category": "timing",
+          "riskLevel": "medium",
+          "description": "具体的显示时间/文本量关系导致明显阅读困难，需播放确认"
+        },
+        {
+          "ruleId": "timing.severe_readability",
+          "example": "40个字符只显示400ms",
+          "counterexample": "短口语/词语闪现、源文与译文合理差异不能单独评高",
+          "category": "timing",
+          "riskLevel": "high",
+          "description": "明确严重不可读：主字幕文本至少20个非空Unicode字符，且显示不超过500ms或每秒至少45字符"
+        }
+      ]
+    },
+    "translationEnabled": false
+  },
+  {
+    "selected": [
+      {
+        "id": "97acacb4-7f4f-4883-aa23-3bebd4d32805"
+      },
+      {
+        "id": "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7"
+      },
+      {
+        "id": "94f0ac49-b0e2-496a-be87-f327b3da7768"
+      },
+      {
+        "id": "1670cf5a-42b2-4762-b0f7-876034b4e6f0"
+      }
+    ],
+    "context": [
+      {
+        "id": "a2fadee6-deba-4cda-88db-2eac32df5350",
+        "sourceText": "NONE: Stable chronological dialogue cue 29.",
+        "startMs": 3080,
+        "endMs": 3180,
+        "translatedText": ""
+      },
+      {
+        "id": "46053d1b-2db5-41b7-8c99-255a4038b4e5",
+        "sourceText": "BOUNDARY: The letter was posted yesterday.",
+        "startMs": 3190,
+        "endMs": 3290,
+        "translatedText": ""
+      },
+      {
+        "id": "97acacb4-7f4f-4883-aa23-3bebd4d32805",
+        "sourceText": "MEDIUM: Therefore the letter arrived before it was posted.",
+        "startMs": 3300,
+        "endMs": 3400,
+        "translatedText": ""
+      },
+      {
+        "id": "5a95de31-10f9-4c33-8d0b-6f07fb7f3ef7",
+        "sourceText": "NONE: Stable chronological dialogue cue 32.",
+        "startMs": 3410,
+        "endMs": 3510,
+        "translatedText": ""
+      },
+      {
+        "id": "94f0ac49-b0e2-496a-be87-f327b3da7768",
+        "sourceText": "NONE: Stable chronological dialogue cue 33.",
+        "startMs": 3520,
+        "endMs": 3620,
+        "translatedText": ""
+      },
+      {
+        "id": "1670cf5a-42b2-4762-b0f7-876034b4e6f0",
+        "sourceText": "NONE: Stable chronological dialogue cue 34.",
+        "startMs": 3630,
+        "endMs": 3730,
+        "translatedText": ""
+      }
+    ],
+    "rubric": {
+      "version": "contextual-review-v1",
+      "rules": [
+        {
+          "ruleId": "source.minor_wording",
+          "example": "明确的同音错字或多余标点",
+          "counterexample": "陌生人名、方言与口语习惯本身不是错误",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "轻微错字、标点或措辞问题，意思仍明确"
+        },
+        {
+          "ruleId": "source.weak_coherence",
+          "example": "连接词略显生硬，但语意可理解",
+          "counterexample": "话题切换、引语、幽默、省略本身不构成高风险",
+          "category": "source",
+          "riskLevel": "low",
+          "description": "只有较弱的衔接疑点，没有具体含义冲突"
+        },
+        {
+          "ruleId": "source.context_inconsistency",
+          "example": "同一对象在相邻句被赋予互相冲突的行为",
+          "counterexample": "单句低相关、视角变化或引用他人观点不能证明矛盾",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "指出与具体相邻字幕的矛盾，需试听确认"
+        },
+        {
+          "ruleId": "source.suspected_omission",
+          "example": "相邻句连续列举，当前句缺少使句意成立的成分",
+          "counterexample": "视频里的空白间隔、自然停顿或口语省略不证明漏字",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "有具体衔接证据的疑似漏词或断句，无法据此证明漏识别"
+        },
+        {
+          "ruleId": "source.meaning_problem",
+          "example": "当前句出现无法合理解析的词组，邻句可提供解释线索",
+          "counterexample": "专业术语、专名、笑话不能仅因不熟悉被判错",
+          "category": "source",
+          "riskLevel": "medium",
+          "description": "具体词句导致明显理解障碍，但未达到持续崩坏证据"
+        },
+        {
+          "ruleId": "source.sustained_breakdown",
+          "example": "目标句成为无意义词串，前后两句明确延续同一说明",
+          "counterexample": "一条不相关字幕、话题变化、引用、幽默、省略或专名绝不能单独评高",
+          "category": "source",
+          "riskLevel": "high",
+          "description": "严重语义崩坏；必须有目标句及至少两条前后相邻字幕共同支持同一具体解释"
+        },
+        {
+          "ruleId": "translation.minor_wording",
+          "example": "略生硬但忠实的译法",
+          "counterexample": "合理意译与不同表达习惯不构成错误",
+          "category": "translation",
+          "riskLevel": "low",
+          "description": "译文意思保留，仅有轻微措辞或标点问题"
+        },
+        {
+          "ruleId": "translation.meaning_problem",
+          "example": "译文遗漏一个影响理解的条件",
+          "counterexample": "仅因逐字不对应不能认为意译错误",
+          "category": "translation",
+          "riskLevel": "medium",
+          "description": "明确指出原文与已有译文的具体意义、遗漏或可读性问题"
+        },
+        {
+          "ruleId": "translation.negation_contradiction",
+          "example": "原文明确禁止进入，译文变成允许进入",
+          "counterexample": "反问、引用、双重否定或上下文反转需谨慎，证据不足降级",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "有强文本证据表明关键否定、允许/禁止或肯定关系被颠倒"
+        },
+        {
+          "ruleId": "translation.key_numeric_contradiction",
+          "example": "字幕数量从 12 变为 120",
+          "counterexample": "1000m 与 1km、日期格式或无关数字不是矛盾",
+          "category": "translation",
+          "riskLevel": "high",
+          "description": "原文和已有译文的关键数量、价格、日期等明确矛盾，排除单位换算与格式变化"
+        },
+        {
+          "ruleId": "timing.minor_flow",
+          "example": "很短间隔可能使阅读衔接略生硬",
+          "counterexample": "自然停顿、换人说话或叠加字幕本身不算异常",
+          "category": "timing",
+          "riskLevel": "low",
+          "description": "时轴略影响阅读节奏，含义与阅读仍基本可用"
+        },
+        {
+          "ruleId": "timing.readability_concern",
+          "example": "较长一句在不足一秒内显示",
+          "counterexample": "短词或歌词闪现不能直接认为错误",
+          "category": "timing",
+          "riskLevel": "medium",
+          "description": "具体的显示时间/文本量关系导致明显阅读困难，需播放确认"
+        },
+        {
+          "ruleId": "timing.severe_readability",
+          "example": "40个字符只显示400ms",
+          "counterexample": "短口语/词语闪现、源文与译文合理差异不能单独评高",
+          "category": "timing",
+          "riskLevel": "high",
+          "description": "明确严重不可读：主字幕文本至少20个非空Unicode字符，且显示不超过500ms或每秒至少45字符"
+        }
+      ]
+    },
+    "translationEnabled": false
+  }
+]

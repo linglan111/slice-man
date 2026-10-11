@@ -1,0 +1,172 @@
+{
+  "source": "Anonymous generated testsrc2/time-band-color fixture, no user media or user data.",
+  "durationSeconds": 75.008,
+  "sourceBytes": 32363635,
+  "transport": {
+    "status": 206,
+    "contentRange": "bytes 0-31/6799210",
+    "acceptRanges": "bytes",
+    "length": "32",
+    "receivedBytes": 32
+  },
+  "observations": [
+    {
+      "targetSeconds": 38,
+      "bufferedBefore": [
+        [
+          0,
+          5.783
+        ]
+      ],
+      "targetWasBuffered": false,
+      "currentTime": 38,
+      "decodedFrameTime": 38,
+      "seekedEvents": 1,
+      "rgb": [
+        26,
+        35,
+        255
+      ]
+    },
+    {
+      "targetSeconds": 72,
+      "bufferedBefore": [
+        [
+          0,
+          5.783
+        ],
+        [
+          36.149,
+          41.933
+        ]
+      ],
+      "targetWasBuffered": false,
+      "currentTime": 72,
+      "decodedFrameTime": 72,
+      "seekedEvents": 1,
+      "rgb": [
+        253,
+        253,
+        0
+      ]
+    },
+    {
+      "targetSeconds": 18,
+      "bufferedBefore": [
+        [
+          0,
+          5.783
+        ],
+        [
+          36.149,
+          41.933
+        ],
+        [
+          55.833333,
+          75.008
+        ]
+      ],
+      "targetWasBuffered": false,
+      "currentTime": 18,
+      "decodedFrameTime": 18,
+      "seekedEvents": 1,
+      "rgb": [
+        27,
+        126,
+        0
+      ]
+    },
+    {
+      "targetSeconds": 2,
+      "bufferedBefore": [
+        [
+          0,
+          5.783
+        ],
+        [
+          16.916667,
+          22.051
+        ],
+        [
+          36.149,
+          41.933
+        ],
+        [
+          55.833333,
+          75.008
+        ]
+      ],
+      "targetWasBuffered": true,
+      "currentTime": 2,
+      "decodedFrameTime": 2,
+      "seekedEvents": 1,
+      "rgb": [
+        248,
+        36,
+        0
+      ]
+    },
+    {
+      "targetSeconds": 68,
+      "bufferedBefore": [
+        [
+          0,
+          5.783
+        ],
+        [
+          16.916667,
+          22.051
+        ],
+        [
+          36.149,
+          41.933
+        ],
+        [
+          55.833333,
+          75.008
+        ]
+      ],
+      "targetWasBuffered": true,
+      "currentTime": 68,
+      "decodedFrameTime": 68,
+      "seekedEvents": 1,
+      "rgb": [
+        253,
+        253,
+        0
+      ]
+    },
+    {
+      "targetSeconds": 2,
+      "bufferedBefore": [
+        [
+          0,
+          5.783
+        ],
+        [
+          16.916667,
+          22.051
+        ],
+        [
+          36.149,
+          41.933
+        ],
+        [
+          55.833333,
+          75.008
+        ]
+      ],
+      "targetWasBuffered": true,
+      "currentTime": 2,
+      "decodedFrameTime": 2,
+      "seekedEvents": 1,
+      "rgb": [
+        248,
+        36,
+        0
+      ]
+    }
+  ],
+  "playbackAdvancedAfterSubtitleJump": true,
+  "provider": "Loopback mocked recognition and translation, no native inference or paid API."
+}

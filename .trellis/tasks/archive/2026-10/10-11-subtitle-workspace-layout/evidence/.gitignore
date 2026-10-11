@@ -1,0 +1,8 @@
+# Keep native failure traces/screenshots/context, not generated test profiles,
+# installed executables, temporary media or Electron caches.
+/*-results/**
+!/*-results/**/
+!/*-results/**/trace.zip
+!/*-results/**/test-failed-*.png
+!/*-results/**/error-context.md
+!/*-results/.last-run.json
