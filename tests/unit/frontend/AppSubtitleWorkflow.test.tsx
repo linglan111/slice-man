@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../../src/renderer/src/App';
 import { savedJob, stubApi } from './app-fixtures';
@@ -26,7 +27,7 @@ describe('optional translation and subtitle repair workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: '选择当前等级' }));
     expect((screen.getByLabelText('选择字幕 1') as HTMLInputElement).checked).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: '重新识别选中' }));
-    await screen.findByText('00:00.100 → 00:01.800');
+    await within(screen.getByRole('region', { name: '分段处理' })).findByText('00:00.100 → 00:01.800');
     expect(screen.queryByLabelText('同时翻译')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '识别并替换片段' }));
     await waitFor(() => expect(api.jobs.recognizePartial).toHaveBeenCalledExactlyOnceWith({ jobId: job.id, revision: 7, target: { mode: 'selection', segmentIds: ['old-cue'] }, translate: false }));
@@ -72,16 +73,22 @@ describe('optional translation and subtitle repair workspace', () => {
 
   it('shows the server-expanded range and submits atomic recognition with translation explicitly selected', async () => {
     const previous = savedJob(); const { api } = stubApi(previous);
+    const user = userEvent.setup();
     vi.mocked(api.jobs.planReprocess).mockResolvedValue({ success: true, data: { jobId: previous.id, revision: 7, operation: 'recognize', intervals: [{ startMs: 100, endMs: 1800 }], segmentIds: ['old-cue'], affectedCount: 1 } });
     vi.mocked(api.jobs.recognizePartial).mockResolvedValue({ success: false, code: 'CANCELLED', error: 'Operation cancelled; existing content retained' });
-    render(<App />);
+    // Finish the initial project activation (including its selection-reset effect) before user interaction.
+    await act(async () => { render(<App />); });
     await screen.findByText('Corrected original.');
-    fireEvent.click(screen.getByLabelText('选择字幕 1'));
-    fireEvent.click(screen.getByRole('button', { name: '重新识别片段' }));
-    await screen.findByText('00:00.100 → 00:01.800');
+    await user.click(screen.getByLabelText('选择字幕 1'));
+    expect((screen.getByLabelText('选择字幕 1') as HTMLInputElement).checked).toBe(true);
+    await user.click(screen.getByRole('button', { name: '重新识别片段' }));
+    expect(screen.getByRole('button', { name: '勾选字幕（1）' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: '起止时间' }).getAttribute('aria-pressed')).toBe('false');
+    await waitFor(() => expect(api.jobs.planReprocess).toHaveBeenCalledExactlyOnceWith({ jobId: previous.id, revision: 7, target: { mode: 'selection', segmentIds: ['old-cue'] }, operation: 'recognize' }));
+    await within(screen.getByRole('region', { name: '分段处理' })).findByText('00:00.100 → 00:01.800');
     expect((screen.getByLabelText('同时翻译') as HTMLInputElement).checked).toBe(false);
-    fireEvent.click(screen.getByLabelText('同时翻译'));
-    fireEvent.click(screen.getByRole('button', { name: '识别并替换片段' }));
+    await user.click(screen.getByLabelText('同时翻译'));
+    await user.click(screen.getByRole('button', { name: '识别并替换片段' }));
     await waitFor(() => expect(api.jobs.recognizePartial).toHaveBeenCalledExactlyOnceWith({ jobId: previous.id, revision: 7, target: { mode: 'selection', segmentIds: ['old-cue'] }, translate: true }));
     await screen.findAllByText(/Operation cancelled/);
     expect(screen.getByText('人工校对译文。')).toBeTruthy();
@@ -116,7 +123,7 @@ describe('optional translation and subtitle repair workspace', () => {
     await screen.findByText('Corrected original.');
     fireEvent.click(screen.getByLabelText('选择字幕 1'));
     fireEvent.click(screen.getByRole('button', { name: '重新识别片段' }));
-    await screen.findByText('00:00.100 → 00:01.800');
+    await within(screen.getByRole('region', { name: '分段处理' })).findByText('00:00.100 → 00:01.800');
     fireEvent.click(screen.getByRole('button', { name: '识别并替换片段' }));
     await screen.findAllByText(/片段已取消，原字幕保留/);
     expect(screen.queryByRole('button', { name: '重试未完成阶段' })).toBeNull();
@@ -136,7 +143,7 @@ describe('optional translation and subtitle repair workspace', () => {
     await screen.findByText('Corrected original.');
     fireEvent.click(screen.getByLabelText('选择字幕 1'));
     fireEvent.click(screen.getByRole('button', { name: '重新翻译片段' }));
-    await screen.findByText('00:00.100 → 00:01.800');
+    await within(screen.getByRole('region', { name: '分段处理' })).findByText('00:00.100 → 00:01.800');
     fireEvent.click(screen.getByRole('button', { name: '翻译选定片段' }));
     await screen.findAllByText(/片段翻译失败，原字幕保留/);
     expect(screen.queryByRole('button', { name: '重试未完成阶段' })).toBeNull();
