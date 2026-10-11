@@ -1,6 +1,12 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { mkdtemp, writeFile, readFile, rm } = require("node:fs/promises");
+const {
+  mkdtemp,
+  writeFile,
+  readFile,
+  unlink,
+  rmdir,
+} = require("node:fs/promises");
 const { tmpdir } = require("node:os");
 const { join } = require("node:path");
 const {
@@ -279,7 +285,18 @@ test("HTTP failures are not mistaken for an absent release", async (t) => {
 
 test("actual installer checksum detects corruption and preparation refuses overwrite", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "slice-release-test-"));
-  t.after(() => rm(directory, { recursive: true, force: true }));
+  t.after(async () => {
+    for (const file of [
+      "Slice Man Setup 0.1.4.exe",
+      "Slice-Man-Setup-0.1.4.exe",
+      "SHA256SUMS.txt",
+    ]) {
+      await unlink(join(directory, file)).catch((error) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+    }
+    await rmdir(directory);
+  });
   await writeFile(
     join(directory, "Slice Man Setup 0.1.4.exe"),
     "test installer bytes",

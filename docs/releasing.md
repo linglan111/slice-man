@@ -36,18 +36,18 @@ git push origin HEAD:release
 
 首次源码上传到 `main` 不会发布。随后首次推送 `release` 自动构建并发布 v0.1.4。执行记录见 [Actions](https://github.com/linglan111/slice-man/actions)，安装包见 [Releases](https://github.com/linglan111/slice-man/releases)。
 
-## 手动发布与维护
+## 重试与维护
 
 使用正常的 GitHub 登录流程，不把密钥写入 shell、文档或仓库。
 
 ```powershell
-git push origin HEAD:release
-git tag v0.1.4
-git push origin v0.1.4
-gh release create v0.1.4 --verify-tag --title "Slice Man v0.1.4" --notes-file docs/releases/v0.1.4.md "dist/github-v0.1.4/Slice-Man-Setup-0.1.4.exe" "dist/github-v0.1.4/SHA256SUMS.txt"
+# 手动触发同一条验证与发布流程，仍只允许 release 分支
+gh workflow run release.yml --repo linglan111/slice-man --ref release
 ```
 
-上述手动命令用于维护场景，不应与正在执行的自动发布并行。不要用强制推送覆盖已有内容。上传后验证仓库为公开、MIT 许可证可见、README 图片和链接正确，Release 标签对应预期提交且附件名称/大小/摘要正确。若调整发布分支，必须同步更改工作流分支过滤、各阶段检查和 GitHub 发布环境规则。
+上传阶段失败时，优先在 Actions 中重新运行失败的任务，复用同一次已验证的构建附件。已建立的标签和草稿附件不允许覆盖；若构建内容改变，请使用新版本。不要绕过工作流并行创建标签或 Release，也不要用强制推送覆盖已有内容。
+
+上传后验证仓库为公开、MIT 许可证可见、README 图片和链接正确，Release 标签对应预期提交且附件名称/大小/摘要正确。若调整发布分支，必须同步更改工作流分支过滤、各阶段检查和 GitHub 发布环境规则。
 
 `private: true` 仅防止误发布到 npm，不影响 GitHub 源码开源。
 
