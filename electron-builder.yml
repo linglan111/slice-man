@@ -9,6 +9,8 @@ asar: true
 asarUnpack:
   - node_modules/better-sqlite3/**
 extraResources:
+  - from: LICENSE
+    to: notices/Slice-Man-LICENSE.txt
   - from: resources/icons
     to: icons
   - from: resources/runtime-smoke.wav
