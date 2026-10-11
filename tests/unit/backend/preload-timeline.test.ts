@@ -15,6 +15,43 @@ vi.mock("electron", () => ({
 import "../../../src/preload/index";
 
 describe("manual timeline preload", () => {
+  it("routes import mode and partial/review contracts through validated channels", async () => {
+    const api = bridge.api;
+    if (!api) throw new Error("Missing bridge");
+    bridge.invoke.mockResolvedValue({ success: true, data: null });
+    await api.jobs.importVideo({ translationEnabled: false });
+    expect(bridge.invoke).toHaveBeenLastCalledWith("jobs:importVideo", {
+      translationEnabled: false,
+    });
+    const input = {
+      jobId: "job",
+      revision: 3,
+      target: { mode: "range" as const, startMs: 1000, endMs: 2000 },
+      operation: "recognize" as const,
+    };
+    bridge.invoke.mockResolvedValue({
+      success: true,
+      data: {
+        jobId: "job",
+        revision: 3,
+        operation: "recognize",
+        intervals: [{ startMs: 900, endMs: 2100 }],
+        segmentIds: ["cue"],
+        affectedCount: 1,
+      },
+    });
+    expect(await api.jobs.planReprocess(input)).toMatchObject({
+      success: true,
+    });
+    expect(bridge.invoke).toHaveBeenLastCalledWith("jobs:planReprocess", input);
+    bridge.invoke.mockResolvedValue({
+      success: true,
+      data: { id: "malformed" },
+    });
+    expect(
+      await api.jobs.reviewSubtitles({ jobId: "job", revision: 3 }),
+    ).toMatchObject({ success: false, code: "IPC_OUTPUT_INVALID" });
+  });
   it("validates independent export settings responses and preserves picker cancellation", async () => {
     const api = bridge.api;
     if (!api) throw new Error("Missing bridge");

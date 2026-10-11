@@ -10,7 +10,8 @@ import {
   open,
 } from "node:fs/promises";
 import { join, resolve, sep, isAbsolute, dirname, basename } from "node:path";
-import type { Job } from "../../../../shared/contracts";
+import { importOptionsSchema } from "../../../../shared/contracts";
+import type { Job, ImportOptions } from "../../../../shared/contracts";
 import { AppError, checkAbort } from "../../../lib/errors";
 import { runProcess } from "../../../lib/process";
 import { downloadArtifact, extractArchive } from "../../runtime/artifacts";
@@ -82,7 +83,11 @@ type Dependencies = {
   ffmpeg: string;
   ffprobe: string;
   defaultDirectory?: string;
-  importVideo: (path: string, signal: AbortSignal) => Promise<Job>;
+  importVideo: (
+    path: string,
+    signal: AbortSignal,
+    options?: ImportOptions,
+  ) => Promise<Job>;
   probe: (path: string, signal: AbortSignal) => Promise<unknown>;
   emit: (status: DownloadStatus) => void;
   artifacts?: DownloadArtifacts;
@@ -355,7 +360,8 @@ export class DownloadService {
       }
     }
   }
-  async importUrl(rawUrl: string): Promise<Job> {
+  async importUrl(rawUrl: string, rawOptions?: ImportOptions): Promise<Job> {
+    const options = importOptionsSchema.parse(rawOptions ?? {});
     const url = onlineUrlSchema.parse(rawUrl);
     await this.status();
     if (!this.activeDirectory)
@@ -466,6 +472,7 @@ export class DownloadService {
       const job = await this.deps.importVideo(
         join(destination, finalName),
         signal,
+        options,
       );
       imported = true;
       this.update({

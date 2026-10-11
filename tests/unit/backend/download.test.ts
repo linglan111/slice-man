@@ -381,14 +381,28 @@ describe("online download boundaries", () => {
   it("downloads in controlled folders, probes before import, retains prior files", async () => {
     const f = await fixture();
     await f.service.install();
-    const first = await f.service.importUrl("https://example.org/one");
-    const second = await f.service.importUrl("https://example.org/two");
+    const first = await f.service.importUrl("https://example.org/one", {
+      translationEnabled: false,
+      sourceLanguage: "ja",
+    });
+    const second = await f.service.importUrl("https://example.org/two", {
+      translationEnabled: true,
+      targetLanguage: "zh-CN",
+    });
     expect(first.inputPath).not.toBe(second.inputPath);
     expect(await readFile(first.inputPath, "utf8")).toBe("video");
     expect(f.probe.mock.invocationCallOrder[0]).toBeLessThan(
       f.importer.mock.invocationCallOrder[0] ?? 0,
     );
     expect(f.importer).toHaveBeenCalledTimes(2);
+    expect(f.importer.mock.calls[0]?.[2]).toEqual({
+      translationEnabled: false,
+      sourceLanguage: "ja",
+    });
+    expect(f.importer.mock.calls[1]?.[2]).toEqual({
+      translationEnabled: true,
+      targetLanguage: "zh-CN",
+    });
     expect(
       (await readdir(join(f.root, "downloads"))).every(
         (n) => !n.startsWith(".partial"),

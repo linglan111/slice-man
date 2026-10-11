@@ -1,4 +1,16 @@
 import { z } from "zod";
+import { reviewReportSchema } from "./reprocessing-contracts";
+import type {
+  ImportOptions,
+  ReprocessPlan,
+  PlanReprocessInput,
+  ReprocessInput,
+  RecognizePartialInput,
+  ReviewReport,
+  ReviewSubtitlesInput,
+  AcknowledgeFindingInput,
+} from "./reprocessing-contracts";
+export * from "./reprocessing-contracts";
 import type {
   ExportSettings,
   ExportSettingsInput,
@@ -152,6 +164,8 @@ export const optionsSchema = z
     recognition: z.enum(["local", "cloud"]).default("local"),
     recognitionProfileId: idSchema.optional(),
     translationProfileId: idSchema.optional(),
+    reviewProfileId: idSchema.optional(),
+    translationEnabled: z.boolean().default(true),
     styleProfileId: idSchema.optional(),
     modelId: z.enum(["base", "small", "large-v3-turbo"]).default("base"),
     preferGpu: z.boolean().default(true),
@@ -201,6 +215,7 @@ export type Job = {
   actualBackend?: "cpu" | "gpu" | "cloud";
   previewUrl?: string;
   outputs: string[];
+  reviewReport?: ReviewReport;
 };
 export const stageSchema: z.ZodType<Stage> = z
   .object({
@@ -252,6 +267,7 @@ export const jobSchema: z.ZodType<Job> = z
     actualBackend: z.enum(["cpu", "gpu", "cloud"]).optional(),
     previewUrl: z.string().optional(),
     outputs: z.array(z.string()),
+    reviewReport: reviewReportSchema.optional(),
   })
   .strict();
 export const profileSchema = profileInputSchema
@@ -275,7 +291,7 @@ export type RuntimeStatus = {
 };
 export type ProgressEvent = {
   jobId?: string;
-  stage: StageName | "install";
+  stage: StageName | "install" | "review";
   progress: number;
   message: string;
   job?: Job;
@@ -299,7 +315,10 @@ export type AppApi = {
     saveSettings(input: DownloadSettingsInput): Promise<Result<DownloadStatus>>;
     chooseDirectory(): Promise<Result<DownloadStatus | null>>;
     install(): Promise<Result<DownloadStatus>>;
-    importUrl(input: { url: string }): Promise<Result<Job>>;
+    importUrl(input: {
+      url: string;
+      options?: ImportOptions;
+    }): Promise<Result<Job>>;
     cancel(): Promise<Result<void>>;
   };
   onDownloadStatus(handler: (status: DownloadStatus) => void): () => void;
@@ -323,7 +342,12 @@ export type AppApi = {
   jobs: {
     list(): Promise<Result<Job[]>>;
     get(id: string): Promise<Result<Job>>;
-    importVideo(): Promise<Result<Job | null>>;
+    importVideo(options?: ImportOptions): Promise<Result<Job | null>>;
+    planReprocess(input: PlanReprocessInput): Promise<Result<ReprocessPlan>>;
+    recognizePartial(input: RecognizePartialInput): Promise<Result<Job>>;
+    translatePartial(input: ReprocessInput): Promise<Result<Job>>;
+    reviewSubtitles(input: ReviewSubtitlesInput): Promise<Result<Job>>;
+    acknowledgeFinding(input: AcknowledgeFindingInput): Promise<Result<Job>>;
     updateOptions(input: {
       jobId: string;
       options: JobOptions;

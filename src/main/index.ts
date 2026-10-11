@@ -1,4 +1,11 @@
-import { app, BrowserWindow, protocol, safeStorage, dialog } from "electron";
+import {
+  app,
+  BrowserWindow,
+  protocol,
+  safeStorage,
+  dialog,
+  Menu,
+} from "electron";
 import { isE2e } from "./env-setup";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -46,6 +53,7 @@ if (app.requestSingleInstanceLock()) {
     .whenReady()
     .then(async () => {
       const root = app.getPath("userData");
+      Menu.setApplicationMenu(null);
       const resourceRoot = app.isPackaged
         ? process.resourcesPath
         : join(app.getAppPath(), "resources");
@@ -65,7 +73,9 @@ if (app.requestSingleInstanceLock()) {
         height: 960,
         minWidth: 1050,
         minHeight: 700,
-        title: "Slice Man 视频翻译字幕",
+        title: "Slice Man 字幕工作室",
+        icon: join(resourceRoot, "icons", "icon.ico"),
+        autoHideMenuBar: true,
         webPreferences: {
           preload: join(__dirname, "../preload/index.js"),
           contextIsolation: true,
@@ -74,6 +84,7 @@ if (app.requestSingleInstanceLock()) {
         },
       });
       mainWindow = window;
+      window.setMenu(null);
       window.on("closed", () => {
         mainWindow = undefined;
       });
@@ -119,7 +130,8 @@ if (app.requestSingleInstanceLock()) {
         defaultDirectory: isE2e
           ? join(root, "downloads")
           : join(app.getPath("videos"), "Slice Man"),
-        importVideo: (path, signal) => currentJobs.importVideo(path, signal),
+        importVideo: (path, signal, options) =>
+          currentJobs.importVideo(path, signal, options),
         probe: (path, signal) => media.probe(path, signal),
         emit: (status) => {
           if (!window.isDestroyed())

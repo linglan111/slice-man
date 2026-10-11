@@ -54,7 +54,12 @@ const api: AppApi = {
   jobs: {
     list: () => invoke("jobs:list"),
     get: (id) => invoke("jobs:get", id),
-    importVideo: () => invoke("jobs:importVideo"),
+    importVideo: (options) => invoke("jobs:importVideo", options),
+    planReprocess: (input) => invoke("jobs:planReprocess", input),
+    recognizePartial: (input) => invoke("jobs:recognizePartial", input),
+    translatePartial: (input) => invoke("jobs:translatePartial", input),
+    reviewSubtitles: (input) => invoke("jobs:reviewSubtitles", input),
+    acknowledgeFinding: (input) => invoke("jobs:acknowledgeFinding", input),
     updateOptions: (input) => invoke("jobs:updateOptions", input),
     recognize: (id) => invoke("jobs:recognize", id),
     recognizeAgain: (input) => invoke("jobs:recognizeAgain", input),

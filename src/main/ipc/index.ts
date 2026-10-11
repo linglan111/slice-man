@@ -4,6 +4,12 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   idSchema,
+  importOptionsSchema,
+  planReprocessInputSchema,
+  recognizePartialInputSchema,
+  reprocessInputSchema,
+  reviewSubtitlesInputSchema,
+  acknowledgeFindingInputSchema,
   optionsSchema,
   segmentSchema,
   newSegmentSchema,
@@ -131,8 +137,10 @@ export function registerIpc(services: Services): () => void {
   handle("download:install", empty, () => services.download.install());
   handle(
     "download:importUrl",
-    z.object({ url: onlineUrlSchema }).strict(),
-    ({ url }) => services.download.importUrl(url),
+    z
+      .object({ url: onlineUrlSchema, options: importOptionsSchema.optional() })
+      .strict(),
+    ({ url, options }) => services.download.importUrl(url, options),
   );
   handle("download:cancel", empty, () => services.download.cancel());
   handle("profiles:list", empty, () => services.store.listProfiles());
@@ -206,27 +214,46 @@ export function registerIpc(services: Services): () => void {
   handle("runtime:cancel", empty, () => installController?.abort());
   handle("jobs:list", empty, () => services.store.listJobs());
   handle("jobs:get", idSchema, (id) => services.store.getJob(id));
-  handle("jobs:importVideo", empty, async () => {
-    const path = isE2e
-      ? imports.shift()
-      : (
-          await dialog.showOpenDialog(services.window, {
-            title: "选择视频",
-            properties: ["openFile"],
-            filters: [
-              {
-                name: "视频",
-                extensions: ["mp4", "mkv", "mov", "webm", "avi", "m4v"],
-              },
-            ],
-          })
-        ).filePaths[0];
-    return path ? services.jobs.importVideo(path) : null;
-  });
+  handle(
+    "jobs:importVideo",
+    importOptionsSchema.optional(),
+    async (options) => {
+      const path = isE2e
+        ? imports.shift()
+        : (
+            await dialog.showOpenDialog(services.window, {
+              title: "选择视频",
+              properties: ["openFile"],
+              filters: [
+                {
+                  name: "视频",
+                  extensions: ["mp4", "mkv", "mov", "webm", "avi", "m4v"],
+                },
+              ],
+            })
+          ).filePaths[0];
+      return path ? services.jobs.importVideo(path, undefined, options) : null;
+    },
+  );
   handle(
     "jobs:updateOptions",
     jobId.extend({ options: optionsSchema }),
     (input) => services.jobs.updateOptions(input.jobId, input.options),
+  );
+  handle("jobs:planReprocess", planReprocessInputSchema, (input) =>
+    services.jobs.planReprocess(input),
+  );
+  handle("jobs:recognizePartial", recognizePartialInputSchema, (input) =>
+    services.jobs.recognizePartial(input),
+  );
+  handle("jobs:translatePartial", reprocessInputSchema, (input) =>
+    services.jobs.translatePartial(input),
+  );
+  handle("jobs:reviewSubtitles", reviewSubtitlesInputSchema, (input) =>
+    services.jobs.reviewSubtitles(input),
+  );
+  handle("jobs:acknowledgeFinding", acknowledgeFindingInputSchema, (input) =>
+    services.jobs.acknowledgeFinding(input),
   );
   handle("jobs:recognize", idSchema, (id) => services.jobs.recognize(id));
   handle(

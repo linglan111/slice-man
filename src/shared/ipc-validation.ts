@@ -3,6 +3,7 @@ import { exportSettingsSchema } from "./export-contracts";
 import { downloadStatusSchema } from "./download-contracts";
 import {
   jobSchema,
+  reprocessPlanSchema,
   profileSchema,
   type ProgressEvent,
   type RuntimeStatus,
@@ -38,6 +39,7 @@ export const progressSchema: z.ZodType<ProgressEvent> = z
       "preview",
       "export",
       "install",
+      "review",
     ]),
     progress: z.number().min(0).max(1),
     message: z.string(),
@@ -68,6 +70,11 @@ const outputSchemas: Record<string, z.ZodType> = {
   "jobs:recognize": jobSchema,
   "jobs:recognizeAgain": jobSchema,
   "jobs:translate": jobSchema,
+  "jobs:planReprocess": reprocessPlanSchema,
+  "jobs:recognizePartial": jobSchema,
+  "jobs:translatePartial": jobSchema,
+  "jobs:reviewSubtitles": jobSchema,
+  "jobs:acknowledgeFinding": jobSchema,
   "jobs:editSegment": jobSchema,
   "jobs:addSegment": jobSchema,
   "jobs:removeSegment": jobSchema,

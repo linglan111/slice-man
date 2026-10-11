@@ -1,3 +1,4 @@
+import { refreshReview, staleReview } from "../services/jobs/lib/reprocessing";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq, desc } from "drizzle-orm";
@@ -71,7 +72,11 @@ export class Store {
       .from(schema.jobs)
       .orderBy(desc(schema.jobs.updatedAt))
       .all()
-      .map((row) => jobSchema.parse(JSON.parse(row.payload)));
+      .map((row) => {
+        const job = jobSchema.parse(JSON.parse(row.payload));
+        refreshReview(job);
+        return job;
+      });
   }
   getJob(id: string): Job {
     const row = this.db
@@ -80,9 +85,12 @@ export class Store {
       .where(eq(schema.jobs.id, id))
       .get();
     if (!row) throw new AppError("NOT_FOUND", "找不到视频任务");
-    return jobSchema.parse(JSON.parse(row.payload));
+    const job = jobSchema.parse(JSON.parse(row.payload));
+    refreshReview(job);
+    return job;
   }
   saveJob(job: Job): Job {
+    refreshReview(job);
     jobSchema.parse(job);
     job.updatedAt = Date.now();
     this.db.transaction((tx) => {
@@ -229,6 +237,13 @@ export class Store {
       const translationChanged =
         recognitionChanged || job.options.translationProfileId === id;
       const styleChanged = job.options.styleProfileId === id;
+      const reviewChanged =
+        job.options.reviewProfileId === id ||
+        job.reviewReport?.profileId === id;
+      if (reviewChanged && job.reviewReport) {
+        staleReview(job);
+        this.saveJob(job);
+      }
       if (!recognitionChanged && !translationChanged && !styleChanged) continue;
       if (recognitionChanged)
         job.stages.recognize = {
@@ -289,6 +304,7 @@ export class Store {
     }
   }
   removeProfile(id: string): void {
+    this.invalidateProfileDependents(id);
     this.db.delete(schema.profiles).where(eq(schema.profiles.id, id)).run();
     this.sessionKeys.delete(id);
   }

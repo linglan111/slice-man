@@ -169,7 +169,7 @@ describe("independent narrow IPC trust boundary", () => {
     const f = fixture();
     f.dispose();
     expect(new Set(mocks.removed)).toEqual(new Set(mocks.handlers.keys()));
-    expect(mocks.removed).toHaveLength(32);
+    expect(mocks.removed).toHaveLength(37);
   });
   it("validates export defaults and passes only operation choices, using configured native-dialog location", async () => {
     const f = fixture();

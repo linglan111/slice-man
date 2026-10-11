@@ -1,4 +1,8 @@
 import {
+  primarySubtitleText,
+  subtitleText,
+} from "../../../../shared/subtitle-content";
+import {
   styleSchema,
   type Segment,
   type SubtitleStyle,
@@ -20,10 +24,6 @@ function time(ms: number, ass = false): string {
   const m = Math.floor(value / 60000) % 60;
   const s = Math.floor(value / 1000) % 60;
   return `${ass ? h : String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}${ass ? "." : ","}${String(ass ? Math.floor((value % 1000) / 10) : value % 1000).padStart(ass ? 2 : 3, "0")}`;
-}
-function displayed(s: Segment, bilingual: boolean): string {
-  const target = s.translatedText || s.sourceText;
-  return bilingual && s.translatedText ? `${target}\n${s.sourceText}` : target;
 }
 function wrap(text: string, max: number): string {
   return text
@@ -55,6 +55,7 @@ export function compileSubtitles(
   geometry: { width: number; height: number; durationMs: number },
   bilingual: boolean,
   format: "ass" | "srt" | "vtt",
+  translationEnabled = true,
 ): string {
   const style = styleSchema.parse(rawStyle);
   const cues = validateTimeline(segments, geometry.durationMs);
@@ -62,7 +63,7 @@ export function compileSubtitles(
     const body = cues
       .map(
         (s, i) =>
-          `${format === "srt" ? `${i + 1}\n` : ""}${time(s.startMs).replace(",", format === "vtt" ? "." : ",")} --> ${time(s.endMs).replace(",", format === "vtt" ? "." : ",")}\n${displayed(s, bilingual).replace(/-->/g, "→")}\n`,
+          `${format === "srt" ? `${i + 1}\n` : ""}${time(s.startMs).replace(",", format === "vtt" ? "." : ",")} --> ${time(s.endMs).replace(",", format === "vtt" ? "." : ",")}\n${subtitleText(s, translationEnabled, bilingual).replace(/-->/g, "→")}\n`,
       )
       .join("\n");
     return `${format === "vtt" ? "WEBVTT\n\n" : ""}${body}`;
@@ -89,7 +90,7 @@ export function compileSubtitles(
     )}${style.shadow.color.slice(5, 7)}${style.shadow.color.slice(3, 5)}${style.shadow.color.slice(1, 3)},${bold},0,0,0,100,100,0,0,1,${(geometry.height * style.outlineWidthRatio).toFixed(2)},0,${alignment},${marginX},${marginX},${margin},1\n\n[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n`;
   const events = cues.map((s) => {
     let target = wrap(
-      s.translatedText || s.sourceText,
+      primarySubtitleText(s, translationEnabled),
       Math.max(
         1,
         Math.floor((geometry.width * style.layout.maxWidthRatio) / size),
@@ -115,7 +116,7 @@ export function compileSubtitles(
         );
       }
     }
-    if (bilingual && s.translatedText) {
+    if (translationEnabled && bilingual && s.translatedText) {
       target = wrap(
         s.sourceText,
         Math.max(
