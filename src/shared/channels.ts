@@ -1,0 +1,33 @@
+export const IPC_CHANNELS = {
+  exportSettings: ["status", "saveSettings", "chooseDirectory"],
+  download: [
+    "status",
+    "saveSettings",
+    "chooseDirectory",
+    "install",
+    "importUrl",
+    "cancel",
+  ],
+  profiles: ["list", "save", "remove", "test"],
+  runtime: ["status", "install", "cancel"],
+  jobs: [
+    "list",
+    "get",
+    "importVideo",
+    "updateOptions",
+    "recognize",
+    "recognizeAgain",
+    "translate",
+    "editSegment",
+    "addSegment",
+    "removeSegment",
+    "setStyle",
+    "designStyle",
+    "preview",
+    "playback",
+    "export",
+    "cancel",
+  ],
+} as const;
+export const PROGRESS_CHANNEL = "app:progress";
+export const DOWNLOAD_STATUS_CHANNEL = "app:download-status";

@@ -1,0 +1,15 @@
+:root {
+  --color-background: #10161f;
+  --color-panel: #18212d;
+  --color-sidebar: #121a25;
+  --color-surface: #202c3b;
+  --color-border: #2a3645;
+  --color-text: #eef2f5;
+  --color-muted: #99a8ba;
+  --color-primary: #a8e2cd;
+  --color-primary-text: #122b24;
+  --color-danger: #f1a0a4;
+  --radius: 12px;
+  --font-sans: 'Segoe UI', 'Microsoft YaHei UI', 'Noto Sans CJK SC', sans-serif;
+  color-scheme: dark;
+}

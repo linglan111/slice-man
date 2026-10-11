@@ -1,0 +1,29 @@
+appId: local.sliceman.desktop
+productName: Slice Man
+directories:
+  output: dist
+files:
+  - out/**/*
+  - package.json
+asar: true
+asarUnpack:
+  - node_modules/better-sqlite3/**
+extraResources:
+  - from: resources/runtime-smoke.wav
+    to: runtime-smoke.wav
+  - from: resources/media
+    to: media
+  - from: resources/fonts
+    to: fonts
+  - from: resources/notices
+    to: notices
+win:
+  target:
+    - target: nsis
+      arch: x64
+  signAndEditExecutable: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+npmRebuild: true
