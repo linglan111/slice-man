@@ -1,0 +1,17 @@
+{
+  "realNativeDownloader": true,
+  "loopbackProviders": true,
+  "paidRequests": 0,
+  "localImportTranslation": true,
+  "URLImportBothModes": true,
+  "selectedTranslationPreservesSourceTimingAndOtherCues": true,
+  "simultaneousTranslationOptIn": true,
+  "toggleRetainsTranslations": true,
+  "counters": {
+    "recognition": 2,
+    "translation": 3,
+    "style": 0,
+    "connection": 0,
+    "review": 0
+  }
+}

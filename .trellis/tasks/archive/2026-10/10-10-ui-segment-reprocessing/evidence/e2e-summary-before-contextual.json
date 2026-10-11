@@ -1,0 +1,63 @@
+{
+  "distinctTests": 19,
+  "passed": 19,
+  "result": "All 19 distinct task and affected regression tests passed across multiple batches. Earlier failing logs are retained; the passing follow-up batches supersede those specific failures.",
+  "batches": [
+    {
+      "command": "npx playwright test tests/e2e/desktop.spec.ts tests/e2e/inline-subtitles.spec.ts tests/e2e/live-captions.spec.ts tests/e2e/recognition-reset.spec.ts tests/e2e/seeking.spec.ts tests/e2e/download.spec.ts tests/e2e/download-settings.spec.ts tests/e2e/export-settings.spec.ts",
+      "result": "Initial affected regression run: 9 passed, 7 failed. Six failures were the export accessible label mismatch, fixed and passed in regression-e2e.log; seeking sampled letterboxing, fixed without relaxing the independent frame-color assertion. Its successful rerun is in final-task-e2e.log.",
+      "initialPassedTests": [
+        "restart recovers interrupted work and missing original media preserves corrected subtitles",
+        "material provider edits invalidate dependencies while rename preserves completion",
+        "recoverable API failure, cancel and invalid style preserve corrections (later explicit retry adaptation rechecked)",
+        "real CPU runtime install and Whisper inference, failed/cancelled update rollback",
+        "actual NTFS directory denial retains download settings/files",
+        "download native directory, format/codec/resolution transforms, no upscale and cancellation",
+        "online tool integrity/cancel/rollback, download/import playback and restart",
+        "lyric following, overlap/gaps/manual scrolling/typing and busy edit guards",
+        "live captions, text edits, bilingual updates, native controls and fullscreen"
+      ]
+    },
+    {
+      "log": "regression-e2e.log",
+      "result": "7 passed: six previously failing export/desktop/inline/reset regressions plus the translated local/URL import and partial translation test."
+    },
+    {
+      "log": "final-task-e2e.log",
+      "result": "4 passed: task original-only workflow, task layout with readable inline editor, task translated import workflow and independent decoded seek regression. One legacy generic retry selector failed after the approved retry behavior change; its adapted passing test is in final-layout-retry-e2e.log."
+    },
+    {
+      "log": "final-layout-retry-e2e.log",
+      "result": "2 passed: strengthened layout checks for both inline editor and reprocessing panel at default/minimum native windows, and explicit full translation retry with no additional recognition."
+    }
+  ],
+  "sourceOnlyEvidence": {
+    "directory": "source-only-proof",
+    "files": ["anonymous-source.mp4", "libass-reference.png", "source-only.srt", "source-only.ass", "source-only.vtt", "source-only.mp4", "source-only.mkv"],
+    "translationRequests": 0,
+    "recognitionRequests": 7,
+    "reviewRequests": 3,
+    "sourceHashPreserved": true,
+    "windowedAndNativeFullscreen": true,
+    "burnedSubtitleGlyphsMatchSourceOnlyLibassReference": true
+  },
+  "layoutEvidence": {
+    "nativeWindowSizes": ["1440x960", "1050x700"],
+    "sidebarStates": ["expanded", "collapsed"],
+    "portraitMedia": true,
+    "realCancellationBanner": true,
+    "videoHeightGreaterThanPixels": 100,
+    "proofreadingHeightGreaterThanPixels": 70,
+    "inlineEditorAndProcessingPanelHeightAtLeastPixels": 60,
+    "rangeInputsPlanAndExecuteRemainAccessibleByLocalScrolling": true,
+    "documentScrollY": 0,
+    "nativeMenuAbsentAfterAlt": true,
+    "nativeSelectCopyPaste": true,
+    "screenshots": ["layout-1050x700-expanded-portrait-inline.png", "layout-1050x700-collapsed-portrait-inline.png", "layout-1050x700-expanded-reprocess.png", "layout-1050x700-collapsed-reprocess.png"]
+  },
+  "limitations": [
+    "Speech/text service HTTP fixtures are deterministic loopback responses, proving workflow behavior rather than linguistic accuracy or live paid-provider compatibility.",
+    "The existing CPU installation regression runs actual native Whisper inference; original-only scoped workflow ASR remains mocked while real FFmpeg cropping/encoding and SQLite/preload/IPC are exercised.",
+    "GPU hardware, external live provider and packaged installer/icon checks are separate coordinator/backend-owned evidence; they are not claimed by these 19 desktop tests."
+  ]
+}

@@ -1,0 +1,24 @@
+[
+  {
+    "message": "chore: track existing application baseline",
+    "oid": "a67a8533e4b90735f7d2a53be95493b5dbacaf77",
+    "files": 159
+  },
+  {
+    "message": "feat: add optional translation and contextual subtitle repair",
+    "oid": "9c15f0c51a8e70ca72d4b74db892e130866c459d",
+    "files": 19
+  },
+  {
+    "message": "feat: refine subtitle workspace and application identity",
+    "oid": "748b1346f1c54a4dc83a14f74042fc222efc7bc2",
+    "files": 48,
+    "approvedPaths": 51
+  },
+  {
+    "message": "docs: define subtitle review and reprocessing contracts",
+    "oid": "d744c4afd88a9861ff3d1c19719ae5cc1aee0eb2",
+    "files": 7,
+    "approvedPaths": 7
+  }
+]

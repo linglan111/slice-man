@@ -1,0 +1,14 @@
+{"file":".trellis/spec/shared/code-quality.md","reason":"Required TypeScript quality and verification rules"}
+{"file":".trellis/spec/shared/subtitle-contracts.md","reason":"Revision guards, subtitle timing, provider contracts and atomic content updates"}
+{"file":".trellis/spec/shared/native-runtime-testing.md","reason":"Electron ABI, isolated runtime and safe package/media verification"}
+{"file":".trellis/spec/shared/media-streaming.md","reason":"Actual playback/seek behavior and source media isolation"}
+{"file":".trellis/spec/frontend/css-design.md","reason":"Design tokens, modular styles and accessible bounded layout"}
+{"file":".trellis/spec/frontend/live-subtitle-preview.md","reason":"Inline edits, live/fullscreen captions, lyric follow and native controls"}
+{"file":".trellis/spec/frontend/react-pitfalls.md","reason":"State/effect cleanup and async UI correctness"}
+{"file":".trellis/spec/backend/api-module.md","reason":"Reusable services and thin validated IPC boundary"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Transaction failures and atomic publication"}
+{"file":".trellis/spec/backend/online-download.md","reason":"URL import options, cancellation and final-file ownership"}
+{"file":".trellis/spec/backend/export-preferences.md","reason":"Preserve independent export defaults and subtitle-only paths"}
+{"file":".trellis/tasks/10-10-ui-segment-reprocessing/research-initial.md","reason":"Repository evidence and resolved product decisions"}
+{"file": ".trellis/spec/shared/subtitle-review-reprocessing.md", "reason": "Review optional translation and atomic partial publication invariants"}
+{"file": ".trellis/tasks/10-10-ui-segment-reprocessing/review-criteria.md", "reason": "Check complete per-cue grades, stable rules and context invalidation"}

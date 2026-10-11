@@ -1,0 +1,85 @@
+resources/notices/FFmpeg-BUILD-README.txt:9: trailing whitespace.
++release-essentials build configuration: 
+resources/notices/FFmpeg-BUILD-README.txt:789: trailing whitespace.
++release-essentials external libraries' versions: 
+resources/notices/FFmpeg-BUILD-README.txt:823: new blank line at EOF.
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:355: trailing whitespace.
++2. The origin of this software must not be misrepresented; you must 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:356: trailing whitespace.
++   not claim that you wrote the original software.  If you use this 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:357: trailing whitespace.
++   software in a product, an acknowledgment in the product 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:363: trailing whitespace.
++4. The name of the author may not be used to endorse or promote 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:364: trailing whitespace.
++   products derived from this software without specific prior written 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:739: trailing whitespace.
++listed in the bullets below are 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:2698: trailing whitespace.
++  0. Additional Definitions. 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:2799: trailing whitespace.
++       Version. 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3580: trailing whitespace.
++documentation is licensed as follows: 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3584: trailing whitespace.
++    Permission is hereby granted, free of charge, to any person 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3585: trailing whitespace.
++    obtaining a copy of this software and associated documentation 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3586: trailing whitespace.
++    files (the "Software"), to deal in the Software without 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3587: trailing whitespace.
++    restriction, including without limitation the rights to use, 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3588: trailing whitespace.
++    copy, modify, merge, publish, distribute, sublicense, and/or 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3589: trailing whitespace.
++    sell copies of the Software, and to permit persons to whom the 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3592: trailing whitespace.
++    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3593: trailing whitespace.
++    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3594: trailing whitespace.
++    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3595: trailing whitespace.
++    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3596: trailing whitespace.
++    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3597: trailing whitespace.
++    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3615: trailing whitespace.
++* Redistributions of source code must retain the above copyright notice, this 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3617: trailing whitespace.
++* Redistributions in binary form must reproduce the above copyright notice, 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3618: trailing whitespace.
++  this list of conditions and the following disclaimer in the documentation 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3620: trailing whitespace.
++* Neither the name of the copyright holder nor the names of its contributors may 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3621: trailing whitespace.
++  be used to endorse or promote products derived from this software without 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3624: trailing whitespace.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3625: trailing whitespace.
++ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3626: trailing whitespace.
++WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3627: trailing whitespace.
++DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3628: trailing whitespace.
++LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3629: trailing whitespace.
++CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3630: trailing whitespace.
++GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3631: trailing whitespace.
++HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+resources/notices/yt-dlp-THIRD-PARTY-LICENSES.txt:3632: trailing whitespace.
++LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT 
+src/renderer/src/App.tsx:200: new blank line at EOF.
+src/renderer/src/components/ExportDialog.tsx:44: new blank line at EOF.
+src/renderer/src/components/JobSettings.tsx:30: new blank line at EOF.
+src/renderer/src/components/ProfileEditor.tsx:50: new blank line at EOF.
+src/renderer/src/components/ProfileManager.tsx:35: new blank line at EOF.
+src/renderer/src/components/RuntimeDialog.tsx:28: new blank line at EOF.
+src/renderer/src/components/SegmentEditor.tsx:45: new blank line at EOF.
+src/renderer/src/components/StylePanel.tsx:26: new blank line at EOF.
+tests/e2e/deepseek-live.spec.ts:208: new blank line at EOF.
+tests/e2e/desktop.spec.ts:276: new blank line at EOF.

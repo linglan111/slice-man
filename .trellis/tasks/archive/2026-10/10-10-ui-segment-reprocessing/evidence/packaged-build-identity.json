@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "scope": "Final contextual four-grade review and corrected minimum-window layout build",
+  "checks": [
+    {
+      "file": "out/main/index.js",
+      "sha256": "dc56194fe2cbd174ac1a60244a68c0cd33eb2a87e486cb65cadfb5683e4b5d62",
+      "packageSha256": "dc56194fe2cbd174ac1a60244a68c0cd33eb2a87e486cb65cadfb5683e4b5d62"
+    },
+    {
+      "file": "out/preload/index.js",
+      "sha256": "6d345c90a4fbaeac03a27a6f4c866a94ef3b1178bb6378414b82a4421e0da577",
+      "packageSha256": "6d345c90a4fbaeac03a27a6f4c866a94ef3b1178bb6378414b82a4421e0da577"
+    },
+    {
+      "file": "out/renderer/index.html",
+      "sha256": "2926976aa7639128ca01f7828f9ab7b159be1edefb39f2b64a5b367f6b511fca",
+      "packageSha256": "2926976aa7639128ca01f7828f9ab7b159be1edefb39f2b64a5b367f6b511fca"
+    },
+    {
+      "file": "out/renderer/assets/index-BHqZnTWx.js",
+      "sha256": "2264091139f5fd8b270ac4bb933a7b3ea4a8ffa1913241b732ca99d76708af9b",
+      "packageSha256": "2264091139f5fd8b270ac4bb933a7b3ea4a8ffa1913241b732ca99d76708af9b"
+    },
+    {
+      "file": "out/renderer/assets/index-D2zVu9cU.css",
+      "sha256": "a8a7ad928a6af1d38302d2f88019866adbd9913e39cafd01c1d1a58ede47cdaa",
+      "packageSha256": "a8a7ad928a6af1d38302d2f88019866adbd9913e39cafd01c1d1a58ede47cdaa"
+    }
+  ],
+  "iconSizes": [
+    16,
+    24,
+    32,
+    48,
+    64,
+    128,
+    256
+  ],
+  "packagedIcoSHA256": "29d540457038687eb9f67f59edd0255e73a38f12704dd9e0c8db2cfe27d60aba",
+  "sharedSvgIdentity": true,
+  "installer": {
+    "path": "F:\\Code\\slice man\\dist\\ui-segment-reprocessing\\Slice Man Setup 0.1.4.exe",
+    "sha256": "e7f4e8a90455a93c2bb7a2809951223158100f8fd653738ef6fc5d2b985a6ec4",
+    "bytes": 186130093
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "status": "skipped",
+  "applicationVersion": "0.1.4",
+  "mode": "inspect",
+  "inspection": {
+    "status": "skipped",
+    "reason": "Existing Slice Man installation/registry/shortcut/process would be affected; left untouched.",
+    "existing": [],
+    "shortcutCollisions": [
+      "C:\\Users\\a1519\\Desktop\\Slice Man.lnk",
+      "C:\\Users\\a1519\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Slice Man.lnk"
+    ],
+    "runningProcesses": []
+  },
+  "note": "Read-only preflight skipped because an existing app/shortcut/registration would be affected; no installation or uninstallation was performed."
+}

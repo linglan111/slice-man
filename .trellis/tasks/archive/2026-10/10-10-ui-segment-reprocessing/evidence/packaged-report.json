@@ -1,0 +1,71 @@
+{
+  "status": "passed",
+  "host": {
+    "packaged": true,
+    "userData": "F:\\Code\\slice man\\.native-smoke\\packaged-user-data",
+    "appPath": "F:\\Code\\slice man\\dist\\ui-segment-reprocessing\\win-unpacked\\resources\\app.asar",
+    "safeStorage": true,
+    "versions": {
+      "node": "24.19.0",
+      "acorn": "8.17.0",
+      "ada": "3.4.4",
+      "amaro": "1.1.10",
+      "ares": "1.34.6",
+      "brotli": "1.2.0",
+      "cldr": "48.0",
+      "icu": "78.2",
+      "llhttp": "9.4.3",
+      "merve": "1.2.2",
+      "modules": "146",
+      "napi": "10",
+      "nbytes": "0.1.4",
+      "ncrypto": "0.0.1",
+      "nghttp2": "1.69.0",
+      "nghttp3": "",
+      "ngtcp2": "",
+      "openssl": "0.0.0",
+      "simdjson": "4.6.4",
+      "simdutf": "7.7.0",
+      "sqlite": "3.53.3",
+      "tz": "2025c",
+      "undici": "7.29.0",
+      "unicode": "17.0",
+      "uv": "1.52.1",
+      "uvwasi": "0.0.23",
+      "v8": "14.8.178.38-electron.0",
+      "zlib": "1.3.2.1-motley",
+      "zstd": "1.6.0",
+      "electron": "42.11.11",
+      "chrome": "148.0.7778.280"
+    }
+  },
+  "profileCount": 0,
+  "runtime": {
+    "installed": false,
+    "cpuReady": false,
+    "gpuReady": false,
+    "actualBackend": "unavailable",
+    "message": "尚未安装本地识别；选择模型并点击一键安装。",
+    "installedModels": [],
+    "gpuName": "NVIDIA GeForce RTX 5070",
+    "totalMemoryGb": 47,
+    "catalog": [
+      {
+        "id": "base",
+        "name": "轻量 · Base（多语言）",
+        "sizeBytes": 147951465
+      },
+      {
+        "id": "small",
+        "name": "均衡 · Small（多语言）",
+        "sizeBytes": 487601967
+      },
+      {
+        "id": "large-v3-turbo",
+        "name": "高质量 · Large v3 Turbo",
+        "sizeBytes": 1624555275
+      }
+    ]
+  },
+  "note": "Real unpacked packaged app startup, native persistence via IPC, narrow renderer preload, native module/fonts/media/notices resource checks. Not a clean Windows installation test."
+}

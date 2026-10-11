@@ -1,0 +1,274 @@
+[
+  {
+    "path": "README.md",
+    "kind": "modified"
+  },
+  {
+    "path": "electron-builder.yml",
+    "kind": "modified"
+  },
+  {
+    "path": "package.json",
+    "kind": "modified"
+  },
+  {
+    "path": "scripts/generate-app-icons.cjs",
+    "kind": "added"
+  },
+  {
+    "path": "src/main/db/store.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/main/index.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/main/ipc/index.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/main/services/download/lib/download-service.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/main/services/jobs/lib/job-service.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/main/services/jobs/lib/reprocessing.ts",
+    "kind": "added"
+  },
+  {
+    "path": "src/main/services/subtitles/lib/compiler.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/preload/index.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/App.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/assets/app-icon.svg",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/components/Icon.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/components/ImportOptions.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/components/JobSettings.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/components/LiveVideoPreview.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/components/LocalImportDialog.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/components/OnlineImportDialog.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/components/ReprocessingPanel.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/components/ReviewGrade.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/components/ReviewRubricHelp.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/components/SegmentEditor.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/components/StylePanel.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/components/SubtitleList.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/lib/live-captions.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/lib/review-presentation.ts",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/styles/editor-layout.css",
+    "kind": "added"
+  },
+  {
+    "path": "src/renderer/src/styles/index.css",
+    "kind": "modified"
+  },
+  {
+    "path": "src/renderer/src/styles/review-grades.css",
+    "kind": "added"
+  },
+  {
+    "path": "src/shared/channels.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/shared/contracts.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/shared/ipc-validation.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "src/shared/reprocessing-contracts.ts",
+    "kind": "added"
+  },
+  {
+    "path": "src/shared/review-rubric.ts",
+    "kind": "added"
+  },
+  {
+    "path": "src/shared/subtitle-content.ts",
+    "kind": "added"
+  },
+  {
+    "path": "tests/e2e/contextual-review.spec.ts",
+    "kind": "added"
+  },
+  {
+    "path": "tests/e2e/deepseek-live.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/desktop.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/download-helpers.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/download-real.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/download-settings.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/download.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/export-original-web-codecs.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/export-settings.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/gpu-helpers.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/gpu-native.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/helpers.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/inline-subtitles.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/live-captions.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/recognition-reset.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/seeking-helpers.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/seeking.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/single-instance.spec.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/e2e/subtitle-workspace.spec.ts",
+    "kind": "added"
+  },
+  {
+    "path": "tests/integration/backend/reprocessing.test.ts",
+    "kind": "added"
+  },
+  {
+    "path": "tests/unit/backend/download.test.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/unit/backend/ipc-check.test.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/unit/backend/preload-timeline.test.ts",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/unit/backend/review-assessments.test.ts",
+    "kind": "added"
+  },
+  {
+    "path": "tests/unit/frontend/AppInlineSubtitles.test.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/unit/frontend/AppSubtitleWorkflow.test.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "tests/unit/frontend/ExportPreferences.test.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/unit/frontend/LiveVideoPreview.test.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/unit/frontend/SubtitleList.test.tsx",
+    "kind": "modified"
+  },
+  {
+    "path": "tests/unit/frontend/SubtitleReviewGrades.test.tsx",
+    "kind": "added"
+  },
+  {
+    "path": "tests/unit/frontend/app-fixtures.ts",
+    "kind": "modified"
+  }
+]

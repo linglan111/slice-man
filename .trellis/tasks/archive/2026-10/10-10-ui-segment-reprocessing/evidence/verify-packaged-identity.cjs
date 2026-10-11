@@ -1,0 +1,26 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const asar = require('@electron/asar');
+const evidence = __dirname;
+const app = path.resolve('dist/ui-segment-reprocessing/win-unpacked');
+const archive = path.join(app, 'resources/app.asar');
+const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
+const files = ['out/main/index.js', 'out/preload/index.js', 'out/renderer/index.html'];
+files.push(...fs.readdirSync('out/renderer/assets').filter((name) => /^index-.*\.(js|css)$/.test(name)).map((name) => 'out/renderer/assets/' + name));
+const checks = files.map((file) => {
+  const sha256 = hash(fs.readFileSync(file));
+  const packageSha256 = hash(asar.extractFile(archive, path.normalize(file)));
+  if (sha256 !== packageSha256) throw new Error('Packaged bytes differ: ' + file);
+  return {file, sha256, packageSha256};
+});
+const ico = fs.readFileSync('resources/icons/icon.ico');
+const packagedIcoSHA256 = hash(fs.readFileSync(path.join(app, 'resources/icons/icon.ico')));
+if (hash(ico) !== packagedIcoSHA256) throw new Error('Packaged window icon differs');
+const iconSizes = Array.from({length: ico.readUInt16LE(4)}, (_, i) => ico[6 + i * 16] || 256);
+const sharedSvgIdentity = hash(fs.readFileSync('resources/icons/icon.svg')) === hash(fs.readFileSync('src/renderer/src/assets/app-icon.svg'));
+if (!sharedSvgIdentity) throw new Error('Renderer icon differs from canonical asset');
+const installer = path.resolve('dist/ui-segment-reprocessing/Slice Man Setup 0.1.4.exe');
+const report = {status: 'passed', scope: 'Final contextual four-grade review and corrected minimum-window layout build', checks, iconSizes, packagedIcoSHA256, sharedSvgIdentity, installer: {path: installer, sha256: hash(fs.readFileSync(installer)), bytes: fs.statSync(installer).size}};
+fs.writeFileSync(path.join(evidence, 'packaged-build-identity.json'), JSON.stringify(report, null, 2));
+console.log(JSON.stringify({status: report.status, verifiedBuildFiles: checks.length, installerBytes: report.installer.bytes}));

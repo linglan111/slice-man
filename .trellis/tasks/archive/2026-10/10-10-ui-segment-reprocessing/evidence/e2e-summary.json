@@ -1,0 +1,264 @@
+{
+  "distinctTests": 20,
+  "passed": 20,
+  "result": "20 distinct tests passed across original and refinement batches: 16 affected regressions plus four task cases. The four refinement cases passed across batches; the final CSS/help build reran and passed contextual review and minimum/default layout. Counts do not mean all 20 ran against one build.",
+  "batches": [
+    {
+      "command": "npx playwright test tests/e2e/desktop.spec.ts tests/e2e/inline-subtitles.spec.ts tests/e2e/live-captions.spec.ts tests/e2e/recognition-reset.spec.ts tests/e2e/seeking.spec.ts tests/e2e/download.spec.ts tests/e2e/download-settings.spec.ts tests/e2e/export-settings.spec.ts",
+      "result": "Initial affected regression run: 9 passed, 7 failed. Six failures were the export accessible label mismatch, fixed and passed in regression-e2e.log; seeking sampled letterboxing, fixed without relaxing the independent frame-color assertion. Its successful rerun is in final-task-e2e.log.",
+      "initialPassedTests": [
+        "restart recovers interrupted work and missing original media preserves corrected subtitles",
+        "material provider edits invalidate dependencies while rename preserves completion",
+        "recoverable API failure, cancel and invalid style preserve corrections (later explicit retry adaptation rechecked)",
+        "real CPU runtime install and Whisper inference, failed/cancelled update rollback",
+        "actual NTFS directory denial retains download settings/files",
+        "download native directory, format/codec/resolution transforms, no upscale and cancellation",
+        "online tool integrity/cancel/rollback, download/import playback and restart",
+        "lyric following, overlap/gaps/manual scrolling/typing and busy edit guards",
+        "live captions, text edits, bilingual updates, native controls and fullscreen"
+      ]
+    },
+    {
+      "log": "regression-e2e.log",
+      "result": "7 passed: six previously failing export/desktop/inline/reset regressions plus the translated local/URL import and partial translation test."
+    },
+    {
+      "log": "final-task-e2e.log",
+      "result": "4 passed: task original-only workflow, task layout with readable inline editor, task translated import workflow and independent decoded seek regression. One legacy generic retry selector failed after the approved retry behavior change; its adapted passing test is in final-layout-retry-e2e.log."
+    },
+    {
+      "log": "final-layout-retry-e2e.log",
+      "result": "2 passed: strengthened layout checks for both inline editor and reprocessing panel at default/minimum native windows, and explicit full translation retry with no additional recognition."
+    },
+    {
+      "log": "refinement-e2e.log",
+      "result": "3 passed (contextual four-grade case, layout and both-mode import); one source-only test still used the removed batch button, migrated without weakening processing/export assertions."
+    },
+    {
+      "log": "refinement-source-only-e2e.log",
+      "result": "1 passed: source-only workflow uses pending filter/select + scoped repair; ASR7, review4, translation0, permanent real exports preserved."
+    },
+    {
+      "log": "refinement-final-layout-contextual-e2e.log",
+      "command": "npx playwright test tests/e2e/contextual-review.spec.ts tests/e2e/subtitle-workspace.spec.ts -g 'all cues receive|fixed preview'",
+      "result": "2 passed against final build: graded selected/pending/report/help at 1050x700, real decoded overview, four filters, legacy restart, original default/minimum portrait/banner/inline/range/menu/shortcuts."
+    }
+  ],
+  "sourceOnlyEvidence": {
+    "directory": "source-only-proof",
+    "files": [
+      "anonymous-source.mp4",
+      "libass-reference.png",
+      "source-only.srt",
+      "source-only.ass",
+      "source-only.vtt",
+      "source-only.mp4",
+      "source-only.mkv"
+    ],
+    "translationRequests": 0,
+    "recognitionRequests": 7,
+    "reviewRequests": 4,
+    "sourceHashPreserved": true,
+    "windowedAndNativeFullscreen": true,
+    "burnedSubtitleGlyphsMatchSourceOnlyLibassReference": true
+  },
+  "layoutEvidence": {
+    "nativeWindowSizes": [
+      "1440x960",
+      "1050x700"
+    ],
+    "sidebarStates": [
+      "expanded",
+      "collapsed"
+    ],
+    "portraitMedia": true,
+    "realCancellationBanner": true,
+    "videoHeightGreaterThanPixels": 100,
+    "proofreadingHeightGreaterThanPixels": 70,
+    "inlineEditorAndProcessingPanelHeightAtLeastPixels": 60,
+    "rangeInputsPlanAndExecuteRemainAccessibleByLocalScrolling": true,
+    "documentScrollY": 0,
+    "nativeMenuAbsentAfterAlt": true,
+    "nativeSelectCopyPaste": true,
+    "screenshots": [
+      "layout-1050x700-expanded-portrait-inline.png",
+      "layout-1050x700-collapsed-portrait-inline.png",
+      "layout-1050x700-expanded-reprocess.png",
+      "layout-1050x700-collapsed-reprocess.png"
+    ]
+  },
+  "limitations": [
+    "Speech/text service HTTP fixtures are deterministic loopback responses, proving workflow behavior rather than linguistic accuracy or live paid-provider compatibility.",
+    "The existing CPU installation regression runs actual native Whisper inference; original-only scoped workflow ASR remains mocked while real FFmpeg cropping/encoding and SQLite/preload/IPC are exercised.",
+    "GPU hardware, external live provider and packaged installer/icon checks are separate coordinator/backend-owned evidence; they are not claimed by these 19 desktop tests."
+  ],
+  "refinement": {
+    "distinctTests": 4,
+    "passed": 4,
+    "finalBuildRerunTests": 2,
+    "rubricVersion": "contextual-review-v1",
+    "cueCount": 34,
+    "initialGrades": {
+      "none": 30,
+      "low": 1,
+      "medium": 2,
+      "high": 1
+    },
+    "allTargetsExplicit": true,
+    "crossBatchContext": true,
+    "quickHighOnlyRepair": true,
+    "neighborEditInvalidatesNoneAndIssues": true,
+    "legacyUngraded": true,
+    "localHelpVersion": "v1",
+    "minimumLayout": {
+      "selectedMinimumLayout": {
+        "viewport": 661,
+        "body": 661,
+        "scrollY": 0,
+        "player": {
+          "height": 108,
+          "bottom": 273.375,
+          "top": 165.375,
+          "clientHeight": 108,
+          "scrollHeight": 108
+        },
+        "list": {
+          "height": 75,
+          "bottom": 640.78125,
+          "top": 565.78125,
+          "clientHeight": 75,
+          "scrollHeight": 145
+        },
+        "panel": {
+          "height": 83.625,
+          "bottom": 402,
+          "top": 318.375,
+          "clientHeight": 82,
+          "scrollHeight": 264
+        },
+        "previewPanel": {
+          "height": 255.625,
+          "bottom": 411,
+          "top": 155.375,
+          "clientHeight": 254,
+          "scrollHeight": 254
+        },
+        "subtitlePanel": {
+          "height": 230,
+          "bottom": 649,
+          "top": 419,
+          "clientHeight": 228,
+          "scrollHeight": 229
+        },
+        "content": {
+          "height": 493.625,
+          "bottom": 649,
+          "top": 155.375,
+          "clientHeight": 494,
+          "scrollHeight": 494
+        }
+      },
+      "pendingMinimumLayout": {
+        "viewport": 661,
+        "body": 661,
+        "scrollY": 0,
+        "player": {
+          "height": 146.625,
+          "bottom": 344,
+          "top": 197.375,
+          "clientHeight": 147,
+          "scrollHeight": 147
+        },
+        "list": {
+          "height": 75,
+          "bottom": 640.78125,
+          "top": 565.78125,
+          "clientHeight": 75,
+          "scrollHeight": 2911
+        },
+        "previewPanel": {
+          "height": 255.625,
+          "bottom": 411,
+          "top": 155.375,
+          "clientHeight": 254,
+          "scrollHeight": 254
+        },
+        "subtitlePanel": {
+          "height": 230,
+          "bottom": 649,
+          "top": 419,
+          "clientHeight": 228,
+          "scrollHeight": 229
+        },
+        "content": {
+          "height": 493.625,
+          "bottom": 649,
+          "top": 155.375,
+          "clientHeight": 494,
+          "scrollHeight": 494
+        }
+      },
+      "helpMinimumLayout": {
+        "viewport": 661,
+        "body": 661,
+        "scrollY": 0,
+        "player": {
+          "height": 146.625,
+          "bottom": 344,
+          "top": 197.375,
+          "clientHeight": 147,
+          "scrollHeight": 147
+        },
+        "list": {
+          "height": 75,
+          "bottom": 640.78125,
+          "top": 565.78125,
+          "clientHeight": 75,
+          "scrollHeight": 3759
+        },
+        "previewPanel": {
+          "height": 255.625,
+          "bottom": 411,
+          "top": 155.375,
+          "clientHeight": 254,
+          "scrollHeight": 254
+        },
+        "subtitlePanel": {
+          "height": 230,
+          "bottom": 649,
+          "top": 419,
+          "clientHeight": 228,
+          "scrollHeight": 229
+        },
+        "content": {
+          "height": 493.625,
+          "bottom": 649,
+          "top": 155.375,
+          "clientHeight": 494,
+          "scrollHeight": 494
+        }
+      }
+    },
+    "buildLog": "refinement-final-build.log",
+    "typecheckLog": "refinement-typecheck.log",
+    "mainBuildSha256": "dc56194fe2cbd174ac1a60244a68c0cd33eb2a87e486cb65cadfb5683e4b5d62",
+    "screenshotOverview": "contextual-four-grade-overview.png",
+    "screenshots": [
+      "contextual-grade-none.png",
+      "contextual-grade-low.png",
+      "contextual-grade-medium.png",
+      "contextual-grade-high.png",
+      "contextual-layout-selected-minimum.png",
+      "contextual-layout-pending-minimum.png",
+      "contextual-minimum-pending-standards.png",
+      "contextual-neighbour-change-stale.png",
+      "contextual-legacy-ungraded.png"
+    ],
+    "priorArtifacts": "Earlier package/check artifacts refer to the pre-refinement build. Native final package evidence is coordinator-owned.",
+    "supersededFailures": [
+      "refinement-e2e.log source-only selector",
+      "refinement-final-contextual-e2e.log graded selected overflow",
+      "refinement-layout-diagnostic.log same overflow"
+    ]
+  }
+}
