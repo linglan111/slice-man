@@ -123,3 +123,63 @@ export const acknowledgeFindingInputSchema = z
 export type AcknowledgeFindingInput = z.infer<
   typeof acknowledgeFindingInputSchema
 >;
+
+export const repairScopeSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("all") }).strict(),
+  z.object({ mode: z.literal("range"), startMs: ms, endMs: ms }).strict(),
+]);
+export type RepairScope = z.infer<typeof repairScopeSchema>;
+export const repairLoopInputSchema = z
+  .object({
+    jobId: id,
+    revision: ms,
+    threshold: z.enum(["low", "medium", "high"]),
+    maxRounds: z.number().int().min(1).max(20),
+    scope: repairScopeSchema,
+  })
+  .strict();
+export type RepairLoopInput = z.infer<typeof repairLoopInputSchema>;
+export const repairRunSchema = z
+  .object({
+    id,
+    scope: repairScopeSchema,
+    threshold: repairLoopInputSchema.shape.threshold,
+    maxRounds: repairLoopInputSchema.shape.maxRounds,
+    state: z.enum([
+      "running",
+      "succeeded",
+      "cancelled",
+      "failed",
+      "interrupted",
+    ]),
+    phase: z.enum([
+      "analysis",
+      "recognize",
+      "translate",
+      "commit",
+      "reassessment",
+      "done",
+    ]),
+    round: ms.max(20),
+    committedRounds: ms.max(20),
+    affectedCount: ms,
+    remainingCount: ms.optional(),
+    effectiveIntervals: z
+      .array(z.object({ startMs: ms, endMs: ms }).strict())
+      .max(10000),
+    startedAt: ms,
+    completedAt: ms.optional(),
+    reason: z
+      .enum([
+        "no_eligible",
+        "max_rounds",
+        "user_cancelled",
+        "error",
+        "interrupted",
+      ])
+      .optional(),
+    errorCode: z.string().max(100).optional(),
+    errorMessage: z.string().max(500).optional(),
+  })
+  .strict();
+export type RepairRun = z.infer<typeof repairRunSchema>;

@@ -45,7 +45,7 @@ test('default original encoding burns subtitles into actual AV1 MP4 and VP9/VP8 
       if (row.format === 'mp4') await expect(page.getByLabel('导出格式', { exact: true })).toHaveValue('mp4');
       else await page.getByLabel('导出格式', { exact: true }).selectOption(row.format);
       await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
-      await expect(page.getByRole('dialog', { name: '导出作品', exact: true })).not.toBeVisible({ timeout: 90000 });
+      await expect(page.getByRole('region', { name: '导出操作', exact: true })).not.toBeVisible({ timeout: 90000 });
       const output = outputs[index]; const input = sources[index]; if (!output || !input) throw new Error('Fixture paths absent');
       const probe = await execute(FFPROBE, ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', output], { windowsHide: true });
       const inspected = z.object({ streams: z.array(z.object({ codec_type: z.string(), codec_name: z.string(), width: z.number().optional(), height: z.number().optional() }).passthrough()), format: z.object({ format_name: z.string() }).passthrough() }).parse(JSON.parse(probe.stdout) as unknown);

@@ -1,0 +1,13 @@
+.repair-loop { flex-shrink: 0; min-width: 0; padding: 7px 9px; margin: 3px 0 7px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-surface); }
+.repair-loop__fields { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(65px, .7fr); gap: 6px; }
+.repair-loop label { min-width: 0; font-size: 10px; color: var(--color-muted); }
+.repair-loop input, .repair-loop select { width: 100%; min-width: 0; padding: 4px 6px; margin-top: 3px; font-size: 11px; }
+.repair-loop__range { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+.repair-loop__actions { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 5px; }
+.repair-loop__actions .button { padding: 4px 7px; font-size: 11px; }
+.repair-loop .hint, .repair-loop .error-message { font-size: 10px; margin-top: 3px; }
+.repair-loop__status { margin-top: 5px; font-size: 10px; max-height: 72px; overflow: auto; scrollbar-gutter: stable; overflow-wrap: anywhere; }
+.repair-loop__status strong { font-weight: 500; color: var(--color-primary); }
+.repair-loop__status p { margin-top: 2px; }
+.repair-loop__status small { font-size: 9px; color: var(--color-muted); }
+@media (max-width: 1150px) { .repair-loop { padding: 5px 6px; margin-bottom: 4px; } .repair-loop__fields { gap: 4px; } .repair-loop input, .repair-loop select { font-size: 10px; } .repair-loop__boundary { line-height: 1.3; } }

@@ -40,10 +40,13 @@ export const progressSchema: z.ZodType<ProgressEvent> = z
       "export",
       "install",
       "review",
+      "repair",
+      "names",
     ]),
     progress: z.number().min(0).max(1),
     message: z.string(),
     job: jobSchema.optional(),
+    repairRunId: z.string().min(1).max(100).optional(),
   })
   .strict();
 const outputSchemas: Record<string, z.ZodType> = {
@@ -74,6 +77,10 @@ const outputSchemas: Record<string, z.ZodType> = {
   "jobs:recognizePartial": jobSchema,
   "jobs:translatePartial": jobSchema,
   "jobs:reviewSubtitles": jobSchema,
+  "jobs:analyzeNames": jobSchema,
+  "jobs:applyNames": jobSchema,
+  "jobs:undoNames": jobSchema,
+  "jobs:repairLoop": jobSchema,
   "jobs:acknowledgeFinding": jobSchema,
   "jobs:editSegment": jobSchema,
   "jobs:addSegment": jobSchema,

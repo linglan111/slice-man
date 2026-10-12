@@ -1,4 +1,5 @@
 import { refreshReview, staleReview } from "../services/jobs/lib/reprocessing";
+import { refreshNameReport } from '../services/jobs/lib/person-names';
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq, desc } from "drizzle-orm";
@@ -43,6 +44,17 @@ export class Store {
     this.db = drizzle(this.sqlite, { schema });
     for (const job of this.listJobs()) {
       let changed = false;
+      if (job.repairRun?.state === "running") {
+        job.repairRun = {
+          ...job.repairRun,
+          state: "interrupted",
+          phase: "done",
+          reason: "interrupted",
+          completedAt: Date.now(),
+          remainingCount: undefined,
+        };
+        changed = true;
+      }
       for (const stage of Object.values(job.stages)) {
         if (stage.state === "running") {
           stage.state = "interrupted";
@@ -75,6 +87,7 @@ export class Store {
       .map((row) => {
         const job = jobSchema.parse(JSON.parse(row.payload));
         refreshReview(job);
+        refreshNameReport(job);
         return job;
       });
   }
@@ -87,12 +100,14 @@ export class Store {
     if (!row) throw new AppError("NOT_FOUND", "找不到视频任务");
     const job = jobSchema.parse(JSON.parse(row.payload));
     refreshReview(job);
+    refreshNameReport(job);
     return job;
   }
   saveJob(job: Job): Job {
     refreshReview(job);
+    refreshNameReport(job);
     jobSchema.parse(job);
-    job.updatedAt = Date.now();
+    job.updatedAt = Math.max(Date.now(), job.updatedAt + 1);
     this.db.transaction((tx) => {
       tx.insert(schema.jobs)
         .values({
@@ -240,6 +255,7 @@ export class Store {
       const reviewChanged =
         job.options.reviewProfileId === id ||
         job.reviewReport?.profileId === id;
+      if (job.nameReport?.profileId === id) { job.nameReport.state = 'stale'; this.saveJob(job); }
       if (reviewChanged && job.reviewReport) {
         staleReview(job);
         this.saveJob(job);

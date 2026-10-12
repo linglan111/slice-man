@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { reviewReportSchema } from "./reprocessing-contracts";
+import { nameReportSchema, nameBatchSchema } from './person-name-contracts';
+import type { NameReport, NameBatch, AnalyzeNamesInput, ApplyNamesInput, UndoNamesInput } from './person-name-contracts';
+export * from './person-name-contracts';
+import { reviewReportSchema, repairRunSchema } from "./reprocessing-contracts";
 import type {
   ImportOptions,
   ReprocessPlan,
@@ -9,6 +12,8 @@ import type {
   ReviewReport,
   ReviewSubtitlesInput,
   AcknowledgeFindingInput,
+  RepairLoopInput,
+  RepairRun,
 } from "./reprocessing-contracts";
 export * from "./reprocessing-contracts";
 import type {
@@ -216,6 +221,9 @@ export type Job = {
   previewUrl?: string;
   outputs: string[];
   reviewReport?: ReviewReport;
+  repairRun?: RepairRun;
+  nameReport?: NameReport;
+  nameBatch?: NameBatch;
 };
 export const stageSchema: z.ZodType<Stage> = z
   .object({
@@ -268,6 +276,9 @@ export const jobSchema: z.ZodType<Job> = z
     previewUrl: z.string().optional(),
     outputs: z.array(z.string()),
     reviewReport: reviewReportSchema.optional(),
+    repairRun: repairRunSchema.optional(),
+    nameReport: nameReportSchema.optional(),
+    nameBatch: nameBatchSchema.optional(),
   })
   .strict();
 export const profileSchema = profileInputSchema
@@ -291,10 +302,11 @@ export type RuntimeStatus = {
 };
 export type ProgressEvent = {
   jobId?: string;
-  stage: StageName | "install" | "review";
+  stage: StageName | "install" | "review" | "repair" | "names";
   progress: number;
   message: string;
   job?: Job;
+  repairRunId?: string;
 };
 export type Result<T> =
   | { success: true; data: T }
@@ -347,6 +359,10 @@ export type AppApi = {
     recognizePartial(input: RecognizePartialInput): Promise<Result<Job>>;
     translatePartial(input: ReprocessInput): Promise<Result<Job>>;
     reviewSubtitles(input: ReviewSubtitlesInput): Promise<Result<Job>>;
+    repairLoop(input: RepairLoopInput): Promise<Result<Job>>;
+    analyzeNames(input: AnalyzeNamesInput): Promise<Result<Job>>;
+    applyNames(input: ApplyNamesInput): Promise<Result<Job>>;
+    undoNames(input: UndoNamesInput): Promise<Result<Job>>;
     acknowledgeFinding(input: AcknowledgeFindingInput): Promise<Result<Job>>;
     updateOptions(input: {
       jobId: string;

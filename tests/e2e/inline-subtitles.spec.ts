@@ -1,3 +1,4 @@
+import { jobSetting, workspaceButton, closeWorkspaceSettings } from './helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -48,7 +49,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     expect(first.id).not.toBe('new-draft');
     await seek(page, 1.8); await expect(page.getByTestId('live-captions')).toBeEmpty();
     // Preview insertion uses actual currentTime in a gap, not the rounded label.
-    await page.getByRole('button', { name: '添加画面字幕', exact: true }).click();
+    await (await workspaceButton(page, '添加画面字幕')).click();
     await expect(page.getByLabel('开始时间（秒）', { exact: true })).toHaveValue('1.800');
     await fillCue(page, '1.800', '2.800', 'Preview source', 'Preview target'); await save(page);
     await expect(page.getByTestId('segment-1')).toContainText('Preview target');
@@ -97,9 +98,23 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     // Overlap creates two literal buttons; bilingual lines address one exact cue.
     await seek(page, 1); await page.getByRole('button', { name: '添加字幕', exact: true }).click();
     await fillCue(page, '0.900', '1.400', 'Overlap source', 'Overlap target'); await save(page);
-    await page.getByLabel('双语字幕（译文 + 原文）', { exact: true }).click();
-    await expect(page.getByLabel('双语字幕（译文 + 原文）', { exact: true })).toBeChecked();
+    await (await jobSetting(page, '双语字幕（译文 + 原文）')).click();
+    await expect((await jobSetting(page, '双语字幕（译文 + 原文）'))).toBeChecked();
+    await closeWorkspaceSettings(page);
     await expect(page.getByTestId('live-captions').locator('button')).toHaveCount(2);
+    // Measure a shrink synchronously, before ResizeObserver can deliver a new
+    // object-fit rectangle: edit targets must never invade native controls.
+    const immediateShrink = await page.locator('.live-video-player').evaluate((player: HTMLElement) => {
+      const oldHeight = player.style.height;
+      try {
+        player.style.height = `${Math.max(130, player.getBoundingClientRect().height - 40)}px`;
+        const video = player.querySelector('video');
+        const cues = [...player.querySelectorAll('.live-captions__cue')];
+        if (!video || cues.length !== 2) throw new Error('Bilingual shrink fixture missing');
+        return { videoBottom: video.getBoundingClientRect().bottom, cueBottom: Math.max(...cues.map((cue) => cue.getBoundingClientRect().bottom)) };
+      } finally { player.style.height = oldHeight; }
+    });
+    expect(immediateShrink.cueBottom, 'Pre-observer shrink keeps both clickable captions clear of native controls').toBeLessThanOrEqual(immediateShrink.videoBottom - 63);
     const controlsBounds = await page.locator('video').boundingBox(); if (!controlsBounds) throw new Error('Video bounds absent');
     const lowestCue = await page.getByTestId('live-captions').locator('button').evaluateAll((cues) => Math.max(...cues.map((cue) => cue.getBoundingClientRect().bottom)));
     expect(lowestCue, 'Every clickable overlap cue stays above the native control row').toBeLessThanOrEqual(controlsBounds.y + controlsBounds.height - 63);
@@ -125,8 +140,9 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     expect(srt).toContain('Overlap corrected');
     // Preview deletion clears only clicked cue and its emphasis; history stays.
     await page.getByLabel('选择字幕 2', { exact: true }).check();
-    await page.getByLabel('强调关键词', { exact: true }).fill('Overlap');
+    await (await jobSetting(page, '强调关键词')).fill('Overlap');
     await page.getByRole('button', { name: '为选中字幕设置强调', exact: true }).click();
+    await closeWorkspaceSettings(page);
     await page.getByRole('button', { name: '校对画面字幕：Overlap corrected', exact: true }).click();
     await page.getByRole('button', { name: '删除此字幕', exact: true }).click(); await expect(page.locator('.segment-editor')).toHaveCount(0);
     const afterDelete = await currentJob(page);
@@ -138,7 +154,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     await page.getByLabel('删除字幕 1', { exact: true }).click(); await expect(page.locator('.subtitle-row')).toHaveCount(1);
     await page.getByLabel('删除字幕 1', { exact: true }).click(); await expect(page.locator('.subtitle-row')).toHaveCount(0);
     await expect(page.getByTestId('live-captions')).toBeEmpty();
-    await seek(page, 3.999); await page.getByRole('button', { name: '添加画面字幕', exact: true }).click();
+    await seek(page, 3.999); await (await workspaceButton(page, '添加画面字幕')).click();
     await expect(page.getByLabel('开始时间（秒）', { exact: true })).toHaveValue('3.999');
     await expect(page.getByLabel('结束时间（秒）', { exact: true })).toHaveValue('4.000');
     await page.getByLabel('原文', { exact: true }).fill('Last millisecond'); await save(page);
@@ -206,15 +222,18 @@ test('lyric highlighting and confined auto-follow respect seeks, overlap, gaps, 
     await page.getByRole('button', { name: '取消', exact: true }).click();
     await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(100);
     // A manual timeline translates without local model availability and never ASR.
-    await page.getByLabel('翻译服务', { exact: true }).selectOption({ label: 'Manual translator' });
-    await expect(page.getByRole('button', { name: '翻译全部字幕', exact: true })).toBeEnabled();
+    await (await jobSetting(page, '翻译服务')).selectOption({ label: 'Manual translator' });
+    await expect((await workspaceButton(page, '翻译全部字幕'))).toBeEnabled();
     await seek(page, 2.72); mock.behavior.translation = 'slow';
     await page.getByTestId('live-captions').locator('button').click();
     await page.getByLabel('原文', { exact: true }).fill('Busy retained draft');
-    await page.getByRole('button', { name: '翻译全部字幕', exact: true }).click();
+    await (await workspaceButton(page, '翻译全部字幕')).click();
     await expect.poll(() => mock.counters.translation).toBe(1);
+    // The single operation panel temporarily hides the retained preview draft.
+    // Closing the generation panel restores that same draft during processing.
+    await page.getByRole('button', { name: '关闭操作面板', exact: true }).click();
     await expect(page.getByTestId('live-captions').locator('button')).toBeDisabled();
-    await expect(page.getByRole('button', { name: '添加画面字幕', exact: true })).toBeDisabled();
+    await expect((await workspaceButton(page, '添加画面字幕'))).toBeDisabled();
     await expect(page.getByRole('button', { name: '添加字幕', exact: true })).toBeDisabled();
     await expect(page.getByLabel('删除字幕 1', { exact: true })).toBeDisabled();
     await expect(page.getByLabel('原文', { exact: true })).toBeDisabled();

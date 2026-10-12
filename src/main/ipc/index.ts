@@ -9,7 +9,11 @@ import {
   recognizePartialInputSchema,
   reprocessInputSchema,
   reviewSubtitlesInputSchema,
+  analyzeNamesInputSchema,
+  applyNamesInputSchema,
+  undoNamesInputSchema,
   acknowledgeFindingInputSchema,
+  repairLoopInputSchema,
   optionsSchema,
   segmentSchema,
   newSegmentSchema,
@@ -144,10 +148,17 @@ export function registerIpc(services: Services): () => void {
   );
   handle("download:cancel", empty, () => services.download.cancel());
   handle("profiles:list", empty, () => services.store.listProfiles());
-  handle("profiles:save", profileInputSchema, (input) =>
-    services.store.saveProfile(input),
+  handle("profiles:save", profileInputSchema, (input) => {
+    services.jobs.assertProfileWritable(input.id);
+    return services.store.saveProfile(input);
+  });
+  handle("profiles:remove", idSchema, (id) => {
+    services.jobs.assertProfileWritable(id);
+    services.store.removeProfile(id);
+  });
+  handle("jobs:repairLoop", repairLoopInputSchema, (input) =>
+    services.jobs.repairLoop(input),
   );
-  handle("profiles:remove", idSchema, (id) => services.store.removeProfile(id));
   handle(
     "profiles:test",
     z
@@ -252,6 +263,9 @@ export function registerIpc(services: Services): () => void {
   handle("jobs:reviewSubtitles", reviewSubtitlesInputSchema, (input) =>
     services.jobs.reviewSubtitles(input),
   );
+  handle('jobs:analyzeNames', analyzeNamesInputSchema, (input) => services.jobs.analyzeNames(input));
+  handle('jobs:applyNames', applyNamesInputSchema, (input) => services.jobs.applyNames(input));
+  handle('jobs:undoNames', undoNamesInputSchema, (input) => services.jobs.undoNames(input));
   handle("jobs:acknowledgeFinding", acknowledgeFindingInputSchema, (input) =>
     services.jobs.acknowledgeFinding(input),
   );

@@ -1,3 +1,4 @@
+import { workspaceButton } from './helpers';
 import { test, expect } from '@playwright/test';
 import { mkdir, writeFile, stat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -35,9 +36,9 @@ test('long video seeks beyond buffered data, backwards and through subtitle time
     expect(observations.some((observation) => observation.targetSeconds > 30 && !observation.targetWasBuffered), 'At least one actual forward seek must reach media outside the previously buffered ranges.').toBe(true);
     await addProfile(page, 'Seek fixture mock', 'openai', mock.url);
     await configureCloud(page, 'Seek fixture mock');
-    await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
+    await (await workspaceButton(page, '一键生成字幕')).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
-    await expect(page.getByRole('button', { name: '翻译全部字幕', exact: true })).toBeEnabled();
+    await expect((await workspaceButton(page, '翻译全部字幕'))).toBeEnabled();
     await page.getByLabel('编辑字幕 1', { exact: true }).click();
     await page.getByLabel('开始时间（秒）', { exact: true }).fill('68');
     await page.getByLabel('结束时间（秒）', { exact: true }).fill('70');

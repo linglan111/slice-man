@@ -26,12 +26,13 @@ async function seedManualCue(page: Page, endMs = 1800): Promise<void> {
   await expect(page.getByTestId('segment-0')).toContainText('最终译文');
 }
 async function openExport(page: Page, subtitle = false): Promise<void> {
-  await page.getByRole('button', { name: subtitle ? '导出字幕文件' : '导出作品', exact: true }).click();
+  await page.getByRole('button', { name: '导出作品', exact: true }).click();
   await expect(page.getByLabel('导出格式', { exact: true })).toBeEnabled();
+  if (subtitle) await page.getByRole('button', { name: '独立字幕文件', exact: true }).click();
 }
 async function finishExport(page: Page): Promise<void> {
   await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: '导出作品', exact: true })).not.toBeVisible({ timeout: 90000 });
+  await expect(page.getByRole('region', { name: '导出操作', exact: true })).not.toBeVisible({ timeout: 90000 });
 }
 async function inspect(path: string): Promise<{ width: number; height: number; codec: string; format: string; subtitleTracks: number }> {
   const result = await execute(FFPROBE, ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', path], { windowsHide: true });
@@ -185,20 +186,20 @@ test('unsupported original codec, destination/source protection, native save can
   try {
     await importVideo(page); await seedManualCue(page);
     await openExport(page); await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
-    await expect(page.getByRole('dialog').getByRole('alert')).toContainText(/H.264.*H.265/);
+    await expect(page.getByRole('region', { name: '导出操作', exact: true }).getByRole('alert')).toContainText(/H.264.*H.265/);
     expect(await stat(unsupported).catch(() => undefined)).toBeUndefined();
     await page.getByLabel('视频编码', { exact: true }).selectOption('h264'); await finishExport(page);
     expect((await inspect(recovered)).codec).toBe('h264'); await assertSubtitlePixels(recovered);
     await openExport(page); await page.getByLabel('视频编码', { exact: true }).selectOption('h264'); await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
-    await expect(page.getByRole('dialog').getByRole('alert')).toContainText(/已存在|覆盖/); expect(await readFile(existing, 'utf8')).toBe('existing untouched file');
+    await expect(page.getByRole('region', { name: '导出操作', exact: true }).getByRole('alert')).toContainText(/已存在|覆盖/); expect(await readFile(existing, 'utf8')).toBe('existing untouched file');
     await page.getByRole('button', { name: '返回工作区', exact: true }).click();
     await openExport(page); await page.getByLabel('视频编码', { exact: true }).selectOption('h264'); await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
-    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('不能覆盖原视频'); expect(await hash(input)).toBe(sourceHash);
+    await expect(page.getByRole('region', { name: '导出操作', exact: true }).getByRole('alert')).toContainText('不能覆盖原视频'); expect(await hash(input)).toBe(sourceHash);
     await page.getByRole('button', { name: '返回工作区', exact: true }).click();
     // Native save cancellation returns null and does not start another stage.
     await openExport(page); const before = await page.evaluate(() => window.api.jobs.list()); await page.getByRole('button', { name: '选择保存位置并导出', exact: true }).click();
     await expect(page.getByRole('button', { name: '选择保存位置并导出', exact: true })).toBeEnabled();
-    await expect(page.getByRole('dialog', { name: '导出作品', exact: true })).toBeVisible(); expect(await page.evaluate(() => window.api.jobs.list())).toEqual(before);
+    await expect(page.getByRole('region', { name: '导出操作', exact: true })).toBeVisible(); expect(await page.evaluate(() => window.api.jobs.list())).toEqual(before);
     await page.getByRole('button', { name: '返回工作区', exact: true }).click();
     await importVideo(page); await seedManualCue(page, 14000);
     await openExport(page); await page.getByLabel('导出格式', { exact: true }).selectOption('mkv'); await page.getByLabel('视频编码', { exact: true }).selectOption('h265');

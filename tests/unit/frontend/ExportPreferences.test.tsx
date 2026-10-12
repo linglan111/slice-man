@@ -88,13 +88,15 @@ describe('independent export preferences and operation choices', () => {
     expect((screen.getByLabelText('画质') as HTMLSelectElement).value).toBe('high');
   });
 
-  it('App exposes separate settings and subtitle shortcut with the correct captured job', async () => {
+  it('App exposes separate settings and inline export types with the correct captured job', async () => {
     const job = savedJob(); const { api } = stubApi(job);
     vi.mocked(api.jobs.export).mockResolvedValue({ success: true, data: { path: 'anonymous.srt' } });
     vi.mocked(api.jobs.get).mockResolvedValue({ success: true, data: job });
     render(<App />); await screen.findByLabelText('选择字幕 1');
     expect(screen.getByRole('button', { name: '导出设置' }).closest('.sidebar__footer')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '导出字幕文件' }));
+    fireEvent.click(screen.getByRole('button', { name: '导出作品' }));
+    await screen.findByLabelText('导出格式');
+    fireEvent.click(screen.getByRole('button', { name: '独立字幕文件' }));
     await waitFor(() => expect((screen.getByLabelText('导出格式') as HTMLSelectElement).value).toBe('srt'));
     fireEvent.click(screen.getByRole('button', { name: '选择保存位置并导出' }));
     await waitFor(() => expect(api.jobs.export).toHaveBeenCalledWith({ jobId: job.id, format: 'srt' }));

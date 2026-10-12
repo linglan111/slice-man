@@ -1,3 +1,4 @@
+import { jobSetting, workspaceButton } from './helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
@@ -55,16 +56,16 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
     await addProfile(page, 'Recognition reset fixture', 'openai', fixture.url);
     await importVideo(page);
     await configureCloud(page, 'Recognition reset fixture');
-    await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
+    await (await workspaceButton(page, '一键生成字幕')).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
-    await expect(page.getByRole('button', { name: '翻译全部字幕', exact: true })).toBeEnabled();
+    await expect((await workspaceButton(page, '翻译全部字幕'))).toBeEnabled();
     await page.getByLabel('编辑字幕 1', { exact: true }).click();
     await page.getByLabel('原文', { exact: true }).fill('Manually corrected original.');
     await page.getByLabel('译文', { exact: true }).fill('保留这句人工校对译文。');
     await page.getByRole('button', { name: '保存字幕', exact: true }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
     await page.getByLabel('选择字幕 1', { exact: true }).check();
-    await page.getByLabel('强调关键词', { exact: true }).fill('人工');
+    await (await jobSetting(page, '强调关键词')).fill('人工');
     await page.getByRole('button', { name: '为选中字幕设置强调', exact: true }).click();
     await expect(page.getByRole('button', { name: '渲染当前参考画面', exact: true })).toHaveCount(0);
     await renderInternalReference(page, 0);
@@ -74,19 +75,19 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
     const oldExport = await readFile(output, 'utf8');
     const sourceHash = createHash('sha256').update(await readFile(source)).digest('hex');
     const confirm = async (): Promise<void> => {
-      await page.getByRole('button', { name: '重新识别原片', exact: true }).click();
+      await (await workspaceButton(page, '重新识别原片')).click();
       await expect(page.getByRole('dialog', { name: '重新识别原片', exact: true })).toContainText('手工校对');
       await page.getByRole('button', { name: '确认重新识别', exact: true }).click();
       await expect(page.getByRole('dialog')).not.toBeVisible();
     };
-    await page.getByRole('button', { name: '重新识别原片', exact: true }).click();
+    await (await workspaceButton(page, '重新识别原片')).click();
     await expect(page.getByRole('dialog')).toContainText('服务商可能收取费用');
     await expect(page.getByRole('dialog')).toContainText('逐句关键词强调将清除，整体样式保留');
     await page.getByRole('button', { name: '保留现有字幕', exact: true }).click();
-    await expect(page.getByRole('button', { name: '重新识别原片', exact: true })).toBeFocused();
+    await expect((await workspaceButton(page, '重新识别原片'))).toBeFocused();
     expect(fixture.calls.recognition).toBe(1);
     expect((await currentJob(page)).segments).toEqual(previous.segments);
-    await page.getByRole('button', { name: '重新识别原片', exact: true }).click();
+    await (await workspaceButton(page, '重新识别原片')).click();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).not.toBeVisible();
     expect(fixture.calls.recognition).toBe(1);
@@ -103,7 +104,7 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
     fixture.behavior.recognition = 'slow';
     await confirm();
     await expect.poll(() => fixture.calls.recognition).toBe(3);
-    await expect(page.getByRole('button', { name: '重新识别原片', exact: true })).toBeDisabled();
+    await expect((await workspaceButton(page, '重新识别原片'))).toBeDisabled();
     await page.getByRole('button', { name: '取消当前处理', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('CANCELLED');
     const cancelled = await currentJob(page);
@@ -115,7 +116,7 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
     await confirm();
     await expect(page.getByTestId('segment-0')).toContainText('Fresh recognition replaces the old words.');
     await expect(page.getByTestId('segment-0')).toContainText('等待翻译');
-    await expect(page.getByRole('button', { name: '翻译全部字幕', exact: true })).toBeEnabled();
+    await expect((await workspaceButton(page, '翻译全部字幕'))).toBeEnabled();
     const replaced = await currentJob(page);
     expect(replaced.revision).toBeGreaterThan(previous.revision);
     expect(replaced.segments.every((segment) => !segment.translatedText)).toBe(true);
@@ -133,7 +134,7 @@ test('explicit recognition confirmation preserves old corrections on dismissal, 
     expect(fixture.calls.recognition).toBe(4);
     expect(fixture.calls.translation).toBe(1);
     await expect(page.getByRole('status')).toContainText('不会自动');
-    await page.getByRole('button', { name: '翻译全部字幕', exact: true }).click();
+    await (await workspaceButton(page, '翻译全部字幕')).click();
     await expect(page.getByTestId('segment-0')).toContainText('你好，世界。');
     expect(fixture.calls.translation).toBe(2);
     const directory = resolve('.trellis/tasks/10-11-subtitle-workspace-layout/evidence');

@@ -1,3 +1,4 @@
+import { jobSetting, workspaceButton } from './helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -28,17 +29,17 @@ test('actual CUDA desktop recognition and explicit CPU selection report each rea
     for (const backend of ['gpu', 'cpu'] as const) {
       const previousIds = new Set((await currentJobs(page)).map((job) => job.id));
       await importVideo(page);
-      await expect(page.getByLabel('识别方式', { exact: true })).toHaveValue('local');
-      const preference = page.getByLabel('优先使用 NVIDIA GPU', { exact: true });
+      await expect((await jobSetting(page, '识别方式'))).toHaveValue('local');
+      const preference = (await jobSetting(page, '优先使用 NVIDIA GPU'));
       await expect(preference).toBeChecked();
       if (backend === 'cpu') { await preference.click(); await expect(preference).not.toBeChecked(); }
-      await page.getByLabel('原语言', { exact: true }).selectOption('en');
-      await page.getByLabel('翻译服务', { exact: true }).selectOption({ label: 'Local mock translator' });
-      await expect(page.getByRole('button', { name: '一键生成字幕', exact: true })).toBeEnabled();
+      await (await jobSetting(page, '原语言')).selectOption('en');
+      await (await jobSetting(page, '翻译服务')).selectOption({ label: 'Local mock translator' });
+      await expect((await workspaceButton(page, '一键生成字幕'))).toBeEnabled();
       const startedAt = Date.now();
-      await page.getByRole('button', { name: '一键生成字幕', exact: true }).click();
+      await (await workspaceButton(page, '一键生成字幕')).click();
       await expect(page.getByTestId('segment-0')).toContainText(/country|fellow/i, { timeout: 90000 });
-      await expect(page.getByRole('button', { name: '翻译全部字幕', exact: true })).toBeEnabled({ timeout: 90000 });
+      await expect((await workspaceButton(page, '翻译全部字幕'))).toBeEnabled({ timeout: 90000 });
       await expect(page.getByRole('heading', { level: 1 }).locator('..')).toContainText(`识别后端 ${backend.toUpperCase()}`);
       const job = (await currentJobs(page)).find((item) => !previousIds.has(item.id));
       if (!job) throw new Error('Imported native inference job is missing from real IPC history.');

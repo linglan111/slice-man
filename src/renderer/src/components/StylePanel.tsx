@@ -2,8 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { styleSchema, type Job, type SubtitleStyle } from '../../../shared/contracts';
 import { TEMPLATE_LABELS, templateStyle } from '../lib/presentation';
 
-type Props = { job: Job; isBusy: boolean; selectedIds: string[]; onStyle: (style: SubtitleStyle) => void; onBilingual: (value: boolean) => void; onDesign: (prompt: string) => void };
-export function StylePanel({ job, isBusy, selectedIds, onStyle, onBilingual, onDesign }: Props): ReactNode {
+type Props = { job: Job; isBusy: boolean; selectedIds: string[]; onStyle: (style: SubtitleStyle) => void; onBilingual: (value: boolean) => void; onDesign: (prompt: string) => void; settingsOnly?: boolean };
+export function StylePanel({ job, isBusy, selectedIds, onStyle, onBilingual, onDesign, settingsOnly = false }: Props): ReactNode {
   const [prompt, setPrompt] = useState('');
   const [keywords, setKeywords] = useState('');
   const style = job.style;
@@ -19,8 +19,8 @@ export function StylePanel({ job, isBusy, selectedIds, onStyle, onBilingual, onD
       const words = keywords.split(/[,，]/).map((word) => word.trim()).filter(Boolean);
       onStyle({ ...style, emphasisBySegment: [...style.emphasisBySegment.filter((item) => !selectedIds.includes(item.segmentId)), ...selectedIds.map((segmentId) => ({ segmentId, keywords: words }))] });
     }}>为选中字幕设置强调</button>
-    <div className="ai-style"><label>AI 设计描述<textarea aria-label="AI 设计描述" rows={2} value={prompt} disabled={isBusy} onChange={(event) => setPrompt(event.target.value)} placeholder="例如：电影感，白色字幕，淡黄色强调" /></label>
-      <button className="button button--subtle" disabled={isBusy || !prompt.trim() || !job.options.styleProfileId} onClick={() => onDesign(prompt.trim())}>✧ 生成 AI 样式</button><p className="hint">生成字体、配色和有限动画配置；不修改字幕文字。</p></div>
+    {!settingsOnly && <div className="ai-style"><label>AI 设计描述<textarea aria-label="AI 设计描述" rows={2} value={prompt} disabled={isBusy} onChange={(event) => setPrompt(event.target.value)} placeholder="例如：电影感，白色字幕，淡黄色强调" /></label>
+      <button className="button button--subtle" disabled={isBusy || !prompt.trim() || !job.options.styleProfileId} onClick={() => onDesign(prompt.trim())}>✧ 生成 AI 样式</button><p className="hint">生成字体、配色和有限动画配置；不修改字幕文字。</p></div>}
   </section>;
 }
 

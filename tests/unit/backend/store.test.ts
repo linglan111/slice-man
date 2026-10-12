@@ -78,6 +78,40 @@ function job(): Job {
   };
 }
 describe("SQLite migration/persistence and credentials", () => {
+  it("marks persisted automatic repair interrupted on restart, retaining committed content without resuming", async () => {
+    const s = await store();
+    const value = job();
+    value.repairRun = {
+      id: "repair",
+      scope: { mode: "range", startMs: 0, endMs: 1000 },
+      threshold: "medium",
+      maxRounds: 3,
+      state: "running",
+      phase: "reassessment",
+      round: 1,
+      committedRounds: 1,
+      affectedCount: 1,
+      remainingCount: 1,
+      effectiveIntervals: [{ startMs: 0, endMs: 1000 }],
+      startedAt: Date.now(),
+    };
+    s.saveJob(value);
+    const path = s.sqlite.name;
+    s.close();
+    stores.splice(stores.indexOf(s), 1);
+    const reopened = new Store(path, secret);
+    stores.push(reopened);
+    const result = reopened.getJob(value.id);
+    expect(result.repairRun).toMatchObject({
+      state: "interrupted",
+      phase: "done",
+      reason: "interrupted",
+      committedRounds: 1,
+    });
+    expect(result.repairRun?.remainingCount).toBeUndefined();
+    expect(result.segments).toEqual(value.segments);
+    expect(result.revision).toBe(value.revision);
+  });
   it("declares the same composite keys in ORM metadata and real migrations", async () => {
     const s = await store();
     for (const [table, expected] of [

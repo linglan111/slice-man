@@ -1,3 +1,4 @@
+import { jobSetting, workspaceButton, closeWorkspaceSettings } from './helpers';
 import {
   test,
   expect,
@@ -48,9 +49,8 @@ async function job(page: Page): Promise<Job> {
 
 async function setCloud(page: Page, profile: string): Promise<void> {
   await expandSecondaryControls(page);
-  await page.getByLabel("识别方式", { exact: true }).selectOption("cloud");
-  await page
-    .getByLabel("语音识别服务", { exact: true })
+  await (await jobSetting(page, '识别方式')).selectOption("cloud");
+  await (await jobSetting(page, '语音识别服务'))
     .selectOption({ label: profile });
 }
 
@@ -82,8 +82,7 @@ async function screenshot(page: Page, name: string): Promise<void> {
 
 async function fixedWorkspace(page: Page): Promise<void> {
   const preview = await page.locator("video").boundingBox();
-  const action = await page
-    .getByRole("button", { name: "添加画面字幕", exact: true })
+  const action = await (await workspaceButton(page, '添加画面字幕'))
     .boundingBox();
   const list = await page.locator(".subtitle-list").boundingBox();
   const height = await page.evaluate(() => innerHeight);
@@ -186,7 +185,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       mock.url,
     );
     // Dismissed import does not consume the native picker or create a project.
-    await page.getByRole("button", { name: "导入视频", exact: true }).click();
+    await (await workspaceButton(page, '导入视频')).click();
     await page.keyboard.press("Escape");
     expect(
       await page.evaluate(async () => {
@@ -197,26 +196,24 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     await importVideo(page, false);
     expect((await job(page)).options.translationEnabled).toBe(false);
     await setCloud(page, "Recognition and review fixture");
-    await expect(page.getByLabel("翻译服务", { exact: true })).toHaveCount(0);
+    await expect((await jobSetting(page, '翻译服务'))).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: "重新翻译片段", exact: true }),
+      (await workspaceButton(page, '重新翻译片段')),
     ).toHaveCount(0);
-    await page
-      .getByRole("button", { name: "一键生成字幕", exact: true })
+    await (await workspaceButton(page, '一键生成字幕'))
       .click();
     await expect(page.getByTestId("segment-0")).toContainText("Hello world.");
     await expect(page.getByTestId("segment-1")).toContainText(
       "A second sentence.",
     );
     expect(mock.counters.translation).toBe(0);
-    await page
-      .getByRole("button", { name: "重新识别原片", exact: true })
+    await (await workspaceButton(page, '重新识别原片'))
       .click();
     await page
       .getByRole("button", { name: "确认重新识别", exact: true })
       .click();
     await expect(
-      page.getByRole("button", { name: "重新识别原片", exact: true }),
+      (await workspaceButton(page, '重新识别原片')),
     ).toBeEnabled();
     expect(mock.counters.recognition).toBe(2);
     expect(mock.counters.translation).toBe(0);
@@ -241,8 +238,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     });
     mock.behavior.recognition = "partial";
     await page.getByLabel("选择字幕 1", { exact: true }).check();
-    await page
-      .getByRole("button", { name: "重新识别片段", exact: true })
+    await (await workspaceButton(page, '重新识别片段'))
       .click();
     await expect(page.getByLabel("同时翻译", { exact: true })).toHaveCount(0);
     await expect(page.locator(".reprocessing-panel__scope")).toContainText("1");
@@ -259,8 +255,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       untouched,
     );
     // An explicit interval intersects the second cue; replacement expands to 2–3.8s.
-    await page
-      .getByRole("button", { name: "重新识别片段", exact: true })
+    await (await workspaceButton(page, '重新识别片段'))
       .click();
     await page.getByRole("button", { name: "起止时间", exact: true }).click();
     await page.getByLabel("片段开始（秒）", { exact: true }).fill("2.4");
@@ -278,12 +273,10 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       .poll(async () => (await job(page)).segments[1]?.startMs)
       .toBe(2000);
     expect((await job(page)).segments[0]).toEqual(repaired.segments[0]);
-    await page
-      .getByLabel("AI 检查服务（可选）", { exact: true })
+    await (await jobSetting(page, 'AI 检查服务（可选）'))
       .selectOption({ label: "Recognition and review fixture" });
     const recognitionBeforeReview = mock.counters.recognition;
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
+    await (await workspaceButton(page, 'AI 检查字幕'))
       .click();
     await expect
       .poll(async () => (await job(page)).reviewReport?.findings.length)
@@ -310,8 +303,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       .poll(() => mock.counters.recognition)
       .toBe(recognitionBeforeReview + 2);
     await expect(page.locator(".review-finding--recheck")).toHaveCount(2);
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
+    await (await workspaceButton(page, 'AI 检查字幕'))
       .click();
     await expect.poll(() => mock.counters.review).toBe(2);
     await expect(page.locator(".review-finding--pending")).toHaveCount(2);
@@ -380,8 +372,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       });
       if (!result.success) throw new Error(result.error);
     });
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
+    await (await workspaceButton(page, 'AI 检查字幕'))
       .click();
     await expect(page.locator(".review-finding--pending")).toHaveCount(2);
     await page
@@ -556,18 +547,15 @@ for (const orientation of ["portrait", "landscape"] as const) {
       await expect(page.locator(".subtitle-row")).toHaveCount(25);
       await addProfile(page, "Layout review fixture", "openai", mock.url);
       await setCloud(page, "Layout review fixture");
-      await page
-        .getByLabel("AI 检查服务（可选）", { exact: true })
+      await (await jobSetting(page, 'AI 检查服务（可选）'))
         .selectOption({ label: "Layout review fixture" });
       mock.behavior.review = "graded";
-      await page
-        .getByRole("button", { name: "AI 检查字幕", exact: true })
+      await (await workspaceButton(page, 'AI 检查字幕'))
         .click();
       await expect(page.locator(".review-summary")).toBeVisible();
       await expect(page.locator(".processing-strip")).not.toBeVisible();
       mock.behavior.review = "slow";
-      await page
-        .getByRole("button", { name: "AI 检查字幕", exact: true })
+      await (await workspaceButton(page, 'AI 检查字幕'))
         .click();
       await expect.poll(() => mock.counters.review).toBe(2);
       await page
@@ -623,19 +611,21 @@ for (const orientation of ["portrait", "landscape"] as const) {
               .toBeGreaterThan(100);
             expect(await page.locator("video").boundingBox()).toEqual(before);
             if (secondaryExpanded) {
+              const overflows = await page.locator('.work-grid__settings').evaluate((node) => node.scrollHeight > node.clientHeight);
               await page.locator(".work-grid__settings").hover();
               await page.mouse.wheel(0, 700);
-              await expect
+              if (overflows) await expect
                 .poll(() =>
                   page
                     .locator(".work-grid__settings")
                     .evaluate((node) => node.scrollTop),
                 )
                 .toBeGreaterThan(0);
+              else expect(await page.locator('.work-grid__settings').evaluate((node) => node.scrollTop)).toBe(0);
+              expect(await page.locator('video').boundingBox()).toEqual(before);
             }
             expect(await page.evaluate(() => window.scrollY)).toBe(0);
-            await page
-              .getByRole("button", { name: "添加画面字幕", exact: true })
+            await (await workspaceButton(page, '添加画面字幕'))
               .click();
             await page
               .getByLabel("原文", { exact: true })
@@ -665,8 +655,7 @@ for (const orientation of ["portrait", "landscape"] as const) {
             await page
               .getByRole("button", { name: "取消", exact: true })
               .click();
-            await page
-              .getByRole("button", { name: "重新识别片段", exact: true })
+            await (await workspaceButton(page, '重新识别片段'))
               .click();
             await page
               .getByRole("button", { name: "起止时间", exact: true })
@@ -765,17 +754,14 @@ test("local and URL import persist explicit translation choices and translation-
     await importVideo(page, true);
     expect((await job(page)).options.translationEnabled).toBe(true);
     await setCloud(page, "Translation fixture");
-    await page
-      .getByLabel("翻译服务", { exact: true })
+    await (await jobSetting(page, '翻译服务'))
       .selectOption({ label: "Translation fixture" });
-    await page
-      .getByRole("button", { name: "一键生成字幕", exact: true })
+    await (await workspaceButton(page, '一键生成字幕'))
       .click();
     await expect(page.getByTestId("segment-0")).toContainText("你好，世界。");
     const before = await job(page);
     await page.getByLabel("选择字幕 1", { exact: true }).check();
-    await page
-      .getByRole("button", { name: "重新翻译片段", exact: true })
+    await (await workspaceButton(page, '重新翻译片段'))
       .click();
     await page
       .getByRole("button", { name: "翻译选定片段", exact: true })
@@ -790,8 +776,7 @@ test("local and URL import persist explicit translation choices and translation-
     });
     expect(translated.segments[1]).toEqual(before.segments[1]);
     mock.behavior.recognition = "partial";
-    await page
-      .getByRole("button", { name: "重新识别片段", exact: true })
+    await (await workspaceButton(page, '重新识别片段'))
       .click();
     await page.getByLabel("同时翻译", { exact: true }).check();
     await page
@@ -801,13 +786,14 @@ test("local and URL import persist explicit translation choices and translation-
       "已重译：Repaired source passage.",
     );
     expect(mock.counters.translation).toBe(3);
-    await page.getByLabel("翻译字幕", { exact: true }).click();
+    await (await jobSetting(page, "翻译字幕")).click();
     await expect(
-      page.getByLabel("翻译字幕", { exact: true }),
+      (await jobSetting(page, "翻译字幕")),
     ).not.toBeChecked();
     await expect(page.getByTestId("segment-0")).not.toContainText("已重译");
     expect((await job(page)).segments[0]?.translatedText).toContain("已重译");
     expect(mock.counters.translation).toBe(3);
+    await closeWorkspaceSettings(page);
     await page
       .getByRole("button", { name: "链接导入设置", exact: true })
       .click();
@@ -821,7 +807,7 @@ test("local and URL import persist explicit translation choices and translation-
     ).toBeVisible({ timeout: 30000 });
     await page.getByRole("button", { name: "关闭", exact: true }).click();
     for (const enabled of [false, true]) {
-      await page.getByRole("button", { name: "链接导入", exact: true }).click();
+      await (await workspaceButton(page, '链接导入')).click();
       const dialog = page.getByRole("dialog", {
         name: "链接导入视频",
         exact: true,

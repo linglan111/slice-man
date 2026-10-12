@@ -1,10 +1,11 @@
+import { jobSetting, workspaceButton } from './helpers';
 import {
   test,
   expect,
   type Page,
   type ElectronApplication,
 } from "@playwright/test";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import {
   addProfile,
@@ -44,15 +45,24 @@ async function drag(page: Page, label: string, delta: number): Promise<void> {
     (await separator.getAttribute("aria-orientation")) === "vertical";
   const x = bounds.x + bounds.width / 2;
   const y = bounds.y + bounds.height / 2;
+  const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   await page.mouse.move(x, y);
   await page.mouse.down();
+  // CDP can lose release events thousands of pixels outside a native window.
+  // Real viewport edges still exceed every pane limit and exercise clamping.
   await page.mouse.move(
-    x + (vertical ? delta : 0),
-    y + (vertical ? 0 : delta),
+    Math.max(1, Math.min(viewport.width - 1, x + (vertical ? delta : 0))),
+    Math.max(1, Math.min(viewport.height - 1, y + (vertical ? 0 : delta))),
     { steps: 8 },
   );
   await page.mouse.up();
   await expect(page.locator("body")).not.toHaveClass(/pane-dragging/);
+  if (Math.abs(delta) >= 5000) {
+    await expect.poll(async () => {
+      const bound = await separator.getAttribute(delta < 0 ? "aria-valuemin" : "aria-valuemax");
+      return Number(await separator.getAttribute("aria-valuenow")) - Number(bound);
+    }).toBe(0);
+  }
 }
 
 async function assertWorkspace(page: Page): Promise<void> {
@@ -75,7 +85,7 @@ async function assertWorkspace(page: Page): Promise<void> {
       };
       const list = document.querySelector(".subtitle-list");
       const editor = document.querySelector(
-        ".preview-editor, .reprocessing-panel",
+        ".preview-editor:not([hidden]), .reprocessing-panel, .operation-panel",
       );
       return {
         width: innerWidth,
@@ -222,23 +232,20 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
     await importVideo(page);
     await assertBrand(page, app);
     await configureCloud(page, "Resize provider fixture");
-    await page
-      .getByLabel("AI 检查服务（可选）", { exact: true })
+    await (await jobSetting(page, 'AI 检查服务（可选）'))
       .selectOption({ label: "Resize provider fixture" });
-    await page
-      .getByRole("button", { name: "一键生成字幕", exact: true })
+    await (await workspaceButton(page, '一键生成字幕'))
       .click();
     await expect(page.getByTestId("segment-0")).toContainText("你好，世界。");
     await expect(page.locator(".processing-strip")).not.toBeVisible();
     await page.screenshot({
       path: join(evidence, "resize-default-workspace-brand.png"),
     });
-    await page.getByLabel("双语字幕（译文 + 原文）", { exact: true }).click();
+    await (await jobSetting(page, '双语字幕（译文 + 原文）')).click();
     await expect(
-      page.getByLabel("双语字幕（译文 + 原文）", { exact: true }),
+      (await jobSetting(page, '双语字幕（译文 + 原文）')),
     ).toBeChecked();
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
+    await (await workspaceButton(page, 'AI 检查字幕'))
       .click();
     await expect(page.locator(".review-summary")).toBeVisible();
     await expect(page.locator(".processing-strip")).not.toBeVisible();
@@ -267,7 +274,13 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
           exact: true,
         });
         const before = Number(await separator.getAttribute("aria-valuenow"));
-        await drag(page, label, index === 2 ? -25 : 25);
+        const minimum = Number(await separator.getAttribute('aria-valuemin'));
+        const maximum = Number(await separator.getAttribute('aria-valuemax'));
+        await writeFile(join(evidence, `resize-${size.width}-${index}-bounds.json`), JSON.stringify({ label, before, min: minimum, max: maximum }, null, 2));
+        expect(maximum).toBeGreaterThan(minimum);
+        const preferred = index === 2 ? -25 : 25;
+        const delta = preferred < 0 && before <= minimum ? 25 : preferred > 0 && before >= maximum ? -25 : preferred;
+        await drag(page, label, delta);
         await expect
           .poll(async () =>
             Number(await separator.getAttribute("aria-valuenow")),
@@ -323,8 +336,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await page
         .getByRole("separator", { name: labels[1], exact: true })
         .press("Home");
-      await page
-        .getByRole("button", { name: "添加画面字幕", exact: true })
+      await (await workspaceButton(page, '添加画面字幕'))
         .click();
       await page
         .getByLabel("原文", { exact: true })
@@ -351,8 +363,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
           `resize-${size.width}x${size.height}-translated-inline.png`,
         ),
       });
-      await page
-        .getByRole("button", { name: "重新识别片段", exact: true })
+      await (await workspaceButton(page, '重新识别片段'))
         .click();
       await expect(page.locator(".reprocessing-panel")).toBeVisible();
       await expect(page.locator(".preview-editor")).not.toBeVisible();
@@ -370,22 +381,19 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       );
       await assertWorkspace(page);
       await page.getByRole("button", { name: "取消", exact: true }).click();
-      await page
-        .getByRole("button", { name: "重新识别片段", exact: true })
+      await (await workspaceButton(page, '重新识别片段'))
         .click();
       await drag(page, inline, -5000);
       await assertWorkspace(page);
       await drag(page, inline, 5000);
       await assertWorkspace(page);
-      await page
-        .getByRole("button", { name: "添加画面字幕", exact: true })
+      await (await workspaceButton(page, '添加画面字幕'))
         .click();
       await expect(page.locator(".reprocessing-panel")).toHaveCount(0);
       await expect(page.locator(".preview-editor")).toBeVisible();
       await assertWorkspace(page);
       await page.getByRole("button", { name: "取消", exact: true }).click();
-      await page
-        .getByRole("button", { name: "重新识别片段", exact: true })
+      await (await workspaceButton(page, '重新识别片段'))
         .click();
       await page.getByLabel("关闭分段处理", { exact: true }).click();
       const disclosure = page.getByRole("button", { name: /生成、样式与导出/ });

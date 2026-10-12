@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { useState, type ReactNode, type ComponentProps } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REVIEW_RISK_LABELS, REVIEW_RUBRIC_VERSION, REVIEW_RULES, type Job, type ReviewRiskLevel } from '../../../src/shared/contracts';
 import { SubtitleList } from '../../../src/renderer/src/components/SubtitleList';
 import { savedJob } from './app-fixtures';
 
+beforeEach(() => { HTMLDialogElement.prototype.showModal = function (): void { this.open = true; }; HTMLDialogElement.prototype.close = function (): void { this.open = false; }; });
 afterEach(cleanup);
 
 function gradedJob(levels: ReviewRiskLevel[] = ['none', 'low', 'medium', 'high']): Job {
@@ -97,11 +98,12 @@ describe('contextual four-level review presentation', () => {
     for (const label of Object.values(REVIEW_RISK_LABELS)) expect(within(screen.getByLabelText('可疑度筛选')).getByRole('option', { name: `${label}（0）` })).toBeTruthy();
   });
 
-  it('expands the exact shared rubric inside the local subtitle scroll region', () => {
+  it('opens the exact shared rubric outside the subtitle scroll region', () => {
     render(<SubtitleList {...props(gradedJob())} />);
     fireEvent.click(screen.getByRole('button', { name: '可疑度判断标准' }));
     const help = screen.getByRole('region', { name: '可疑度判断标准' });
-    expect(help.closest('.subtitle-list')).toBeTruthy();
+    expect(help.closest('.subtitle-list')).toBeNull();
+    expect(screen.getByRole('dialog', { name: '可疑度判断标准' }).contains(help)).toBe(true);
     expect(help.textContent).toContain('标准版本：v1');
     expect(help.textContent).toContain('无 · 未发现明显疑点');
     for (const rule of REVIEW_RULES) expect(help.textContent).toContain(rule.description);

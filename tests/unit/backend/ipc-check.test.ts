@@ -14,6 +14,11 @@ const mocks = vi.hoisted(() => ({
   removed: [] as string[],
   listProfiles: vi.fn(() => []),
   saveProfile: vi.fn(),
+  assertProfileWritable: vi.fn(),
+  repairLoop: vi.fn(async () => ({ id: "test-job" })),
+  analyzeNames: vi.fn(async () => ({ id: "test-job" })),
+  applyNames: vi.fn(() => ({ id: "test-job" })),
+  undoNames: vi.fn(() => ({ id: "test-job" })),
   recognizeAgain: vi.fn(async () => ({ id: "test-job" })),
   addSegment: vi.fn(() => ({ id: "test-job" })),
   removeSegment: vi.fn(() => ({ id: "test-job" })),
@@ -49,6 +54,8 @@ vi.mock("electron", () => ({
 }));
 vi.mock("../../../src/main/env-setup", () => ({ isE2e: false }));
 import { registerIpc } from "../../../src/main/ipc";
+import { AppError } from "../../../src/main/lib/errors";
+import { IPC_CHANNELS } from "../../../src/shared/channels";
 
 beforeEach(() => {
   mocks.handlers.clear();
@@ -81,6 +88,11 @@ describe("independent narrow IPC trust boundary", () => {
         addSegment: mocks.addSegment,
         removeSegment: mocks.removeSegment,
         export: mocks.exportJob,
+        assertProfileWritable: mocks.assertProfileWritable,
+        repairLoop: mocks.repairLoop,
+        analyzeNames: mocks.analyzeNames,
+        applyNames: mocks.applyNames,
+        undoNames: mocks.undoNames,
       } as unknown as JobService,
       runtime: {} as RuntimeService,
       download: { cancel: vi.fn() } as unknown as DownloadService,
@@ -121,6 +133,33 @@ describe("independent narrow IPC trust boundary", () => {
       }),
     ).toMatchObject({ success: false, code: "IPC_DENIED" });
     expect(mocks.listProfiles).toHaveBeenCalledTimes(1);
+  });
+  it("strictly validates name analysis, batch mapping and undo identity before the service", async () => {
+    const f = fixture();
+    const base = { jobId: "test-job", revision: 2 };
+    const apply = { ...base, reportId: "report", mappings: [{ candidateId: "candidate", sourceName: "Anne", translatedName: "安妮", enabled: true }] };
+    const undo = { ...base, batchId: "batch" };
+    for (const [channel, raw] of [
+      ["jobs:analyzeNames", { jobId: "test-job" }],
+      ["jobs:analyzeNames", { ...base, revision: .5 }],
+      ["jobs:analyzeNames", { ...base, profileId: "forged" }],
+      ["jobs:applyNames", { ...apply, mappings: [{ ...apply.mappings[0], sourceName: " " }] }],
+      ["jobs:applyNames", { ...apply, mappings: [{ ...apply.mappings[0], occurrences: [] }] }],
+      ["jobs:applyNames", { ...apply, reportId: "" }],
+      ["jobs:undoNames", { ...undo, batchId: "" }],
+      ["jobs:undoNames", { ...undo, patches: [] }],
+    ] as const) {
+      expect(await f.invoke(channel, raw)).toMatchObject({ success: false, code: "VALIDATION_ERROR" });
+    }
+    expect(mocks.analyzeNames).not.toHaveBeenCalled();
+    expect(mocks.applyNames).not.toHaveBeenCalled();
+    expect(mocks.undoNames).not.toHaveBeenCalled();
+    expect(await f.invoke("jobs:analyzeNames", base)).toMatchObject({ success: true });
+    expect(await f.invoke("jobs:applyNames", apply)).toMatchObject({ success: true });
+    expect(await f.invoke("jobs:undoNames", undo)).toMatchObject({ success: true });
+    expect(mocks.analyzeNames).toHaveBeenCalledExactlyOnceWith(base);
+    expect(mocks.applyNames).toHaveBeenCalledExactlyOnceWith(apply);
+    expect(mocks.undoNames).toHaveBeenCalledExactlyOnceWith(undo);
   });
   it("rejects malformed and unknown input fields before storage mutation", async () => {
     const f = fixture();
@@ -169,7 +208,49 @@ describe("independent narrow IPC trust boundary", () => {
     const f = fixture();
     f.dispose();
     expect(new Set(mocks.removed)).toEqual(new Set(mocks.handlers.keys()));
-    expect(mocks.removed).toHaveLength(37);
+    expect(new Set(mocks.removed)).toEqual(new Set(
+      Object.entries(IPC_CHANNELS).flatMap(([group, methods]) => methods.map((method) => `${group}:${method}`)),
+    ));
+  });
+  it("validates automatic loop input before invocation and guards active provider edits", async () => {
+    const f = fixture();
+    const base = {
+      jobId: "test-job",
+      revision: 1,
+      threshold: "medium",
+      maxRounds: 3,
+      scope: { mode: "all" },
+    };
+    for (const input of [
+      { ...base, maxRounds: 21 },
+      { ...base, maxRounds: NaN },
+      { ...base, threshold: "none" },
+      { ...base, scope: { mode: "range", startMs: -1, endMs: 1000 } },
+      { ...base, force: true },
+    ])
+      expect(await f.invoke("jobs:repairLoop", input)).toMatchObject({
+        success: false,
+        code: "VALIDATION_ERROR",
+      });
+    expect(mocks.repairLoop).not.toHaveBeenCalled();
+    expect(await f.invoke("jobs:repairLoop", base)).toMatchObject({
+      success: true,
+    });
+    expect(mocks.repairLoop).toHaveBeenCalledExactlyOnceWith(base);
+    mocks.assertProfileWritable.mockImplementationOnce(() => {
+      throw new AppError("JOB_BUSY", "provider in use");
+    });
+    expect(
+      await f.invoke("profiles:save", {
+        id: "profile",
+        name: "test",
+        protocol: "openai",
+        baseUrl: "https://example.com",
+        model: "test",
+        apiKey: "test-only",
+      }),
+    ).toMatchObject({ success: false, code: "JOB_BUSY" });
+    expect(mocks.saveProfile).not.toHaveBeenCalled();
   });
   it("validates export defaults and passes only operation choices, using configured native-dialog location", async () => {
     const f = fixture();

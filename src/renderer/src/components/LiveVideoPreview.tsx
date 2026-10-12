@@ -70,7 +70,8 @@ export function LiveVideoPreview({ job, source, videoRef, onTimeUpdate, onError,
   };
   return <div className="live-video-player">
     <video ref={videoRef} src={source} controls onTimeUpdate={(event) => onTimeUpdate(Math.round(event.currentTarget.currentTime * 1000))} onSeeked={(event) => onTimeUpdate(Math.round(event.currentTarget.currentTime * 1000))} onError={onError} />
-    {!isNativeFullscreen && <div className="live-captions" data-testid="live-captions" aria-label="实时字幕" style={clock.rect}>
+    {/* Clamp immediately in CSS while ResizeObserver catches up after a pane shrinks. */}
+    {!isNativeFullscreen && <div className="live-captions" data-testid="live-captions" aria-label="实时字幕" style={{ ...clock.rect, maxHeight: `calc(100% - ${clock.rect.top}px)`, maxWidth: `calc(100% - ${clock.rect.left}px)` }}>
       <div className="live-captions__stack" style={captionStyle}>{active.map((segment) => {
         const keywords = style.emphasisBySegment.find((item) => item.segmentId === segment.id)?.keywords ?? [];
         return <button type="button" className="live-captions__cue" key={segment.id} data-cue-id={segment.id} aria-label={`校对画面字幕：${primarySubtitleText(segment, job.options.translationEnabled)}`} disabled={isBusy || !onEdit} style={{ opacity: captionOpacity(segment, clock.timeMs, style.animation) }} onClick={() => {

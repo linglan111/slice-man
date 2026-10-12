@@ -19,6 +19,8 @@ import {
   launchApp,
   makeVideo,
   startMockServer,
+  jobSetting,
+  closeWorkspaceSettings,
 } from "./helpers";
 
 const evidence = resolve(
@@ -26,9 +28,14 @@ const evidence = resolve(
 );
 const promptSchema = z
   .object({
-    selected: z.array(z.object({ id: z.string() }).passthrough()),
-    context: z.array(
-      z.object({ id: z.string(), sourceText: z.string() }).passthrough(),
+    cues: z.array(
+      z.object({ n: z.number().int(), sourceText: z.string() }).passthrough(),
+    ),
+    groups: z.array(
+      z.object({
+        targets: z.array(z.number().int()),
+        context: z.array(z.number().int()),
+      }),
     ),
     rubric: z
       .object({
@@ -47,11 +54,10 @@ const promptSchema = z
     translationEnabled: z.boolean(),
   })
   .passthrough();
-
 function readPrompt(prompt: string): z.infer<typeof promptSchema> {
   const line = prompt
     .split("\n")
-    .find((candidate) => candidate.startsWith('{"selected"'));
+    .find((candidate) => candidate.startsWith('{"cues"'));
   return promptSchema.parse(JSON.parse(line ?? "{}") as unknown);
 }
 
@@ -187,13 +193,14 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
     ).toBeVisible();
     expect((await currentJob(page)).reviewReport).toBeUndefined();
     await addProfile(page, "Contextual fixture", "openai", mock.url);
-    await page.getByLabel("识别方式", { exact: true }).selectOption("cloud");
-    await page
-      .getByLabel("语音识别服务", { exact: true })
-      .selectOption({ label: "Contextual fixture" });
-    await page
-      .getByLabel("AI 检查服务（可选）", { exact: true })
-      .selectOption({ label: "Contextual fixture" });
+    await (await jobSetting(page, "识别方式")).selectOption("cloud");
+    await (
+      await jobSetting(page, "语音识别服务")
+    ).selectOption({ label: "Contextual fixture" });
+    await (
+      await jobSetting(page, "AI 检查服务（可选）")
+    ).selectOption({ label: "Contextual fixture" });
+    await closeWorkspaceSettings(page);
     await page
       .getByRole("button", { name: "AI 检查字幕", exact: true })
       .click();
@@ -236,22 +243,20 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       ),
     ).toHaveLength(1);
     const prompts = mock.reviewPrompts.map(readPrompt);
-    expect(prompts).toHaveLength(2);
-    const first = prompts[0];
-    const second = prompts[1];
-    const beforeBoundary = reviewed.segments[29];
-    const afterBoundary = reviewed.segments[30];
-    if (!first || !second || !beforeBoundary || !afterBoundary)
+    expect(prompts).toHaveLength(1);
+    expect(mock.counters.review).toBe(1);
+    const aggregate = prompts[0];
+    const first = aggregate?.groups[0];
+    const second = aggregate?.groups[1];
+    if (!aggregate || !first || !second)
       throw new Error("Cross-boundary fixture missing");
-    expect(first.selected).toHaveLength(30);
-    expect(second.selected).toHaveLength(4);
-    expect(first.context.some((cue) => cue.id === afterBoundary.id)).toBe(true);
-    expect(second.context.some((cue) => cue.id === beforeBoundary.id)).toBe(
-      true,
+    expect(first.targets).toHaveLength(30);
+    expect(second.targets).toHaveLength(4);
+    expect(first.context).toContain(30);
+    expect(second.context).toContain(29);
+    expect(aggregate.cues.find((cue) => cue.n === 29)?.sourceText).toContain(
+      "posted yesterday",
     );
-    expect(
-      second.context.find((cue) => cue.id === beforeBoundary.id)?.sourceText,
-    ).toContain("posted yesterday");
     for (const prompt of prompts) {
       expect(prompt.rubric.version).toBe(REVIEW_RUBRIC_VERSION);
       expect(prompt.rubric.rules.map((rule) => rule.ruleId)).toEqual([
@@ -369,7 +374,7 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
     await page
       .getByRole("button", { name: "AI 检查字幕", exact: true })
       .click();
-    await expect.poll(() => mock.counters.review).toBe(4);
+    await expect.poll(() => mock.counters.review).toBe(2);
     await expect(
       page.getByTestId("segment-0").getByLabel("可疑度：无", { exact: true }),
     ).toBeVisible();
@@ -416,6 +421,12 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       BrowserWindow.getAllWindows()[0]?.setSize(1050, 700);
     });
     const pendingMinimumLayout = await gradeWorkspace(page, "pending-minimum");
+    const previousListScroll = await page
+      .locator(".subtitle-list")
+      .evaluate((node) => {
+        node.scrollTop = node.scrollHeight;
+        return node.scrollTop;
+      });
     await page
       .getByRole("button", { name: "可疑度判断标准", exact: true })
       .click();
@@ -423,6 +434,9 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       name: "可疑度判断标准",
       exact: true,
     });
+    await expect(
+      page.getByRole("dialog", { name: "可疑度判断标准", exact: true }),
+    ).toBeVisible();
     await expect(help).toContainText("v1");
     await expect(help).toContainText("未发现明显疑点");
     await expect(help).toContainText("需排除");
@@ -432,11 +446,9 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       path: join(evidence, "contextual-minimum-pending-standards.png"),
     });
     await help.locator("li").last().scrollIntoViewIfNeeded();
-    await expect
-      .poll(() =>
-        page.locator(".subtitle-list").evaluate((node) => node.scrollTop),
-      )
-      .toBeGreaterThan(0);
+    expect(
+      await page.locator(".subtitle-list").evaluate((node) => node.scrollTop),
+    ).toBe(previousListScroll);
     expect(await page.evaluate(() => scrollY)).toBe(0);
     await page.getByLabel("关闭判断标准", { exact: true }).click();
     await filter.selectOption("all");
@@ -518,8 +530,8 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
           cueCount: 34,
           initialGrades: { none: 30, low: 1, medium: 2, high: 1 },
           suppliedContexts: prompts.map((prompt) => ({
-            selectedIds: prompt.selected.map((cue) => cue.id),
-            contextIds: prompt.context.map((cue) => cue.id),
+            selectedAliases: prompt.groups.flatMap((group) => group.targets),
+            contextAliases: prompt.groups.map((group) => group.context),
           })),
           crossBatchNeighbourText: true,
           currentGradeFilterCounts: true,

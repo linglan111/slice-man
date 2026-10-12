@@ -38,20 +38,21 @@ describe('secondary workflow disclosure', () => {
     const toggle = await screen.findByRole('button', { name: /生成、样式与导出/ });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(screen.getByRole('button', { name: '添加字幕' }).closest('.work-grid__settings')).toBeNull();
-    expect(document.querySelector('.subtitle-panel')?.parentElement?.firstElementChild?.className).toBe('work-grid__content');
+    expect(document.querySelector('.subtitle-panel')?.parentElement?.className).toBe('work-grid__proofreading');
     fireEvent.click(toggle);
     await act(async () => { progress({ ...job, revision: 8, updatedAt: 8, segments: [] }); });
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(api.jobs.updateOptions).not.toHaveBeenCalled();
   });
 
-  it('starts expanded for pending generation and honors an explicit collapse on a new project', async () => {
+  it('starts collapsed for pending generation with actions in the toolbar and remembers expansion', async () => {
     const job = { ...savedJob(), segments: [] }; stubApi(job);
     const view = render(<App />);
     const toggle = await screen.findByRole('button', { name: /生成、样式与导出/ });
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('button', { name: '生成' })).toBeTruthy();
     fireEvent.click(toggle); view.unmount(); stubApi({ ...job, id: 'another-project' });
     render(<App />);
-    expect((await screen.findByRole('button', { name: /生成、样式与导出/ })).getAttribute('aria-expanded')).toBe('false');
+    expect((await screen.findByRole('button', { name: /生成、样式与导出/ })).getAttribute('aria-expanded')).toBe('true');
   });
 });

@@ -29,26 +29,31 @@ export type MockServer = {
     style: number;
     connection: number;
     review: number;
+    names: number;
   };
   reviewPrompts: string[];
+  namePrompts: string[];
   behavior: {
     translation: "ok" | "auth-error" | "slow";
     style: "ok" | "invalid";
     artifact: "ok" | "corrupt" | "slow";
     recognition: "full" | "partial";
-    review: "findings" | "empty" | "slow" | "graded";
+    review: "findings" | "empty" | "slow" | "graded" | "evidence-corrected" | "evidence-invalid";
+    names: "ok" | "slow" | "empty";
   };
   close: () => Promise<void>;
 };
 
 export async function startMockServer(): Promise<MockServer> {
   const reviewPrompts: string[] = [];
+  const namePrompts: string[] = [];
   const counters = {
     recognition: 0,
     translation: 0,
     style: 0,
     connection: 0,
     review: 0,
+    names: 0,
   };
   const behavior: MockServer["behavior"] = {
     translation: "ok",
@@ -56,6 +61,7 @@ export async function startMockServer(): Promise<MockServer> {
     artifact: "ok",
     recognition: "full",
     review: "findings",
+    names: "ok",
   };
   const server = createServer((request, response) => {
     async function handle(): Promise<void> {
@@ -134,70 +140,30 @@ export async function startMockServer(): Promise<MockServer> {
                 fontSizeRatio: 0.05,
                 textColor: "#FFF5C2",
               };
+      } else if (prompt.startsWith("Analyze recurring PERSON names")) {
+        counters.names++;
+        namePrompts.push(prompt);
+        if (behavior.names === "slow") return;
+        const payload = z.object({ translationEnabled: z.boolean() }).passthrough().parse(JSON.parse(prompt.split("\n").at(-1) ?? "{}") as unknown);
+        content = { candidates: behavior.names === "empty" ? [] : [{ sourceAliases: ["Ann"], translatedAliases: payload.translationEnabled ? ["安娜"] : [], sourceName: "Anne", ...(payload.translationEnabled ? { translatedName: "安妮" } : {}), reason: "同一姓名在两条字幕中重复出现，请核对上下文后统一。" }] };
       } else if (prompt.startsWith("Review subtitle text and timing.")) {
         counters.review++;
         reviewPrompts.push(prompt);
         if (behavior.review === "slow") return;
-        const line = prompt
-          .split("\n")
-          .find((value) => value.startsWith('{"selected"'));
-        const batch = z
-          .object({
-            selected: z.array(z.object({ id: z.string() }).passthrough()),
-            context: z.array(
-              z
-                .object({ id: z.string(), sourceText: z.string() })
-                .passthrough(),
-            ),
-          })
-          .passthrough()
-          .parse(JSON.parse(line ?? "{}") as unknown);
-        content = {
-          assessments: batch.selected.map((cue) => {
-            const sourceText = batch.context.find(
-              (candidate) => candidate.id === cue.id,
-            )?.sourceText;
-            if (sourceText === undefined)
-              throw new Error("Review target omitted from contextual dialogue");
-            const ruleId =
-              behavior.review === "empty"
-                ? undefined
-                : behavior.review !== "graded"
-                  ? "source.meaning_problem"
-                  : sourceText.startsWith("LOW:")
-                    ? "source.minor_wording"
-                    : sourceText.startsWith("MEDIUM:")
-                      ? "source.meaning_problem"
-                      : sourceText.startsWith("HIGH:")
-                        ? "timing.severe_readability"
-                        : undefined;
-            const neighbor = batch.context.find(
-              (candidate) => candidate.id !== cue.id,
-            );
-            return {
-              segmentId: cue.id,
-              issues: ruleId
-                ? [
-                    {
-                      ruleId,
-                      reason:
-                        ruleId === "timing.severe_readability"
-                          ? "这句文字量较大，只显示100毫秒，严重影响阅读。"
-                          : ruleId === "source.minor_wording"
-                            ? "这句措辞有轻微疑点，但主要意思明确。"
-                            : "该词组影响句意理解，请结合相邻对话试听确认。",
-                      evidenceIds: [
-                        cue.id,
-                        ...(neighbor && ruleId === "source.meaning_problem"
-                          ? [neighbor.id]
-                          : []),
-                      ],
-                    },
-                  ]
-                : [],
-            };
-          }),
-        };
+        const line = prompt.split("\n").find(value => value.startsWith('{"cues"'));
+        const batch = z.object({
+          cues: z.array(z.object({ n: z.number().int(), sourceText: z.string() }).passthrough()),
+          groups: z.array(z.object({targets: z.array(z.number().int()),context: z.array(z.number().int())})),
+        }).passthrough().parse(JSON.parse(line ?? "{}") as unknown);
+        content = {a: batch.groups.flatMap(group => group.targets.map(n => {
+          const sourceText = batch.cues.find(candidate => candidate.n === n)?.sourceText;
+          if (sourceText === undefined) throw new Error("Review target omitted from contextual dialogue");
+          const needsEvidence = behavior.review === "evidence-corrected" || behavior.review === "evidence-invalid";
+          const ruleId = needsEvidence ? "source.context_inconsistency" : behavior.review === "empty" ? undefined : behavior.review !== "graded" ? "source.meaning_problem" : sourceText.startsWith("LOW:") ? "source.minor_wording" : sourceText.startsWith("MEDIUM:") ? "source.meaning_problem" : sourceText.startsWith("HIGH:") ? "timing.severe_readability" : undefined;
+          const neighbor = group.context.find(candidate => candidate !== n);
+          const evidenceNeighbor = needsEvidence && behavior.review === "evidence-corrected" && prompt.includes("Correction 1/1") ? group.context.find(candidate => candidate !== n && Math.abs(candidate - n) <= 2) : undefined;
+          return [n, ruleId ? [[ruleId, ruleId === "timing.severe_readability" ? "这句文字量较大，只显示100毫秒，严重影响阅读。" : ruleId === "source.minor_wording" ? "这句措辞有轻微疑点，但主要意思明确。" : "该词组影响句意理解，请结合相邻对话试听确认。", [n, ...(needsEvidence ? evidenceNeighbor !== undefined ? [evidenceNeighbor] : [] : neighbor !== undefined && ruleId === "source.meaning_problem" ? [neighbor] : [])]]] : []];
+        }))};
       } else {
         counters.translation++;
         if (behavior.translation === "slow") return;
@@ -265,6 +231,7 @@ export async function startMockServer(): Promise<MockServer> {
     server,
     counters,
     reviewPrompts,
+    namePrompts,
     behavior,
     url: `http://127.0.0.1:${address.port}/v1`,
     close: async () => {
@@ -314,6 +281,7 @@ export async function launchApp(
   imports: string[],
   exports: string[],
   extraEnv: Record<string, string> = {},
+  options: { preserveGuide?: boolean } = {},
 ): Promise<{ app: ElectronApplication; page: Page }> {
   await mkdir(userData, { recursive: true });
   const inheritedEnv: Record<string, string> = {};
@@ -341,6 +309,15 @@ export async function launchApp(
     await expect(
       page.getByText("正在读取本地项目与引擎状态…"),
     ).not.toBeVisible();
+    // Wait for App's committed startup decision, not a race-prone visibility probe.
+    const shell = page.locator('[data-onboarding-state]');
+    await expect(shell).toHaveAttribute('data-onboarding-state', /^(open|settled)$/);
+    if (!options.preserveGuide && await shell.getAttribute('data-onboarding-state') === 'open') {
+      const guide = page.getByRole('dialog', { name: '功能导航', exact: true });
+      await guide.getByRole('button', { name: '稍后再看', exact: true }).click();
+      await expect(guide).not.toBeVisible();
+      await expect(shell).toHaveAttribute('data-onboarding-state', 'settled');
+    }
     return { app, page };
   } catch (error) {
     await app.close();
@@ -392,7 +369,7 @@ export async function configureCloud(
   page: Page,
   profile: string,
 ): Promise<void> {
-  await expandSecondaryControls(page);
+  await openGenerationSettings(page);
   await page.getByLabel("识别方式", { exact: true }).selectOption("cloud");
   await expect(page.getByLabel("语音识别服务", { exact: true })).toBeEnabled();
   await page
@@ -402,9 +379,9 @@ export async function configureCloud(
   await page
     .getByLabel("翻译服务", { exact: true })
     .selectOption({ label: profile });
-  await expect(
-    page.getByRole("button", { name: "一键生成字幕", exact: true }),
-  ).toBeEnabled();
+  await closeWorkspaceSettings(page);
+  await page.getByRole("button", { name: "生成", exact: true }).click();
+  await expect(page.getByRole("button", { name: "一键生成字幕", exact: true })).toBeEnabled();
 }
 
 /** Workflows that use generation/style settings deliberately open their disclosure. */
@@ -414,14 +391,45 @@ export async function expandSecondaryControls(page: Page): Promise<void> {
   if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
 }
 
+/** Open actual settings dialogs; retained workflow tests use the relocated public UI. */
+export async function closeWorkspaceSettings(page: Page): Promise<void> {
+  const dialog = page.getByRole('dialog').filter({ has: page.locator('.settings-panel, .style-panel') });
+  if (await dialog.count()) { await dialog.getByRole('button', { name: '返回工作区', exact: true }).click(); await expect(dialog).not.toBeVisible(); }
+}
+export async function openGenerationSettings(page: Page): Promise<void> {
+  const existing = page.getByRole('dialog', { name: '生成设置', exact: true });
+  if (await existing.count()) return;
+  await closeWorkspaceSettings(page);
+  await page.getByRole('button', { name: '生成设置', exact: true }).first().click();
+  await expect(existing).toBeVisible();
+}
+export async function jobSetting(page: Page, label: string): Promise<ReturnType<Page['getByLabel']>> {
+  const style = ['文字颜色', '字体', '字幕位置', '入场效果', '双语字幕（译文 + 原文）', '强调关键词'].includes(label);
+  if (style) {
+    const dialog = page.getByRole('dialog', { name: '样式设置', exact: true });
+    if (!await dialog.count()) { await closeWorkspaceSettings(page); await page.getByRole('button', { name: '样式设置', exact: true }).first().click(); }
+  } else await openGenerationSettings(page);
+  return page.getByLabel(label, { exact: true });
+}
+export async function workspaceButton(page: Page, name: string): Promise<ReturnType<Page['getByRole']>> {
+  await closeWorkspaceSettings(page);
+  const operation = ['一键生成字幕', '翻译全部字幕', '重新识别原片', '重试未完成阶段'].includes(name) ? '生成' : name.includes('生成 AI 样式') ? '样式' : null;
+  if (operation) { const toolbar = page.getByRole('toolbar', { name: '视频操作' }).getByRole('button', { name: operation, exact: true }); if (await toolbar.getAttribute('aria-pressed') !== 'true') await toolbar.click(); }
+  return page.getByRole('button', { name: name === '✧ 生成 AI 样式' ? '生成 AI 样式' : name, exact: true });
+}
+export async function styleTemplate(page: Page, name: string): Promise<ReturnType<Page['getByRole']>> {
+  await jobSetting(page, '文字颜色');
+  return page.getByRole('button', { name, exact: true });
+}
+
 export async function exportFormat(page: Page, format: string): Promise<void> {
-  await page.getByRole("button", { name: "导出作品", exact: true }).click();
+  await (await workspaceButton(page, "导出作品")).click();
   await page.getByLabel("导出格式", { exact: true }).selectOption(format);
   await page
     .getByRole("button", { name: "选择保存位置并导出", exact: true })
     .click();
   await expect(
-    page.getByRole("dialog", { name: "导出作品", exact: true }),
+    page.getByRole("region", { name: "导出操作面板", exact: true }),
   ).not.toBeVisible({ timeout: 60000 });
 }
 

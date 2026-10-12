@@ -33,7 +33,7 @@ describe('workspace allocation measurements', () => {
     const view = render(<Harness />);
     expect(layout().secondary.minimum).toBe(262); // 100px heading + 2px border + actual 160px video.
     view.rerender(<Harness inline />);
-    expect(layout().secondary.minimum).toBe(313); // The one visible inline region adds 85px + 16px gutter.
+    expect(layout().secondary.minimum).toBe(548); // Compact forms reserve 320px so export choices stay above the footer.
     expect(layout().editor.minimum).toBe(110);
   });
   it('observes new fixed error actions and removes their budget when cleared', async () => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App } from '../../../src/renderer/src/App';
 import type { Job } from '../../../src/shared/contracts';
 import { savedJob, stubApi } from './app-fixtures';
@@ -12,9 +12,11 @@ beforeAll(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 async function openConfirmation(): Promise<void> {
-  const disclosure = await screen.findByRole('button', { name: /生成、样式与导出/ });
-  if (disclosure.getAttribute('aria-expanded') === 'false') fireEvent.click(disclosure);
-  const trigger = await screen.findByRole('button', { name: '重新识别原片' });
+  await screen.findByText('Corrected original.');
+  const toolbar = screen.getByRole('toolbar', { name: '视频操作' });
+  fireEvent.click(within(toolbar).getByRole('button', { name: '生成' }));
+  const panel = await screen.findByRole('region', { name: '生成操作面板' });
+  const trigger = within(panel).getByRole('button', { name: '重新识别原片' });
   await waitFor(() => expect((trigger as HTMLButtonElement).disabled).toBe(false));
   fireEvent.click(trigger);
 }
@@ -22,7 +24,7 @@ async function openConfirmation(): Promise<void> {
 describe('App explicit recognition rerun integration', () => {
   it('dismisses without calling either recognition API or translation', async () => {
     const { api } = stubApi(savedJob());
-    render(<App />);
+    await act(async () => { render(<App />); });
     await openConfirmation();
     fireEvent.click(screen.getByRole('button', { name: '保留现有字幕' }));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -37,7 +39,7 @@ describe('App explicit recognition rerun integration', () => {
     const { api } = stubApi(previous);
     const next: Job = { ...previous, revision: 8, updatedAt: 8, segments: [{ ...previous.segments[0], id: 'fresh-cue', startMs: 100, endMs: 1800, sourceText: 'Fresh source.', translatedText: '', translationStale: false }], style: { ...previous.style, emphasisBySegment: [] } };
     vi.mocked(api.jobs.recognizeAgain).mockResolvedValue({ success: true, data: next });
-    render(<App />);
+    await act(async () => { render(<App />); });
     await screen.findByText('人工校对译文。');
     fireEvent.click(screen.getByLabelText('选择字幕 1'));
     await openConfirmation();
@@ -56,7 +58,7 @@ describe('App explicit recognition rerun integration', () => {
   it.each(['AUTH_ERROR', 'CANCELLED'])('retains corrected text and output history on %s', async (code) => {
     const { api } = stubApi(savedJob());
     vi.mocked(api.jobs.recognizeAgain).mockResolvedValue({ success: false, error: 'Attempt failed.', code });
-    render(<App />);
+    await act(async () => { render(<App />); });
     await openConfirmation();
     fireEvent.click(screen.getByRole('button', { name: '确认重新识别' }));
     const alert = await screen.findByRole('alert');
@@ -72,7 +74,7 @@ describe('App explicit recognition rerun integration', () => {
     const previous = savedJob();
     const { api, progress } = stubApi(previous);
     vi.mocked(api.jobs.recognizeAgain).mockResolvedValue({ success: false, error: 'Job changed.', code: 'STALE_REVISION' });
-    render(<App />);
+    await act(async () => { render(<App />); });
     await openConfirmation();
     await act(async () => { progress({ ...previous, revision: 8, updatedAt: 8, segments: [{ ...previous.segments[0], id: 'old-cue', startMs: 100, endMs: 1800, sourceText: 'Newer correction.', translatedText: '更新后的译文。', translationStale: false }] }); });
     fireEvent.click(screen.getByRole('button', { name: '确认重新识别' }));
@@ -85,7 +87,7 @@ describe('App explicit recognition rerun integration', () => {
   it('disables an open confirmation if a stage starts through progress events', async () => {
     const previous = savedJob();
     const { api, progress } = stubApi(previous);
-    render(<App />);
+    await act(async () => { render(<App />); });
     await openConfirmation();
     await act(async () => { progress({ ...previous, updatedAt: 8, stages: { ...previous.stages, translate: { state: 'running', progress: .5, message: 'Translating' } } }); });
     const confirm = screen.getByRole('button', { name: '确认重新识别' }) as HTMLButtonElement;

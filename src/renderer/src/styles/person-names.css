@@ -1,0 +1,13 @@
+.person-names { display: flex; flex-direction: column; gap: 8px; min-height: 0; height: 100%; }
+.person-names__overview, .person-names__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.person-names__overview p, .person-names__candidate p { margin: 4px 0; }
+.person-names__candidates { overflow: auto; min-height: 0; flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-content: start; }
+.person-names__candidate { border: 1px solid var(--color-border); padding: 8px; border-radius: 6px; min-width: 0; }
+.person-names__choice { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.person-names__fields label { display: grid; gap: 4px; font-size: 12px; }
+.person-names__fields input { width: 100%; min-width: 0; }
+.person-names__context { font-size: 12px; overflow-wrap: anywhere; }
+.person-names__actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.person-names__undo { font-size: 12px; max-height: 90px; overflow: auto; flex-shrink: 0; }
+.person-names__undo ul { margin: 4px 0; padding-left: 20px; }
+@media (max-width: 1080px) { .person-names__candidates { grid-template-columns: minmax(0, 1fr); } }

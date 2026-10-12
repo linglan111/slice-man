@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { createServer } from "node:http";
+import { AppError } from "../../../src/main/lib/errors";
 import { Store } from "../../../src/main/db/store";
 import { JobService } from "../../../src/main/services/jobs/lib/job-service";
 import { MediaService } from "../../../src/main/services/media/lib/media-service";
@@ -21,6 +23,9 @@ import {
   type ReprocessInput,
   type Job,
   type Profile,
+  type RepairLoopInput,
+  type ReviewRuleId,
+  repairLoopInputSchema,
 } from "../../../src/shared/contracts";
 import {
   resolveReprocess,
@@ -465,25 +470,645 @@ describe("atomic partial processing and optional translation", () => {
   });
 });
 
-function reviewResponse(prompt: string, flagged = new Set<string>()): string {
+type ReviewFixturePrompt = {
+  selected: (Segment & { n: number })[];
+  context: (Segment & { n: number })[];
+  rubric: unknown;
+  translationEnabled: boolean;
+  groups: { targets: number[]; context: number[] }[];
+};
+function parseReviewPrompt(prompt: string): ReviewFixturePrompt {
   const data = JSON.parse(prompt.split("\n")[1] ?? "{}") as {
-    selected: { id: string }[];
+    cues: (Omit<Segment, "id" | "translationStale"> & { n: number })[];
+    groups: { targets: number[]; context: number[] }[];
+    rubric: unknown;
+    translationEnabled: boolean;
   };
+  const all =
+    fixtures.flatMap((f) => f.store.listJobs()).at(-1)?.segments ?? [];
+  const sorted = [...all].sort(
+    (a, b) =>
+      a.startMs - b.startMs || a.endMs - b.endMs || a.id.localeCompare(b.id),
+  );
+  const context = data.cues.map((c) => ({
+    ...c,
+    id: sorted[c.n]?.id ?? `alias-${c.n}`,
+    translationStale: false,
+  }));
+  const targets = new Set(data.groups.flatMap((g) => g.targets));
+  return {
+    ...data,
+    context,
+    selected: context.filter((c) => targets.has(c.n)),
+  };
+}
+function reviewResponse(prompt: string, flagged = new Set<string>()): string {
+  const data = parseReviewPrompt(prompt);
   return JSON.stringify({
-    assessments: data.selected.map((s) => ({
-      segmentId: s.id,
-      issues: flagged.has(s.id)
+    a: data.selected.map((s) => [
+      s.n,
+      flagged.has(s.id)
         ? [
-            {
-              ruleId: "source.meaning_problem",
-              reason: "当前原文的词句存在具体含义问题，需试听",
-              evidenceIds: [s.id],
-            },
+            [
+              "source.meaning_problem",
+              "当前原文的词句存在具体含义问题，需试听",
+              [s.n],
+            ],
           ]
         : [],
-    })),
+    ]),
   });
 }
+function repairResponse(
+  prompt: string,
+  rule: (cue: Segment) => ReviewRuleId[],
+): string {
+  const data = parseReviewPrompt(prompt);
+  return JSON.stringify({
+    a: data.selected.map((s) => [
+      s.n,
+      rule(s).map((ruleId) => [ruleId, "fixture concrete issue", [s.n]]),
+    ]),
+  });
+}
+function loopInput(
+  job: Job,
+  extra: Partial<RepairLoopInput> = {},
+): RepairLoopInput {
+  return {
+    jobId: job.id,
+    revision: job.revision,
+    threshold: "medium",
+    maxRounds: 3,
+    scope: { mode: "all" },
+    ...extra,
+  };
+}
+describe("main-owned bounded automatic repair", () => {
+  it("analysis cancellation retains old valid report and never requests repair", async () => {
+    const f = await fixture();
+    const generated = vi
+      .spyOn(providers, "generateText")
+      .mockImplementation(async (_p, _k, prompt) => reviewResponse(prompt));
+    const previous = await f.jobs.reviewSubtitles({
+      jobId: f.job.id,
+      revision: f.job.revision,
+    });
+    const edited = f.jobs.editSegment(
+      previous.id,
+      { ...(previous.segments[0] as Segment), sourceText: "changed" },
+      previous.revision,
+    );
+    const before = f.store.getJob(edited.id);
+    generated.mockImplementationOnce(async (_p, _k, prompt) => {
+      f.jobs.cancel(f.job.id);
+      return reviewResponse(prompt);
+    });
+    await expect(f.jobs.repairLoop(loopInput(edited))).rejects.toMatchObject({
+      code: "CANCELLED",
+    });
+    const result = f.store.getJob(edited.id);
+    expect(result.reviewReport).toEqual(before.reviewReport);
+    expect(result.repairRun).toMatchObject({
+      state: "cancelled",
+      committedRounds: 0,
+    });
+    expect(result.repairRun?.remainingCount).toBeUndefined();
+    expect(f.transcribe).not.toHaveBeenCalled();
+  });
+  it("cancellation within ASR retains target and previous successful round survives later failure", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) =>
+        repairResponse(prompt, () => ["source.meaning_problem"]),
+    );
+    f.transcribe.mockImplementationOnce(async () => {
+      f.jobs.cancel(f.job.id);
+      return { segments: [] };
+    });
+    await expect(
+      f.jobs.repairLoop(
+        loopInput(f.job, {
+          scope: { mode: "range", startMs: 1300, endMs: 1600 },
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "CANCELLED" });
+    expect(f.store.getJob(f.job.id).segments).toEqual(f.job.segments);
+    f.transcribe
+      .mockResolvedValueOnce({
+        segments: [{ start: 0, end: 0.5, text: "first completed round" }],
+      })
+      .mockRejectedValueOnce(new Error("second round fixture failed"));
+    const current = f.store.getJob(f.job.id);
+    await expect(
+      f.jobs.repairLoop(
+        loopInput(current, {
+          scope: { mode: "range", startMs: 1300, endMs: 1600 },
+        }),
+      ),
+    ).rejects.toThrow();
+    const result = f.store.getJob(f.job.id);
+    expect(result.repairRun).toMatchObject({
+      state: "failed",
+      committedRounds: 1,
+      remainingCount: 1,
+    });
+    expect(
+      result.segments.some((s) => s.sourceText === "first completed round"),
+    ).toBe(true);
+    expect(result.revision).toBe(f.job.revision + 1);
+  });
+  it("direct persisted style conflict rejects the draft without overwriting concurrent content", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => reviewResponse(prompt, new Set(["a"])),
+    );
+    f.translate.mockImplementationOnce(async (_p, _k, selected) => {
+      const changed = f.store.getJob(f.job.id);
+      changed.style.textColor = "#FF0000";
+      changed.revision++;
+      f.store.saveJob(changed);
+      return selected.map((s) => ({ id: s.id, text: "new" }));
+    });
+    await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toMatchObject({
+      code: "STALE_REVISION",
+    });
+    const result = f.store.getJob(f.job.id);
+    expect(result.style.textColor).toBe("#FF0000");
+    expect(result.segments).toEqual(f.job.segments);
+    expect(result.repairRun).toMatchObject({
+      committedRounds: 0,
+      state: "failed",
+    });
+    expect(result.repairRun?.remainingCount).toBeUndefined();
+  });
+  it("merges overlapping ASR coverage and translates the mixed draft in one content save", async () => {
+    const f = await fixture();
+    const job = f.store.getJob(f.job.id);
+    job.segments = [
+      cue("a", 1100, 2100),
+      cue("b", 2000, 3000),
+      cue("c", 5000, 6000),
+    ];
+    f.store.saveJob(job);
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) =>
+        repairResponse(prompt, (s) =>
+          s.id === "a"
+            ? ["source.meaning_problem"]
+            : ["b", "c"].includes(s.id) && s.translatedText.startsWith("译文")
+              ? ["translation.meaning_problem"]
+              : [],
+        ),
+    );
+    const save = vi.spyOn(f.store, "saveJob");
+    const result = await f.jobs.repairLoop(loopInput(job));
+    expect(result.repairRun).toMatchObject({
+      committedRounds: 1,
+      affectedCount: 3,
+      reason: "no_eligible",
+      effectiveIntervals: [
+        { startMs: 1100, endMs: 3000 },
+        { startMs: 5000, endMs: 6000 },
+      ],
+    });
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
+    expect(f.translate).toHaveBeenCalledTimes(1);
+    expect(f.translate.mock.calls[0]?.[2].map((s) => s.id)).toEqual([
+      result.segments[0]?.id,
+      "c",
+    ]);
+    expect(result.segments.some((s) => s.id === "b")).toBe(false);
+    expect(result.segments.find((s) => s.id === "c")?.translatedText).toBe(
+      "replacement translated",
+    );
+    expect(new Set(save.mock.calls.map(([j]) => j.revision))).toEqual(
+      new Set([job.revision, job.revision + 1]),
+    );
+  });
+  it("retains completed round when cancellation lands immediately after its transaction", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => reviewResponse(prompt, new Set(["a"])),
+    );
+    const save = f.store.saveJob.bind(f.store);
+    vi.spyOn(f.store, "saveJob").mockImplementation((job) => {
+      const result = save(job);
+      if (job.revision > f.job.revision && job.repairRun?.phase === "commit")
+        f.jobs.cancel(job.id);
+      return result;
+    });
+    await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toMatchObject({
+      code: "CANCELLED",
+    });
+    const result = f.store.getJob(f.job.id);
+    expect(result.repairRun).toMatchObject({
+      state: "cancelled",
+      committedRounds: 1,
+    });
+    expect(result.repairRun?.remainingCount).toBeUndefined();
+    expect(result.segments.some((s) => s.sourceText === "replacement")).toBe(
+      true,
+    );
+  });
+  it("cancel at pre-commit phase publishes no draft; cancellation during analysis preserves report", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => reviewResponse(prompt, new Set(["a"])),
+    );
+    const save = f.store.saveJob.bind(f.store);
+    vi.spyOn(f.store, "saveJob").mockImplementation((job) => {
+      if (job.repairRun?.phase === "commit" && job.revision === f.job.revision)
+        f.jobs.cancel(job.id);
+      return save(job);
+    });
+    await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toMatchObject({
+      code: "CANCELLED",
+    });
+    expect(f.store.getJob(f.job.id).segments).toEqual(f.job.segments);
+    expect(f.store.getJob(f.job.id).repairRun?.committedRounds).toBe(0);
+  });
+  it("successful silent ASR removes target and reports no eligible without requesting empty review", async () => {
+    const f = await fixture();
+    f.transcribe.mockResolvedValueOnce({ segments: [] });
+    const review = vi
+      .spyOn(providers, "generateText")
+      .mockImplementation(async (_p, _k, prompt) =>
+        reviewResponse(prompt, new Set(["a"])),
+      );
+    const result = await f.jobs.repairLoop(
+      loopInput(f.job, {
+        scope: { mode: "range", startMs: 1500, endMs: 1700 },
+      }),
+    );
+    expect(result.segments).toEqual(f.job.segments.slice(1));
+    expect(result.repairRun).toMatchObject({
+      reason: "no_eligible",
+      committedRounds: 1,
+      remainingCount: 0,
+    });
+    expect(review).toHaveBeenCalledTimes(1);
+    expect(f.translate).not.toHaveBeenCalled();
+  });
+  it("validates caps and range before any provider call, including empty exact-touching scope", async () => {
+    const f = await fixture();
+    const review = vi.spyOn(providers, "generateText");
+    for (const maxRounds of [0, -1, 1.2, 21, NaN, Infinity])
+      expect(
+        repairLoopInputSchema.safeParse(loopInput(f.job, { maxRounds }))
+          .success,
+      ).toBe(false);
+    for (const scope of [
+      { mode: "range" as const, startMs: 2000, endMs: 1000 },
+      { mode: "range" as const, startMs: 0, endMs: 9000 },
+    ])
+      await expect(
+        f.jobs.repairLoop(loopInput(f.job, { scope })),
+      ).rejects.toMatchObject({ code: "TIMING_INVALID" });
+    const result = await f.jobs.repairLoop(
+      loopInput(f.job, {
+        scope: { mode: "range", startMs: 3000, endMs: 5000 },
+      }),
+    );
+    expect(result.repairRun).toMatchObject({
+      reason: "no_eligible",
+      remainingCount: 0,
+      committedRounds: 0,
+    });
+    expect(review).not.toHaveBeenCalled();
+    expect(f.transcribe).not.toHaveBeenCalled();
+  });
+  it("repairs only pending scoped medium issues, generates fresh IDs, reevaluates and permits rerun", async () => {
+    const f = await fixture();
+    const review = vi
+      .spyOn(providers, "generateText")
+      .mockImplementation(async (_p, _k, prompt) =>
+        repairResponse(prompt, (s) =>
+          s.sourceText.startsWith("source") ? ["source.meaning_problem"] : [],
+        ),
+      );
+    const originalC = f.job.segments.find((s) => s.id === "c");
+    const result = await f.jobs.repairLoop(
+      loopInput(f.job, {
+        scope: { mode: "range", startMs: 1500, endMs: 1700 },
+      }),
+    );
+    expect(result.repairRun).toMatchObject({
+      reason: "no_eligible",
+      committedRounds: 1,
+      remainingCount: 0,
+      effectiveIntervals: [{ startMs: 1100, endMs: 2000 }],
+    });
+    expect(result.segments.find((s) => s.id === "a")).toBeUndefined();
+    expect(result.segments.find((s) => s.id === "c")).toEqual(originalC);
+    expect(result.style.emphasisBySegment).toEqual([
+      { segmentId: "c", keywords: ["译文"] },
+    ]);
+    expect(result.outputs).toEqual(f.job.outputs);
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
+    // First replacement is 1200..1700; same absolute interval now targets its new ID.
+    const repeated = await f.jobs.repairLoop(
+      loopInput(result, {
+        scope: { mode: "range", startMs: 1500, endMs: 1700 },
+      }),
+    );
+    expect(repeated.repairRun).toMatchObject({
+      committedRounds: 0,
+      reason: "no_eligible",
+    });
+    expect(review).toHaveBeenCalledTimes(2);
+  });
+  it("reassesses fresh cues throughout expanded coverage without promoting outside issues into scope", async () => {
+    const f = await fixture();
+    f.transcribe.mockResolvedValueOnce({
+      segments: [
+        { start: 0, end: 0.2, text: "outside before" },
+        { start: 0.4, end: 0.6, text: "inside clear" },
+        { start: 0.7, end: 0.9, text: "outside after" },
+      ],
+    });
+    const selectedIds: string[][] = [];
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => {
+        const data = parseReviewPrompt(prompt) as {
+          selected: { id: string }[];
+        };
+        selectedIds.push(data.selected.map((cue) => cue.id));
+        return repairResponse(prompt, (s) =>
+          s.id === "a" || s.sourceText.startsWith("outside")
+            ? ["source.meaning_problem"]
+            : [],
+        );
+      },
+    );
+    const result = await f.jobs.repairLoop(
+      loopInput(f.job, {
+        scope: { mode: "range", startMs: 1500, endMs: 1700 },
+      }),
+    );
+    const replacements = result.segments.filter(
+      (s) => !f.job.segments.some((old) => old.id === s.id),
+    );
+    expect(replacements).toHaveLength(3);
+    expect(selectedIds).toEqual([["a"], replacements.map((cue) => cue.id)]);
+    expect(result.reviewReport?.assessments).toHaveLength(3);
+    expect(
+      result.reviewReport?.assessments?.every((a) => a.status === "current"),
+    ).toBe(true);
+    expect(result.reviewReport?.findings).toHaveLength(2);
+    expect(result.repairRun).toMatchObject({
+      reason: "no_eligible",
+      committedRounds: 1,
+      remainingCount: 0,
+      effectiveIntervals: [{ startMs: 1100, endMs: 2000 }],
+    });
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
+    expect(result.segments.filter((s) => ["b", "c"].includes(s.id))).toEqual(
+      f.job.segments.slice(1),
+    );
+  });
+  it("keeps fixed range and new IDs across two capped rounds, with fresh final assessments", async () => {
+    const f = await fixture();
+    f.transcribe.mockResolvedValue({
+      segments: [{ start: 0, end: 0.5, text: "replacement" }],
+    });
+    const seen: string[][] = [];
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => {
+        const data = parseReviewPrompt(prompt) as {
+          selected: { id: string }[];
+        };
+        seen.push(data.selected.map((s) => s.id));
+        return repairResponse(prompt, () => ["source.meaning_problem"]);
+      },
+    );
+    const result = await f.jobs.repairLoop(
+      loopInput(f.job, {
+        maxRounds: 2,
+        scope: { mode: "range", startMs: 1300, endMs: 1600 },
+      }),
+    );
+    expect(result.repairRun).toMatchObject({
+      reason: "max_rounds",
+      committedRounds: 2,
+      remainingCount: 1,
+      scope: { mode: "range", startMs: 1300, endMs: 1600 },
+    });
+    expect(f.transcribe).toHaveBeenCalledTimes(2);
+    expect(seen).toHaveLength(3);
+    expect(new Set(seen.flat()).size).toBe(3);
+    expect(
+      result.reviewReport?.assessments?.filter((a) => a.status === "current"),
+    ).toHaveLength(1);
+    expect(result.segments.filter((s) => ["b", "c"].includes(s.id))).toEqual(
+      f.job.segments.slice(1),
+    );
+  });
+  it("source-only ASR never resolves missing translation configuration or calls translation", async () => {
+    const f = await fixture();
+    const source = f.jobs.updateOptions(f.job.id, {
+      ...f.job.options,
+      translationEnabled: false,
+      translationProfileId: "missing",
+    });
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) =>
+        repairResponse(prompt, (s) =>
+          s.id === "a" ? ["source.meaning_problem"] : [],
+        ),
+    );
+    const result = await f.jobs.repairLoop(loopInput(source));
+    expect(result.repairRun).toMatchObject({
+      committedRounds: 1,
+      reason: "no_eligible",
+    });
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
+    expect(f.translate).not.toHaveBeenCalled();
+  });
+  it("translation-only repair needs no recognition readiness and preserves timing/source", async () => {
+    const f = await fixture();
+    const job = f.jobs.updateOptions(f.job.id, {
+      ...f.job.options,
+      recognitionProfileId: "missing",
+    });
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) =>
+        repairResponse(prompt, (s) =>
+          s.id === "a" && s.translatedText.startsWith("译文")
+            ? ["translation.meaning_problem"]
+            : [],
+        ),
+    );
+    const result = await f.jobs.repairLoop(loopInput(job));
+    expect(result.repairRun).toMatchObject({
+      committedRounds: 1,
+      reason: "no_eligible",
+    });
+    expect(
+      result.segments.map(
+        ({ translatedText: _t, translationStale: _s, ...cue }) => cue,
+      ),
+    ).toEqual(
+      job.segments.map(
+        ({ translatedText: _t, translationStale: _s, ...cue }) => cue,
+      ),
+    );
+    expect(f.transcribe).not.toHaveBeenCalled();
+    expect(f.runtime.executable).not.toHaveBeenCalled();
+    expect(f.translate).toHaveBeenCalledTimes(1);
+  });
+  it("mixed recognition and translation failure never publishes half a round", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) =>
+        repairResponse(prompt, (s) =>
+          s.id === "a"
+            ? ["source.meaning_problem"]
+            : s.id === "c"
+              ? ["translation.meaning_problem"]
+              : [],
+        ),
+    );
+    f.translate.mockRejectedValueOnce(new Error("provider fixture failed"));
+    await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toThrow(
+      "provider fixture failed",
+    );
+    const result = f.store.getJob(f.job.id);
+    expect(result.segments).toEqual(f.job.segments);
+    expect(result.style).toEqual(f.job.style);
+    expect(result.revision).toBe(f.job.revision);
+    expect(result.repairRun).toMatchObject({
+      state: "failed",
+      committedRounds: 0,
+      remainingCount: 2,
+    });
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
+  });
+  it("preflights combined translation before costly ASR", async () => {
+    const f = await fixture();
+    const job = f.jobs.updateOptions(f.job.id, {
+      ...f.job.options,
+      translationProfileId: undefined,
+    });
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => reviewResponse(prompt, new Set(["a"])),
+    );
+    await expect(f.jobs.repairLoop(loopInput(job))).rejects.toMatchObject({
+      code: "PROFILE_MISSING",
+    });
+    expect(f.transcribe).not.toHaveBeenCalled();
+    expect(f.store.getJob(job.id).segments).toEqual(job.segments);
+  });
+  it("keeps lease through both analysis and reassessment, rejects CRUD/style/provider writes", async () => {
+    const f = await fixture();
+    let analyses = 0;
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => {
+        analyses++;
+        const current = f.store.getJob(f.job.id);
+        expect(() => f.jobs.setStyle(current.id, current.style)).toThrowError(
+          expect.objectContaining({ code: "JOB_BUSY" }),
+        );
+        expect(() =>
+          f.jobs.editSegment(
+            current.id,
+            current.segments[0] ?? cue("x", 0, 1),
+            current.revision,
+          ),
+        ).toThrowError(expect.objectContaining({ code: "JOB_BUSY" }));
+        expect(() => f.jobs.assertProfileWritable(f.profile.id)).toThrowError(
+          expect.objectContaining({ code: "JOB_BUSY" }),
+        );
+        return reviewResponse(
+          prompt,
+          analyses === 1 ? new Set(["a"]) : new Set(),
+        );
+      },
+    );
+    const result = await f.jobs.repairLoop(loopInput(f.job));
+    expect(analyses).toBe(2);
+    expect(() => f.jobs.assertProfileWritable(f.profile.id)).not.toThrow();
+    expect(() => f.jobs.setStyle(result.id, result.style)).not.toThrow();
+  });
+  it("cancellation during translation keeps complete previous content; ignores raw provider secrets", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => reviewResponse(prompt, new Set(["a"])),
+    );
+    f.translate.mockImplementationOnce(async () => {
+      f.jobs.cancel(f.job.id);
+      throw new Error("private provider token");
+    });
+    await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toThrow();
+    const result = f.store.getJob(f.job.id);
+    expect(result.segments).toEqual(f.job.segments);
+    expect(result.repairRun).toMatchObject({
+      state: "cancelled",
+      reason: "user_cancelled",
+      committedRounds: 0,
+    });
+    expect(JSON.stringify(result.repairRun)).not.toContain("private");
+  });
+  it("post-commit reassessment failure preserves completed content with unknown remaining count", async () => {
+    const f = await fixture();
+    const review = vi
+      .spyOn(providers, "generateText")
+      .mockImplementationOnce(async (_p, _k, prompt) =>
+        reviewResponse(prompt, new Set(["a"])),
+      );
+    review.mockRejectedValueOnce(new Error("reassessment fixture failed"));
+    await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toThrow();
+    const result = f.store.getJob(f.job.id);
+    expect(result.repairRun).toMatchObject({
+      state: "failed",
+      committedRounds: 1,
+    });
+    expect(result.repairRun?.remainingCount).toBeUndefined();
+    expect(result.reviewReport?.state).toBe("stale");
+    expect(result.segments.some((s) => s.sourceText === "replacement")).toBe(
+      true,
+    );
+    expect(result.revision).toBe(f.job.revision + 1);
+  });
+  it("preserves current ignored findings across manual recheck and excludes ignored-high/pending-low", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) =>
+        repairResponse(prompt, (s) =>
+          s.id === "a"
+            ? ["translation.negation_contradiction", "source.minor_wording"]
+            : [],
+        ),
+    );
+    let job = await f.jobs.reviewSubtitles({
+      jobId: f.job.id,
+      revision: f.job.revision,
+    });
+    const report = job.reviewReport;
+    const finding = report?.findings.find((f) => f.riskLevel === "high");
+    if (!report || !finding) throw new Error("fixture missing high finding");
+    job = f.jobs.acknowledgeFinding({
+      jobId: job.id,
+      reportId: report.id,
+      findingId: finding.id,
+      status: "ignored",
+    });
+    job = await f.jobs.reviewSubtitles({
+      jobId: job.id,
+      revision: job.revision,
+    });
+    expect(
+      job.reviewReport?.findings.find((f) => f.riskLevel === "high")?.status,
+    ).toBe("ignored");
+    const result = await f.jobs.repairLoop(loopInput(job));
+    expect(result.repairRun).toMatchObject({
+      committedRounds: 0,
+      reason: "no_eligible",
+    });
+    expect(f.transcribe).not.toHaveBeenCalled();
+    expect(f.translate).not.toHaveBeenCalled();
+  });
+});
 describe("text-only review metadata lifecycle", () => {
   it("uses exactly the same actual context and rubric in full and sparse selected scans, then merges every explicit grade", async () => {
     const f = await fixture();
@@ -499,7 +1124,7 @@ describe("text-only review metadata lifecycle", () => {
     }[] = [];
     vi.spyOn(providers, "generateText").mockImplementation(
       async (_profile, _key, prompt) => {
-        received.push(JSON.parse(prompt.split("\n")[1] ?? "{}"));
+        received.push(parseReviewPrompt(prompt));
         return reviewResponse(prompt);
       },
     );
@@ -535,7 +1160,7 @@ describe("text-only review metadata lifecycle", () => {
     expect(f.transcribe).not.toHaveBeenCalled();
     expect(f.translate).not.toHaveBeenCalled();
   });
-  it("late-batch incomplete scan fails atomically rather than filling missing assessments with none", async () => {
+  it("incomplete aggregate output and its single correction fail atomically without filling omissions with none", async () => {
     const f = await fixture();
     const job = f.store.getJob(f.job.id);
     job.segments = Array.from({ length: 35 }, (_, index) =>
@@ -552,10 +1177,8 @@ describe("text-only review metadata lifecycle", () => {
       revision: job.revision,
     });
     generated
-      .mockImplementationOnce(async (_profile, _key, prompt) =>
-        reviewResponse(prompt),
-      )
-      .mockResolvedValueOnce('{"assessments":[]}');
+      .mockResolvedValueOnce('{"a":[]}')
+      .mockResolvedValueOnce('{"a":[]}');
     await expect(
       f.jobs.reviewSubtitles({ jobId: job.id, revision: job.revision }),
     ).rejects.toThrowError(
@@ -571,7 +1194,7 @@ describe("text-only review metadata lifecycle", () => {
     });
     vi.spyOn(providers, "generateText").mockImplementation(
       async (_profile, _key, prompt) => {
-        const input = JSON.parse(prompt.split("\n")[1] ?? "{}") as {
+        const input = parseReviewPrompt(prompt) as {
           context: Segment[];
           translationEnabled: boolean;
         };
@@ -591,7 +1214,7 @@ describe("text-only review metadata lifecycle", () => {
     expect(f.transcribe).not.toHaveBeenCalled();
     expect(f.translate).not.toHaveBeenCalled();
   });
-  it("covers long timelines over bounded prompts, records honest per-batch progress and persists findings across reopening", async () => {
+  it("covers long timelines with one bounded prompt and persists complete findings across reopening", async () => {
     const f = await fixture();
     const job = f.store.getJob(f.job.id);
     job.segments = Array.from({ length: 70 }, (_, index) => ({
@@ -602,8 +1225,8 @@ describe("text-only review metadata lifecycle", () => {
     const batches: string[][] = [];
     vi.spyOn(providers, "generateText").mockImplementation(
       async (_profile, _key, prompt) => {
-        expect(prompt.length).toBeLessThan(42000);
-        const data = JSON.parse(prompt.split("\n")[1] ?? "{}") as {
+        expect(Buffer.byteLength(prompt, "utf8")).toBeLessThan(512 * 1024);
+        const data = parseReviewPrompt(prompt) as {
           selected: Segment[];
         };
         batches.push(data.selected.map((s) => s.id));
@@ -614,7 +1237,7 @@ describe("text-only review metadata lifecycle", () => {
       jobId: job.id,
       revision: job.revision,
     });
-    expect(batches.length).toBeGreaterThan(2);
+    expect(batches).toHaveLength(1);
     expect(batches.flat()).toEqual(job.segments.map((s) => s.id));
     expect(result.reviewReport?.reviewedSegmentIds).toHaveLength(70);
     const reopened = new Store(join(f.root, "isolated.db"), {
@@ -704,12 +1327,12 @@ describe("text-only review metadata lifecycle", () => {
     expect(refreshed.reviewReport?.findings).toEqual([]);
     expect(refreshed.reviewReport?.reviewedSegmentIds).not.toContain("a");
   });
-  it("checks bounded batches with context and persists ignore without invalidating media revision; edits require recheck", async () => {
+  it("checks one aggregate request with canonical context and persists ignore without invalidating media revision; edits require recheck", async () => {
     const f = await fixture();
     const generated = vi
       .spyOn(providers, "generateText")
       .mockImplementation(async (_profile, _key, prompt) => {
-        const data = JSON.parse(prompt.split("\n")[1] ?? "{}") as {
+        const data = parseReviewPrompt(prompt) as {
           selected: Segment[];
           context: Segment[];
         };
@@ -768,9 +1391,7 @@ describe("text-only review metadata lifecycle", () => {
       jobId: f.job.id,
       revision: f.job.revision,
     });
-    generated.mockResolvedValue(
-      '{"assessments":[{"segmentId":"unknown","issues":[]}]}',
-    );
+    generated.mockResolvedValue('{"a":[[999,[]]]}');
     await expect(
       f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision }),
     ).rejects.toThrowError(expect.objectContaining({ code: "REVIEW_IDS" }));
@@ -798,5 +1419,207 @@ describe("text-only review metadata lifecycle", () => {
         false,
       ),
     ).toThrowError(expect.objectContaining({ code: "REVIEW_IDS" }));
+  });
+});
+
+describe("single-request review and bounded correction", () => {
+  it("retains the prior report when credentials change during complete generation", async () => {
+    const f = await fixture();
+    const generated = vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => reviewResponse(prompt),
+    );
+    const previous = await f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision });
+    generated.mockClear().mockImplementation(async (_p, _k, prompt) => {
+      const { hasKey: _hasKey, ...profile } = f.profile;
+      f.store.saveProfile({ ...profile, apiKey: "changed-fixture-key" });
+      return reviewResponse(prompt);
+    });
+    await expect(f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision }))
+      .rejects.toMatchObject({ code: "STALE_REVISION" });
+    expect(generated).toHaveBeenCalledTimes(1);
+    expect(f.store.getJob(f.job.id).reviewReport).toEqual(previous.reviewReport);
+  });
+  it.each([31, 65, 1027])(
+    "reviews %i anonymous targets through exactly one real loopback HTTP request",
+    async (length) => {
+      const f = await fixture();
+      const job = f.store.getJob(f.job.id);
+      job.segments = Array.from({ length }, (_, n) =>
+        cue(`http-${n}`, n * 5, n * 5 + 4),
+      );
+      f.store.saveJob(job);
+      let requests = 0;
+      let groups = 0;
+      const server = createServer((request, response) => {
+        let body = "";
+        request.on("data", (chunk) => {
+          body += String(chunk);
+        });
+        request.on("end", () => {
+          requests++;
+          const payload = JSON.parse(body) as {
+            messages: { content: string }[];
+          };
+          const prompt = payload.messages.at(-1)?.content ?? "";
+          const data = JSON.parse(prompt.split("\n")[1] ?? "{}") as {
+            groups: { targets: number[] }[];
+          };
+          groups = data.groups.length;
+          response.writeHead(200, { "Content-Type": "application/json" });
+          response.end(
+            JSON.stringify({
+              choices: [
+                {
+                  finish_reason: "stop",
+                  message: {
+                    content: JSON.stringify({
+                      a: data.groups.flatMap((g) =>
+                        g.targets.map((n) => [n, []]),
+                      ),
+                    }),
+                  },
+                },
+              ],
+            }),
+          );
+        });
+      });
+      await new Promise<void>((resolve) =>
+        server.listen(0, "127.0.0.1", resolve),
+      );
+      const address = server.address();
+      if (!address || typeof address === "string")
+        throw new Error("fixture port missing");
+      const { hasKey: _hasKey, ...profile } = f.profile;
+      f.store.saveProfile({
+        ...profile,
+        baseUrl: `http://127.0.0.1:${address.port}/v1`,
+      });
+      try {
+        const result = await f.jobs.reviewSubtitles({
+          jobId: job.id,
+          revision: f.store.getJob(job.id).revision,
+        });
+        expect(requests).toBe(1);
+        expect(groups).toBe(Math.ceil(length / 30));
+        expect(result.reviewReport?.assessments).toHaveLength(length);
+        expect(result.reviewReport?.reviewedSegmentIds).toEqual(
+          job.segments.map((s) => s.id),
+        );
+      } finally {
+        await new Promise<void>((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve())),
+        );
+      }
+    },
+  );
+  it("corrects complete-selection evidence once, visibly, without changing canonical groups", async () => {
+    const f = await fixture();
+    const prompts: string[] = [];
+    const generated = vi
+      .spyOn(providers, "generateText")
+      .mockImplementation(async (_p, _k, prompt) => {
+        prompts.push(prompt);
+        const data = parseReviewPrompt(prompt);
+        if (prompts.length === 1)
+          return JSON.stringify({
+            a: data.selected.map((s) => [
+              s.n,
+              s.n === 0
+                ? [["source.context_inconsistency", "fixture evidence", [s.n]]]
+                : [],
+            ]),
+          });
+        return reviewResponse(prompt);
+      });
+    const result = await f.jobs.reviewSubtitles({
+      jobId: f.job.id,
+      revision: f.job.revision,
+    });
+    expect(generated).toHaveBeenCalledTimes(2);
+    expect(prompts[1]).toContain("Correction 1/1");
+    expect(prompts[1]?.split("\n")[1]).toBe(prompts[0]?.split("\n")[1]);
+    expect(result.reviewReport?.assessments).toHaveLength(3);
+  });
+  it("retains a prior valid report after two malformed complete outputs and no third call", async () => {
+    const f = await fixture();
+    const generated = vi
+      .spyOn(providers, "generateText")
+      .mockImplementation(async (_p, _k, prompt) => reviewResponse(prompt));
+    const previous = await f.jobs.reviewSubtitles({
+      jobId: f.job.id,
+      revision: f.job.revision,
+    });
+    generated.mockClear().mockResolvedValue("invalid json");
+    await expect(
+      f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision }),
+    ).rejects.toThrowError(expect.objectContaining({ code: "INVALID_JSON" }));
+    expect(generated).toHaveBeenCalledTimes(2);
+    expect(f.store.getJob(f.job.id).reviewReport).toEqual(
+      previous.reviewReport,
+    );
+  });
+  it.each(["TRUNCATED", "AUTH_ERROR", "PROVIDER_TIMEOUT", "NETWORK_ERROR"])(
+    "does not content-retry %s",
+    async (code) => {
+      const f = await fixture();
+      const generated = vi
+        .spyOn(providers, "generateText")
+        .mockRejectedValue(new AppError(code, "fixture"));
+      await expect(
+        f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision }),
+      ).rejects.toThrowError(expect.objectContaining({ code }));
+      expect(generated).toHaveBeenCalledTimes(1);
+      expect(f.store.getJob(f.job.id).reviewReport).toBeUndefined();
+    },
+  );
+  it("cancellation after complete validation prevents report publication", async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(
+      async (_p, _k, prompt) => reviewResponse(prompt),
+    );
+    const previous = await f.jobs.reviewSubtitles({
+      jobId: f.job.id,
+      revision: f.job.revision,
+    });
+    const jobs = new JobService(
+      f.store,
+      f.media,
+      {
+        modelPath: () => "fixture-model",
+        executable: (gpu: boolean) => ({
+          path: "fixture-whisper",
+          backend: gpu ? "gpu" : "cpu",
+        }),
+      },
+      f.root,
+      (event) => {
+        if (event.message.startsWith("已校验")) jobs.cancel(f.job.id);
+      },
+      (path) => path,
+    );
+    await expect(
+      jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision }),
+    ).rejects.toThrowError(expect.objectContaining({ code: "CANCELLED" }));
+    expect(f.store.getJob(f.job.id).reviewReport).toEqual(
+      previous.reviewReport,
+    );
+  });
+  it("cancellation during correction never publishes or requests a third generation", async () => {
+    const f = await fixture();
+    let calls = 0;
+    const generated = vi
+      .spyOn(providers, "generateText")
+      .mockImplementation(async (_p, _k, prompt) => {
+        calls++;
+        if (calls === 1) return '{"a":[]}';
+        f.jobs.cancel(f.job.id);
+        return reviewResponse(prompt);
+      });
+    await expect(
+      f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision }),
+    ).rejects.toThrowError(expect.objectContaining({ code: "CANCELLED" }));
+    expect(generated).toHaveBeenCalledTimes(2);
+    expect(f.store.getJob(f.job.id).reviewReport).toBeUndefined();
   });
 });

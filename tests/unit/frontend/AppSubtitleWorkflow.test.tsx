@@ -41,7 +41,8 @@ describe('optional translation and subtitle repair workspace', () => {
     const { api } = stubApi(initial);
     vi.mocked(api.jobs.recognize).mockResolvedValue({ success: true, data: next });
     render(<App />);
-    fireEvent.click(await screen.findByRole('button', { name: '一键生成字幕' }));
+    fireEvent.click(await screen.findByRole('button', { name: '生成' }));
+    fireEvent.click(screen.getByRole('button', { name: '一键生成字幕' }));
     await screen.findByText('Corrected original.');
     expect(api.jobs.recognize).toHaveBeenCalledExactlyOnceWith(previous.id);
     expect(api.jobs.translate).not.toHaveBeenCalled();
@@ -99,6 +100,7 @@ describe('optional translation and subtitle repair workspace', () => {
     const previous = savedJob(); previous.options.translationEnabled = false; previous.options.reviewProfileId = 'review';
     const report: ReviewReport = { rubric: { version: REVIEW_RUBRIC_VERSION, rules: [...REVIEW_RULES] }, assessments: [{ segmentId: 'old-cue', riskLevel: 'medium', status: 'current', contextGroupId: 'context', findingIds: ['issue'] }], id: 'report', profileId: 'review', providerFingerprint: 'config', completedAt: 10, state: 'complete' as const, reviewedSegmentIds: ['old-cue'], fingerprints: { 'old-cue': 'content' }, findings: [{ id: 'issue', segmentId: 'old-cue', category: 'source' as const, reason: '句意可能重复', status: 'pending' as const }] };
     const { api } = stubApi(previous);
+    vi.mocked(api.profiles.list).mockResolvedValue({ success: true, data: [{ id: 'review', name: 'Review', protocol: 'openai', baseUrl: 'https://example.test/v1', model: 'text', mode: 'chat', sessionOnly: false, maxUploadBytes: 24000000, structuredOutput: false, timeoutMs: 120000, hasKey: true }] });
     vi.mocked(api.jobs.reviewSubtitles).mockResolvedValue({ success: true, data: { ...previous, updatedAt: 10, reviewReport: report } });
     vi.mocked(api.jobs.acknowledgeFinding).mockResolvedValue({ success: true, data: { ...previous, updatedAt: 11, reviewReport: { ...report, findings: report.findings.map((finding) => ({ ...finding, status: 'ignored' as const })) } } });
     render(<App />);
@@ -114,41 +116,47 @@ describe('optional translation and subtitle repair workspace', () => {
   });
 
   it.each([false, true])('retries failed partial recognition in the same scope with translation mode %s', async (translationEnabled) => {
+    const user = userEvent.setup();
     const previous = savedJob(); previous.options.translationEnabled = translationEnabled;
     const { api, progress } = stubApi(previous);
     const failed = { ...previous, updatedAt: 8, stages: { ...previous.stages, recognize: { state: 'cancelled' as const, progress: 0.5, message: '片段已取消' } } };
     vi.mocked(api.jobs.planReprocess).mockResolvedValue({ success: true, data: { jobId: previous.id, revision: 7, operation: 'recognize', intervals: [{ startMs: 100, endMs: 1800 }], segmentIds: ['old-cue'], affectedCount: 1 } });
     vi.mocked(api.jobs.recognizePartial).mockImplementationOnce(async () => { progress(failed); return { success: false, code: 'CANCELLED', error: '片段已取消，原字幕保留' }; }).mockResolvedValueOnce({ success: true, data: { ...previous, revision: 8, updatedAt: 9 } });
-    render(<App />);
+    await act(async () => { render(<App />); });
     await screen.findByText('Corrected original.');
-    fireEvent.click(screen.getByLabelText('选择字幕 1'));
-    fireEvent.click(screen.getByRole('button', { name: '重新识别片段' }));
+    await user.click(screen.getByLabelText('选择字幕 1'));
+    expect((screen.getByLabelText('选择字幕 1') as HTMLInputElement).checked).toBe(true);
+    await user.click(screen.getByRole('button', { name: '重新识别片段' }));
+    expect(screen.getByRole('button', { name: '勾选字幕（1）' }).getAttribute('aria-pressed')).toBe('true');
     await within(screen.getByRole('region', { name: '分段处理' })).findByText('00:00.100 → 00:01.800');
-    fireEvent.click(screen.getByRole('button', { name: '识别并替换片段' }));
+    await user.click(screen.getByRole('button', { name: '识别并替换片段' }));
     await screen.findAllByText(/片段已取消，原字幕保留/);
     expect(screen.queryByRole('button', { name: '重试未完成阶段' })).toBeNull();
     await waitFor(() => expect((screen.getByRole('button', { name: '识别并替换片段' }) as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(screen.getByRole('button', { name: '识别并替换片段' }));
+    await user.click(screen.getByRole('button', { name: '识别并替换片段' }));
     await waitFor(() => expect(api.jobs.recognizePartial).toHaveBeenCalledTimes(2));
     for (const call of vi.mocked(api.jobs.recognizePartial).mock.calls) expect(call[0]).toEqual({ jobId: previous.id, revision: 7, target: { mode: 'selection', segmentIds: ['old-cue'] }, translate: false });
     expect(api.jobs.recognize).not.toHaveBeenCalled(); expect(api.jobs.translate).not.toHaveBeenCalled();
   });
 
   it('retries failed partial translation without translating the entire retained timeline', async () => {
+    const user = userEvent.setup();
     const previous = savedJob(); const { api, progress } = stubApi(previous);
     const failed = { ...previous, updatedAt: 8, stages: { ...previous.stages, translate: { state: 'failed' as const, progress: 0, message: '片段翻译失败' } } };
     vi.mocked(api.jobs.planReprocess).mockResolvedValue({ success: true, data: { jobId: previous.id, revision: 7, operation: 'translate', intervals: [{ startMs: 100, endMs: 1800 }], segmentIds: ['old-cue'], affectedCount: 1 } });
     vi.mocked(api.jobs.translatePartial).mockImplementationOnce(async () => { progress(failed); return { success: false, code: 'PROVIDER_FAILED', error: '片段翻译失败，原字幕保留' }; }).mockResolvedValueOnce({ success: true, data: { ...previous, revision: 8, updatedAt: 9 } });
-    render(<App />);
+    await act(async () => { render(<App />); });
     await screen.findByText('Corrected original.');
-    fireEvent.click(screen.getByLabelText('选择字幕 1'));
-    fireEvent.click(screen.getByRole('button', { name: '重新翻译片段' }));
+    await user.click(screen.getByLabelText('选择字幕 1'));
+    expect((screen.getByLabelText('选择字幕 1') as HTMLInputElement).checked).toBe(true);
+    await user.click(screen.getByRole('button', { name: '重新翻译片段' }));
+    expect(screen.getByRole('button', { name: '勾选字幕（1）' }).getAttribute('aria-pressed')).toBe('true');
     await within(screen.getByRole('region', { name: '分段处理' })).findByText('00:00.100 → 00:01.800');
-    fireEvent.click(screen.getByRole('button', { name: '翻译选定片段' }));
+    await user.click(screen.getByRole('button', { name: '翻译选定片段' }));
     await screen.findAllByText(/片段翻译失败，原字幕保留/);
     expect(screen.queryByRole('button', { name: '重试未完成阶段' })).toBeNull();
     await waitFor(() => expect((screen.getByRole('button', { name: '翻译选定片段' }) as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(screen.getByRole('button', { name: '翻译选定片段' }));
+    await user.click(screen.getByRole('button', { name: '翻译选定片段' }));
     await waitFor(() => expect(api.jobs.translatePartial).toHaveBeenCalledTimes(2));
     for (const call of vi.mocked(api.jobs.translatePartial).mock.calls) expect(call[0]).toEqual({ jobId: previous.id, revision: 7, target: { mode: 'selection', segmentIds: ['old-cue'] } });
     expect(api.jobs.recognize).not.toHaveBeenCalled(); expect(api.jobs.translate).not.toHaveBeenCalled();

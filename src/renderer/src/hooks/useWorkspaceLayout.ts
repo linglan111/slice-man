@@ -7,7 +7,7 @@ export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, h
   rootRef: RefObject<HTMLDivElement | null>; gridRef: RefObject<HTMLDivElement | null>; leftRef: RefObject<HTMLDivElement | null>; previewRef: RefObject<HTMLElement | null>;
   style: CSSProperties; sidebar: Allocation; columns: Allocation; secondary: Allocation; editor: Allocation; reset: () => void;
 } {
-  const [preferences, setPreferences] = useState(() => parseLayoutPreferences(localStorage.getItem(LAYOUT_KEY)));
+  const [preferences, setPreferences] = useState(() => { try { return parseLayoutPreferences(localStorage.getItem(LAYOUT_KEY)); } catch { return { ...DEFAULT_LAYOUT }; } });
   const preferenceRef = useRef(preferences);
   preferenceRef.current = preferences;
   const dragPreference = useRef<LayoutPreferences | null>(null);
@@ -23,7 +23,7 @@ export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, h
     const previewStyle = getComputedStyle(preview);
     let fixedHeight = parseFloat(previewStyle.paddingTop) + parseFloat(previewStyle.paddingBottom) + 2;
     for (const node of [...preview.children]) {
-      if (!(node instanceof HTMLElement) || node.matches('.video-stage, .preview-editor, .reprocessing-panel, .pane-divider')) continue;
+      if (!(node instanceof HTMLElement) || node.matches('.video-stage, .preview-media, .preview-editor, .reprocessing-panel, .operation-panel, .pane-divider')) continue;
       const style = getComputedStyle(node);
       fixedHeight += node.getBoundingClientRect().height + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
     }
@@ -51,7 +51,7 @@ export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, h
     if (!commit && !dragPreference.current) dragPreference.current = preferenceRef.current;
     const next = { ...preferenceRef.current, [key]: value };
     preferenceRef.current = next; setPreferences(next);
-    if (commit) { dragPreference.current = null; localStorage.setItem(LAYOUT_KEY, JSON.stringify(next)); }
+    if (commit) { dragPreference.current = null; try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(next)); } catch { /* Keep the changed layout for this session. */ } }
   }
   function cancel(): void {
     const previous = dragPreference.current;
@@ -65,19 +65,22 @@ export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, h
   const columnSpace = Math.max(1, measurements.gridWidth - gap);
   const leftMinimum = Math.min(320, columnSpace / 2); const leftMaximum = Math.max(leftMinimum, columnSpace - 350);
   const leftWidth = clamp(preferences.columns * columnSpace, leftMinimum, leftMaximum);
-  const previewMinimum = measurements.fixedHeight + measurements.videoMinimum + (hasInlineForm ? 85 + 16 : 0);
+  // Reserve room for a compact two-column form, including all export choices
+  // above its pinned footer, before allocating the remaining space to video.
+  const formMinimum = hasInlineForm ? 320 : 85;
+  const previewMinimum = measurements.fixedHeight + measurements.videoMinimum + (hasInlineForm ? formMinimum + 16 : 0);
   const availableSecondary = measurements.leftHeight - previewMinimum - 10;
   const secondaryMinimum = Math.min(measurements.secondaryHeader + (hasInlineForm ? 32 : 64), Math.max(measurements.secondaryHeader, availableSecondary));
   const secondaryMaximum = Math.max(secondaryMinimum, availableSecondary);
   const secondaryHeight = clamp(preferences.secondary * measurements.leftHeight, secondaryMinimum, secondaryMaximum);
-  const editorSpace = Math.max(measurements.videoMinimum + 85, measurements.previewHeight - measurements.fixedHeight - 16);
-  const videoHeight = clamp(preferences.editor * editorSpace, measurements.videoMinimum, editorSpace - 85);
+  const editorSpace = Math.max(measurements.videoMinimum + formMinimum, measurements.previewHeight - measurements.fixedHeight - 16);
+  const videoHeight = clamp(preferences.editor * editorSpace, measurements.videoMinimum, editorSpace - formMinimum);
   return { rootRef, gridRef, leftRef, previewRef,
     style: { '--sidebar-width': `${sidebarValue}px`, '--left-width': `${leftWidth}px`, '--secondary-height': `${secondaryHeight}px`, '--inline-video-height': `${videoHeight}px` } as CSSProperties,
     sidebar: { value: sidebarValue, minimum: 160, maximum: sidebarMaximum, update: (value, commit) => update('sidebar', value, commit), cancel },
     columns: { value: leftWidth, minimum: leftMinimum, maximum: leftMaximum, position: leftWidth + gap / 2, update: (value, commit) => update('columns', value / columnSpace, commit), cancel },
     secondary: { value: measurements.leftHeight - secondaryHeight - 10, minimum: previewMinimum, maximum: measurements.leftHeight - secondaryMinimum - 10, update: (value, commit) => update('secondary', (measurements.leftHeight - value - 10) / measurements.leftHeight, commit), cancel },
-    editor: { value: videoHeight, minimum: measurements.videoMinimum, maximum: editorSpace - 85, update: (value, commit) => update('editor', value / editorSpace, commit), cancel },
-    reset: () => { dragPreference.current = null; setPreferences({ ...DEFAULT_LAYOUT }); preferenceRef.current = { ...DEFAULT_LAYOUT }; localStorage.removeItem(LAYOUT_KEY); },
+    editor: { value: videoHeight, minimum: measurements.videoMinimum, maximum: editorSpace - formMinimum, update: (value, commit) => update('editor', value / editorSpace, commit), cancel },
+    reset: () => { dragPreference.current = null; setPreferences({ ...DEFAULT_LAYOUT }); preferenceRef.current = { ...DEFAULT_LAYOUT }; try { localStorage.removeItem(LAYOUT_KEY); } catch { /* Reset remains available without persistence. */ } },
   };
 }
