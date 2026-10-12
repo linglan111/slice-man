@@ -1,0 +1,44 @@
+{
+  "id": "repair-and-onboarding",
+  "name": "repair-and-onboarding",
+  "title": "Subtitle auto-repair and first-run guide",
+  "description": "Add risk-threshold bounded automatic subtitle repair and a repeatable first-run feature guide",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "jing",
+  "assignee": "jing",
+  "createdAt": "2026-10-11",
+  "completedAt": "2026-10-12",
+  "branch": "codex/subtitle-repair-onboarding",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "f25688192762fe1b14959d1666639a312a7931d0",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-11-risk-repair-loop",
+    "10-11-first-run-guide",
+    "10-11-review-reliability",
+    "10-11-operation-workspace",
+    "10-11-person-name-review"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "implementation_approval": "User approved updated complete planning summary including range policy on 2026-10-11",
+    "original_scope_regression": "R1-R8: lint/typecheck/build pass; 497 unit/integration; full native32pass/3explicit skips/0fail; affected9pass; evidence/regression-review.md",
+    "added_scope_planning": "R9-R11 latest final summary approved; implementation authorized",
+    "added_scope_implementation_approval": "User explicitly approved latest final-planning-summary.md on 2026-10-11 after final review (message: 批准)",
+    "final_quality_gate": "2026-10-12: lint/typecheck/build pass; 60files574unit/integration; native40total37pass3explicitexternalgateskip0fail; final-added-e2e-review.md/final-added-full-native.log/final-unit.log",
+    "completion_state": "Implementation/checks and two scoped work commits complete; archive/journal explicitly authorized",
+    "work_commits": [
+      "f25688192762fe1b14959d1666639a312a7931d0",
+      "ae806d19e9bf49265163fbf2f12124e52fdaec43"
+    ],
+    "commit_approval": "User explicitly confirmed scoped two-commit/archive/journal plan on2026-10-12 (提交)"
+  }
+}

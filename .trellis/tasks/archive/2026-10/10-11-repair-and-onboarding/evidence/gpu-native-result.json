@@ -1,0 +1,38 @@
+{
+  "device": {
+    "name": "NVIDIA GeForce RTX 5070",
+    "driver": "610.74"
+  },
+  "engineVersion": "1.8.3",
+  "model": "base",
+  "modelBytes": 147951465,
+  "pinnedSha256": {
+    "cpu": "d824b1e37599f882b396e73f1ee0bfd5d0529f700314c48311dcbd00b803321d",
+    "gpu": "c12a563333d3c3707be70754dc0e87c1cb58aa6333a87055bbcf9b524488dfb0",
+    "model": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe"
+  },
+  "seed": "Physically extracted integrity-checked official archives and model inside normal isolated userData; installation readiness reused, every job runs actual native recognition.",
+  "ai": "Loopback HTTP translation mock only; no cloud speech or paid requests.",
+  "results": [
+    {
+      "backend": "gpu",
+      "wallTimeMs": 1480,
+      "segments": 1,
+      "receipt": {
+        "backend": "gpu",
+        "gpuExecutionVerified": true,
+        "stderrProof": "whisper_model_load:        CUDA0 total size =   147.37 MB\nwhisper_backend_init_gpu: using CUDA0 backend"
+      }
+    },
+    {
+      "backend": "cpu",
+      "wallTimeMs": 1945,
+      "segments": 1,
+      "receipt": {
+        "backend": "cpu",
+        "gpuExecutionVerified": false,
+        "stderrProof": ""
+      }
+    }
+  ]
+}
