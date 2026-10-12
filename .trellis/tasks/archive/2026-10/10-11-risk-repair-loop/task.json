@@ -1,0 +1,36 @@
+{
+  "id": "risk-repair-loop",
+  "name": "risk-repair-loop",
+  "title": "Bounded automatic subtitle repair",
+  "description": "Automatically repair current suspicious subtitles at or above a selected grade with a configurable loop limit",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "jing",
+  "assignee": "jing",
+  "createdAt": "2026-10-11",
+  "completedAt": "2026-10-12",
+  "branch": "codex/subtitle-repair-onboarding",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "f25688192762fe1b14959d1666639a312a7931d0",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-11-repair-and-onboarding",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "implementation_approval": "User approved updated complete planning summary including range policy on 2026-10-11",
+    "regression_evidence": "../10-11-repair-and-onboarding/evidence/regression-review.md (R1-R8 approved scope passed; added-scope integration will rerun gates)",
+    "final_quality_gate": "2026-10-12: lint/typecheck/build pass; 60files574unit/integration; native40total37pass3explicitexternalgateskip0fail; final-added-e2e-review.md/final-added-full-native.log/final-unit.log",
+    "completion_state": "Implementation/checks and two scoped work commits complete; archive/journal explicitly authorized",
+    "work_commits": [
+      "f25688192762fe1b14959d1666639a312a7931d0",
+      "ae806d19e9bf49265163fbf2f12124e52fdaec43"
+    ],
+    "commit_approval": "User explicitly confirmed scoped two-commit/archive/journal plan on2026-10-12 (提交)"
+  }
+}
