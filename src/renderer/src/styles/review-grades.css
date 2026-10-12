@@ -6,9 +6,19 @@
 .review-grade--unreviewed, .review-grade--legacy, .review-grade--stale { color: var(--color-muted); border-color: var(--color-border); background: var(--color-surface); }
 .review-grade--stale { border-style: dashed; }
 .review-grade__recheck { font-size: 9px; }
-.review-toolbar--grades { flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
-.review-toolbar--grades select { width: 138px; flex-shrink: 0; margin: 0; padding: 3px 7px; font-size: 11px; }
-.review-toolbar--grades .review-toolbar__select { margin-right: auto; }
+.subtitle-panel > .subtitle-panel__heading { align-items: flex-start; gap: 7px 12px; margin-bottom: 8px; }
+.subtitle-panel__title { flex: 1 1 140px; min-width: 0; }
+.subtitle-panel__title h2 { white-space: nowrap; }
+.subtitle-panel__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; max-width: 100%; margin-left: auto; }
+.subtitle-panel__actions .button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; font-size: 11px; }
+.subtitle-panel__actions .ui-icon { width: 15px; height: 15px; flex-shrink: 0; }
+.review-toolbar--grades { justify-content: space-between; flex-wrap: wrap; gap: 5px 12px; margin-bottom: 8px; }
+.review-toolbar__filter-group, .review-toolbar__view-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.review-toolbar__filter-group { flex-wrap: wrap; }
+.review-toolbar__view-group { flex-shrink: 0; margin-left: auto; }
+.review-toolbar--grades select { width: 130px; height: 28px; flex-shrink: 0; margin: 0; padding: 3px 7px; font-size: 11px; }
+.review-toolbar--grades .review-toolbar__select { margin: 0; }
+.review-toolbar--grades .review-toolbar__follow { margin: 0; gap: 5px; }
 .review-toolbar--grades .text-button { white-space: nowrap; }
 .review-rubric { padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--color-border); border-radius: 7px; background: var(--color-surface); }
 .review-rubric h3 { font-size: 12px; }

@@ -1,21 +1,29 @@
 import { jobSetting, closeWorkspaceSettings } from './helpers';
 import { test, expect, type Page, type ElectronApplication } from '@playwright/test';
 import type { Job } from '../../src/shared/contracts';
-import { addProfile, expandSecondaryControls, importVideo, launchApp, makeVideo, startMockServer } from './helpers';
+import { addProfile, importVideo, launchApp, makeVideo, startMockServer } from './helpers';
 
 async function currentJob(page: Page): Promise<Job> {
   return page.evaluate(async () => { const result = await window.api.jobs.list(); if (!result.success || !result.data[0]) throw new Error('Repair fixture missing'); return result.data[0]; });
 }
 async function controlGeometry(page: Page): Promise<void> {
   const geometry = await page.evaluate(() => {
-    const node = document.querySelector('.subtitle-list'); const controls = document.querySelector('.repair-loop'); const panel = document.querySelector('.subtitle-panel');
-    if (!node || !controls || !panel) throw new Error('Repair geometry missing');
-    return { list: node.getBoundingClientRect().toJSON(), controls: controls.getBoundingClientRect().toJSON(), panel: panel.getBoundingClientRect().toJSON(), viewport: innerHeight, body: document.body.scrollHeight };
+    const node = document.querySelector('.subtitle-list'); const controls = document.querySelector('dialog .repair-loop'); const panel = document.querySelector('.subtitle-panel'); const dialog = controls?.closest('dialog');
+    if (!node || !controls || !panel || !dialog) throw new Error('Repair geometry missing');
+    const clip = dialog.getBoundingClientRect();
+    const fieldsFit = [...controls.querySelectorAll('input, select, button')].every((field) => {
+      const rect = field.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return rect.left >= clip.left && rect.right <= clip.right && rect.top >= clip.top && rect.bottom <= clip.bottom && Boolean(hit && field.contains(hit));
+    });
+    return { list: node.getBoundingClientRect().toJSON(), controls: controls.getBoundingClientRect().toJSON(), panel: panel.getBoundingClientRect().toJSON(), viewport: innerHeight, body: document.body.scrollHeight, fieldsFit, scrollTop: dialog.scrollTop };
   });
   expect(geometry.list.height).toBeGreaterThan(70);
   expect(geometry.list.bottom).toBeLessThanOrEqual(geometry.panel.bottom + 1);
   expect(geometry.controls.bottom).toBeLessThanOrEqual(geometry.viewport);
   expect(geometry.body).toBeLessThanOrEqual(geometry.viewport + 1);
+  expect(geometry.fieldsFit, 'Every repair field/action fits the dialog and receives pointer input').toBe(true);
+  expect(geometry.scrollTop).toBe(0);
   await expect(page.getByRole('button', { name: '自动循环修复', exact: true })).toBeInViewport();
   await expect(page.getByRole('button', { name: '添加字幕', exact: true })).toBeInViewport();
 }
@@ -35,18 +43,27 @@ test('fixed-range automatic repair converges, reruns with fresh IDs, caps and ca
       }
     });
     await expect(page.locator('.subtitle-row')).toHaveCount(2);
-    await addProfile(page, 'Repair fixture', 'openai', mock.url); await expandSecondaryControls(page);
+    await addProfile(page, 'Repair fixture', 'openai', mock.url);
     await (await jobSetting(page, '识别方式')).selectOption('cloud');
     await (await jobSetting(page, '语音识别服务')).selectOption({ label: 'Repair fixture' });
     await (await jobSetting(page, 'AI 检查服务（可选）')).selectOption({ label: 'Repair fixture' });
     await closeWorkspaceSettings(page);
+    await expect(page.locator('.subtitle-panel > .repair-loop')).toHaveCount(0);
+    await page.getByRole('button', { name: '字幕自动修复', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: '字幕自动修复', exact: true })).toBeVisible();
     await page.getByLabel('自动修复范围', { exact: true }).selectOption('range');
     await page.getByLabel('自动修复开始（秒）', { exact: true }).fill('0.150');
     await page.getByLabel('自动修复结束（秒）', { exact: true }).fill('1.000');
     await controlGeometry(page);
     await page.screenshot({ path: info.outputPath('repair-range-default.png') });
     await app.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows()[0]?.setSize(1050, 700); });
+    await controlGeometry(page);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: '字幕自动修复', exact: true })).toBeFocused();
     await page.getByLabel('编辑字幕 1', { exact: true }).click();
+    await page.getByRole('button', { name: '字幕自动修复', exact: true }).click();
+    await expect(page.getByLabel('自动修复开始（秒）', { exact: true })).toHaveValue('0.150');
+    await expect(page.getByLabel('自动修复结束（秒）', { exact: true })).toHaveValue('1.000');
     await controlGeometry(page);
     await page.screenshot({ path: info.outputPath('repair-range-minimum-editing.png') });
     await page.getByRole('button', { name: '自动循环修复', exact: true }).click();
@@ -76,9 +93,12 @@ test('fixed-range automatic repair converges, reruns with fresh IDs, caps and ca
     await page.evaluate(async () => { const result = await window.api.jobs.list(); if (!result.success || !result.data[0]?.segments[0]) throw new Error('Cancel cue missing'); const job = result.data[0]; const segment = job.segments[0]; if (!segment) throw new Error('Cue missing'); const edited = await window.api.jobs.editSegment({ jobId: job.id, revision: job.revision, segment: { ...segment, sourceText: 'Changed before cancellation.' } }); if (!edited.success) throw new Error(edited.error); });
     await page.getByRole('button', { name: '自动循环修复', exact: true }).click();
     await expect(page.getByRole('button', { name: '取消自动修复', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await currentJob(page)).repairRun?.state).toBe('running');
     await page.getByRole('button', { name: '功能导航', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '功能导航', exact: true })).toBeVisible();
     await page.getByLabel('关闭对话框', { exact: true }).click();
+    await page.getByRole('button', { name: '字幕自动修复', exact: true }).click();
     await page.getByRole('button', { name: '取消自动修复', exact: true }).click();
     await expect.poll(async () => (await currentJob(page)).repairRun?.state).toBe('cancelled');
     const cancelled = await currentJob(page); expect(cancelled.repairRun?.committedRounds).toBe(0); expect(cancelled.repairRun?.remainingCount).toBeUndefined();
@@ -87,6 +107,7 @@ test('fixed-range automatic repair converges, reruns with fresh IDs, caps and ca
     await app.close(); app = undefined;
     const restarted = await launchApp(userData, [], []); app = restarted.app;
     expect((await currentJob(restarted.page)).repairRun?.state).toBe('cancelled');
+    await restarted.page.getByRole('button', { name: '字幕自动修复', exact: true }).click();
     await expect(restarted.page.getByLabel('自动修复范围', { exact: true })).toHaveValue('range');
     await expect(restarted.page.getByLabel('自动修复开始（秒）', { exact: true })).toHaveValue('0.150');
     await expect(restarted.page.getByRole('button', { name: '自动循环修复', exact: true })).toBeEnabled();

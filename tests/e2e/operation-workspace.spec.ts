@@ -47,6 +47,9 @@ test('each operation has two columns and visible actions at default and minimum 
     for (const [width, height] of [[1440, 960], [1050, 700]] as const) {
       await app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]?.setSize(size.width, size.height), { width, height });
       await page.getByRole('button', { name: '重置布局', exact: true }).click();
+      await expect(page.locator('.preview-panel > .workspace-header h1')).toHaveText('operations.mp4');
+      await expect(page.locator('.work-grid__proofreading > .workspace-header')).toHaveCount(0);
+      await expect(page.locator('.secondary-controls')).toHaveCount(0);
       const toolbar = page.getByRole('toolbar', { name: '视频操作' });
       expect(await toolbar.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent?.trim()))).toEqual(['生成', '重新识别片段', '重新翻译片段', '添加画面字幕', '人名检查', '样式', '导出作品']);
       expect(await toolbar.getByRole('button').evaluateAll((buttons) => buttons.every((button) => button.querySelector('svg[aria-hidden="true"]')))).toBe(true);
@@ -84,8 +87,10 @@ test('each operation has two columns and visible actions at default and minimum 
         const stagesFit = await page.locator('.preview-panel > .section-heading').evaluate((node) => {
           const title = node.querySelector('h2')?.getBoundingClientRect();
           const clip = node.getBoundingClientRect();
+          const strip = node.querySelector('.stage-strip')?.getBoundingClientRect();
           const stages = [...node.querySelectorAll('.stage-pill')];
-          return Boolean(title && stages.length === 3 && stages.every((stage) => {
+          const centered = clip.width <= 480 || Boolean(strip && Math.abs((strip.left + strip.right) / 2 - (clip.left + clip.right) / 2) <= 1);
+          return Boolean(title && centered && stages.length === 3 && stages.every((stage) => {
             const rect = stage.getBoundingClientRect();
             return rect.left >= title.right && rect.top >= clip.top - 1 && rect.bottom <= clip.bottom + 1 && rect.right <= clip.right + 1;
           }));
@@ -116,8 +121,14 @@ test('each operation has two columns and visible actions at default and minimum 
         const follow = document.querySelector('.review-toolbar__follow');
         return { heading: review.map((node) => node.textContent?.trim()), standardsAfterFollow: follow?.nextElementSibling?.getAttribute('aria-label') };
       });
-      expect(placement.heading).toEqual(['AI 检查字幕', '＋ 添加字幕']);
+      expect(placement.heading).toEqual(['字幕自动修复', 'AI 检查字幕', '添加字幕']);
       expect(placement.standardsAfterFollow).toBe('可疑度判断标准');
+      const headingActions = page.locator('.subtitle-panel__actions');
+      expect(await headingActions.evaluate((node) => {
+        const [repair, review, add] = [...node.querySelectorAll('button')].map((button) => button.getBoundingClientRect());
+        if (!repair || !review || repair.right > review.left) return false;
+        return Boolean(review && add && Math.abs(review.top - add.top) <= 1 && add.left - review.right >= 0 && add.left - review.right <= 12);
+      }), 'Review and Add remain one adjacent action group').toBe(true);
       for (const label of ['生成设置', '样式设置']) {
         await page.locator('.sidebar__footer').getByRole('button', { name: label, exact: true }).click();
         const dialog = page.getByRole('dialog', { name: label, exact: true });

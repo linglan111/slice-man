@@ -13,6 +13,7 @@ describe('App loop ownership presentation', () => {
     const job = savedJob(); job.options.reviewProfileId = 'review'; const { api } = stubApi(job);
     vi.mocked(api.jobs.repairLoop).mockResolvedValue({ success: true, data: { ...job, updatedAt: 20, repairRun: { ...run, state: 'succeeded', phase: 'done', completedAt: 20, reason: 'no_eligible', remainingCount: 0 } } });
     await act(async () => { render(<App />); });
+    fireEvent.click(screen.getByRole('button', { name: '字幕自动修复' }));
     fireEvent.change(screen.getByLabelText('自动修复范围'), { target: { value: 'range' } });
     fireEvent.change(screen.getByLabelText('自动修复开始（秒）'), { target: { value: '0.2' } });
     fireEvent.change(screen.getByLabelText('自动修复结束（秒）'), { target: { value: '1.5' } });
@@ -25,6 +26,7 @@ describe('App loop ownership presentation', () => {
     const job = savedJob(); job.options.reviewProfileId = 'review'; job.repairRun = run; job.updatedAt = 12;
     const { api } = stubApi(job); vi.mocked(api.jobs.cancel).mockResolvedValue({ success: true, data: undefined });
     await act(async () => { render(<App />); });
+    fireEvent.click(screen.getByRole('button', { name: '字幕自动修复' }));
     expect((screen.getByLabelText('编辑字幕 1') as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: '取消自动修复' })); expect(api.jobs.cancel).toHaveBeenCalledExactlyOnceWith(job.id);
     const handler = vi.mocked(api.onProgress).mock.calls[0]?.[0]; if (!handler) throw new Error('Progress callback missing');

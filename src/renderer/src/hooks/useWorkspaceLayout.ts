@@ -1,18 +1,18 @@
 import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { clamp, DEFAULT_LAYOUT, LAYOUT_KEY, parseLayoutPreferences, type LayoutPreferences } from '../lib/layout-preferences';
 
-type Measurements = { width: number; gridWidth: number; leftHeight: number; previewHeight: number; fixedHeight: number; secondaryHeader: number; videoMinimum: number };
+type Measurements = { width: number; gridWidth: number; previewHeight: number; fixedHeight: number; videoMinimum: number };
 type Allocation = { value: number; minimum: number; maximum: number; update: (value: number, commit: boolean) => void; cancel: () => void; position?: number };
 export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, hasInlineForm: boolean): {
   rootRef: RefObject<HTMLDivElement | null>; gridRef: RefObject<HTMLDivElement | null>; leftRef: RefObject<HTMLDivElement | null>; previewRef: RefObject<HTMLElement | null>;
-  style: CSSProperties; sidebar: Allocation; columns: Allocation; secondary: Allocation; editor: Allocation; reset: () => void;
+  style: CSSProperties; sidebar: Allocation; columns: Allocation; editor: Allocation; reset: () => void;
 } {
   const [preferences, setPreferences] = useState(() => { try { return parseLayoutPreferences(localStorage.getItem(LAYOUT_KEY)); } catch { return { ...DEFAULT_LAYOUT }; } });
   const preferenceRef = useRef(preferences);
   preferenceRef.current = preferences;
   const dragPreference = useRef<LayoutPreferences | null>(null);
   const rootRef = useRef<HTMLDivElement>(null); const gridRef = useRef<HTMLDivElement>(null); const leftRef = useRef<HTMLDivElement>(null); const previewRef = useRef<HTMLElement>(null);
-  const [measurements, setMeasurements] = useState<Measurements>({ width: 1440, gridWidth: 1160, leftHeight: 720, previewHeight: 450, fixedHeight: 120, secondaryHeader: 54, videoMinimum: 160 });
+  const [measurements, setMeasurements] = useState<Measurements>({ width: 1440, gridWidth: 1160, previewHeight: 450, fixedHeight: 120, videoMinimum: 160 });
   const measure = useCallback(() => {
     const root = rootRef.current; const grid = gridRef.current; const left = leftRef.current; const preview = previewRef.current;
     if (!root || !root.clientWidth) return;
@@ -28,8 +28,8 @@ export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, h
       fixedHeight += node.getBoundingClientRect().height + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
     }
     const videoStage = preview.querySelector('.video-stage');
-    const next = { width: root.clientWidth, gridWidth: grid.clientWidth, leftHeight: left.clientHeight, previewHeight: preview.clientHeight,
-      fixedHeight, secondaryHeader: left.querySelector('.secondary-controls__toggle')?.getBoundingClientRect().height ?? 54,
+    const next = { width: root.clientWidth, gridWidth: grid.clientWidth, previewHeight: preview.clientHeight,
+      fixedHeight,
       videoMinimum: videoStage ? parseFloat(getComputedStyle(videoStage).minHeight) || 110 : 110 };
     setMeasurements((current) => Object.keys(next).every((key) => Math.abs(next[key as keyof Measurements] - current[key as keyof Measurements]) < .5) ? current : next);
   }, []);
@@ -68,18 +68,12 @@ export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, h
   // Reserve room for a compact two-column form, including all export choices
   // above its pinned footer, before allocating the remaining space to video.
   const formMinimum = hasInlineForm ? 320 : 85;
-  const previewMinimum = measurements.fixedHeight + measurements.videoMinimum + (hasInlineForm ? formMinimum + 16 : 0);
-  const availableSecondary = measurements.leftHeight - previewMinimum - 10;
-  const secondaryMinimum = Math.min(measurements.secondaryHeader + (hasInlineForm ? 32 : 64), Math.max(measurements.secondaryHeader, availableSecondary));
-  const secondaryMaximum = Math.max(secondaryMinimum, availableSecondary);
-  const secondaryHeight = clamp(preferences.secondary * measurements.leftHeight, secondaryMinimum, secondaryMaximum);
   const editorSpace = Math.max(measurements.videoMinimum + formMinimum, measurements.previewHeight - measurements.fixedHeight - 16);
   const videoHeight = clamp(preferences.editor * editorSpace, measurements.videoMinimum, editorSpace - formMinimum);
   return { rootRef, gridRef, leftRef, previewRef,
-    style: { '--sidebar-width': `${sidebarValue}px`, '--left-width': `${leftWidth}px`, '--secondary-height': `${secondaryHeight}px`, '--inline-video-height': `${videoHeight}px` } as CSSProperties,
+    style: { '--sidebar-width': `${sidebarValue}px`, '--left-width': `${leftWidth}px`, '--inline-video-height': `${videoHeight}px` } as CSSProperties,
     sidebar: { value: sidebarValue, minimum: 160, maximum: sidebarMaximum, update: (value, commit) => update('sidebar', value, commit), cancel },
     columns: { value: leftWidth, minimum: leftMinimum, maximum: leftMaximum, position: leftWidth + gap / 2, update: (value, commit) => update('columns', value / columnSpace, commit), cancel },
-    secondary: { value: measurements.leftHeight - secondaryHeight - 10, minimum: previewMinimum, maximum: measurements.leftHeight - secondaryMinimum - 10, update: (value, commit) => update('secondary', (measurements.leftHeight - value - 10) / measurements.leftHeight, commit), cancel },
     editor: { value: videoHeight, minimum: measurements.videoMinimum, maximum: editorSpace - formMinimum, update: (value, commit) => update('editor', value / editorSpace, commit), cancel },
     reset: () => { dragPreference.current = null; setPreferences({ ...DEFAULT_LAYOUT }); preferenceRef.current = { ...DEFAULT_LAYOUT }; try { localStorage.removeItem(LAYOUT_KEY); } catch { /* Reset remains available without persistence. */ } },
   };

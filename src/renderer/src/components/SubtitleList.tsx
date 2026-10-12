@@ -5,7 +5,7 @@ import { Icon } from './Icon';
 import { Modal } from './Modal';
 import { ReviewGrade } from './ReviewGrade';
 import { ReviewRubricHelp } from './ReviewRubricHelp';
-import { RepairLoopControls } from './RepairLoopControls';
+import { createRepairLoopDraft, RepairLoopControls } from './RepairLoopControls';
 import type { RepairLoopInput } from '../../../shared/contracts';
 import { filteredReviewIds, reviewGrades, REVIEW_LEVELS, type ReviewFilter } from '../lib/review-presentation';
 
@@ -14,7 +14,8 @@ const CATEGORY_LABELS = { timing: '可疑时轴', source: '可疑原文', transl
 export function SubtitleList({ job, selectedIds, activeIds, isBusy, isEditing, editingId, draftStartMs, editor, onAdd, onRemove, onSelect, onSelectMany, onEdit, onSeek, onRetranslate, onReview, onRepair, onIgnore, onPlay, onRepairRange, onRepairLoop, onCancelRepair }: Props & { onRepairLoop?: (input: RepairLoopInput) => void; onCancelRepair?: () => void }): ReactNode {
   const [isFollowing, setIsFollowing] = useState(true);
   const [filter, setFilter] = useState<ReviewFilter>('all');
-  const [isRubricVisible, setIsRubricVisible] = useState(false);
+  const [dialog, setDialog] = useState<'rubric' | 'repair' | null>(null);
+  const [repairDraft, setRepairDraft] = useState(() => createRepairLoopDraft(job));
   const grades = useMemo(() => reviewGrades(job), [job]);
   const pendingIds = grades.pendingIds;
   const filteredIds = useMemo(() => filteredReviewIds(job, filter, grades), [job, filter, grades]);
@@ -44,10 +45,9 @@ export function SubtitleList({ job, selectedIds, activeIds, isBusy, isEditing, e
     const target = row.getBoundingClientRect();
     if (target.top < bounds.top || target.bottom > bounds.bottom) list.scrollTo({ top: list.scrollTop + target.top - bounds.top, behavior: 'smooth' });
   }, [activeIds, isFollowing, isEditing]);
-  return <section className="subtitle-panel" aria-label="字幕列表"><div className="section-heading"><div><h2>字幕校对 <span className="count">{job.segments.length}</span></h2><p className="hint">点击时间定位，勾选字幕可批量修复。</p></div>
-    {onReview && <button className="button" disabled={isBusy || !job.segments.length} onClick={() => onReview()}><Icon name="review" />AI 检查字幕</button>}<button className="button" aria-label="添加字幕" disabled={isBusy} onClick={() => { setFilter('all'); onAdd(); }}>＋ 添加字幕</button></div>
-    {onReview && <div className="review-toolbar review-toolbar--grades"><select aria-label="可疑度筛选" value={filter} onChange={(event) => { const value = event.target.value; setFilter(value === 'all' || value === 'pending' || value === 'unchecked' ? value : reviewRiskLevelSchema.parse(value)); }}><option value="all">全部（{job.segments.length}）</option><option value="unchecked">未检查（{grades.uncheckedIds.length}）</option><option value="pending">待检查（{pendingIds.length + orphanFindings.length}）</option>{REVIEW_LEVELS.map((level) => <option key={level} value={level}>{REVIEW_RISK_LABELS[level]}（{grades.counts[level]}）</option>)}</select>{onSelectMany && <button className="text-button review-toolbar__select" disabled={isBusy || filter === 'all' || !filteredIds.length} onClick={() => onSelectMany(filteredIds)}>{filter === 'pending' ? '选择待检查' : '选择当前等级'}</button>}{filter === 'pending' && pendingIds.length > 0 && <button className="text-button" disabled={isBusy} onClick={() => onReview(pendingIds)}>复查待检查</button>}<label className="check-label review-toolbar__follow"><input type="checkbox" checked={isFollowing} onChange={(event) => setIsFollowing(event.target.checked)} />跟随播放</label><button className="text-button" aria-label="可疑度判断标准" aria-expanded={isRubricVisible} title="查看统一等级标准、例子与排除条件" onClick={() => setIsRubricVisible((value) => !value)}>标准</button></div>}
-    {onRepairLoop && onCancelRepair && <RepairLoopControls job={job} isBusy={isBusy} onStart={onRepairLoop} onCancel={onCancelRepair} />}
+  return <section className="subtitle-panel" aria-label="字幕列表"><div className="section-heading subtitle-panel__heading"><div className="subtitle-panel__title"><h2>字幕校对 <span className="count">{job.segments.length}</span></h2><p className="hint">点击时间定位，勾选字幕可批量修复。</p></div>
+    <div className="subtitle-panel__actions">{onRepairLoop && onCancelRepair && <button className="button" aria-haspopup="dialog" aria-expanded={dialog === 'repair'} onClick={() => setDialog('repair')}><Icon name="repair" />字幕自动修复</button>}{onReview && <button className="button" disabled={isBusy || !job.segments.length} onClick={() => onReview()}><Icon name="review" />AI 检查字幕</button>}<button className="button" aria-label="添加字幕" disabled={isBusy} onClick={() => { setFilter('all'); onAdd(); }}><Icon name="add" />添加字幕</button></div></div>
+    {onReview && <div className="review-toolbar review-toolbar--grades"><div className="review-toolbar__filter-group"><select aria-label="可疑度筛选" value={filter} onChange={(event) => { const value = event.target.value; setFilter(value === 'all' || value === 'pending' || value === 'unchecked' ? value : reviewRiskLevelSchema.parse(value)); }}><option value="all">全部（{job.segments.length}）</option><option value="unchecked">未检查（{grades.uncheckedIds.length}）</option><option value="pending">待检查（{pendingIds.length + orphanFindings.length}）</option>{REVIEW_LEVELS.map((level) => <option key={level} value={level}>{REVIEW_RISK_LABELS[level]}（{grades.counts[level]}）</option>)}</select>{onSelectMany && <button className="text-button review-toolbar__select" disabled={isBusy || filter === 'all' || !filteredIds.length} onClick={() => onSelectMany(filteredIds)}>{filter === 'pending' ? '选择待检查' : '选择当前等级'}</button>}{filter === 'pending' && pendingIds.length > 0 && <button className="text-button" disabled={isBusy} onClick={() => onReview(pendingIds)}>复查待检查</button>}</div><div className="review-toolbar__view-group"><label className="check-label review-toolbar__follow"><input type="checkbox" checked={isFollowing} onChange={(event) => setIsFollowing(event.target.checked)} />跟随播放</label><button className="text-button" aria-label="可疑度判断标准" aria-expanded={dialog === 'rubric'} title="查看统一等级标准、例子与排除条件" onClick={() => setDialog((value) => value === 'rubric' ? null : 'rubric')}>标准</button></div></div>}
     {job.reviewReport && <p className="review-summary hint">{!job.reviewReport.assessments ? '旧版检查未分级，请重新检查。' : job.reviewReport.state === 'stale' ? '部分结果需复查；等级数量仅统计当前有效结果。' : '结合上下文的文本检查；可疑度不代表音频识别正确。'}</p>}
     {!onReview && <div className="subtitle-tools"><label className="check-label"><input type="checkbox" checked={isFollowing} onChange={(event) => setIsFollowing(event.target.checked)} />跟随播放</label></div>}
     {isEditing && <span className="hint">编辑时暂停跟随</span>}
@@ -71,6 +71,7 @@ export function SubtitleList({ job, selectedIds, activeIds, isBusy, isEditing, e
     {filter !== 'all' && filter !== 'pending' && filter !== 'unchecked' && !filteredIds.length && <div className="editor-empty"><h3>没有当前{REVIEW_RISK_LABELS[filter]}可疑度字幕</h3><p>未检查和需复查结果不计入此等级。</p></div>}
     {filter === 'unchecked' && !filteredIds.length && <div className="editor-empty"><h3>没有未检查字幕</h3><p>需要复查的字幕仍可在待检查中查看。</p></div>}
     {!job.segments.length && draftStartMs === undefined && <div className="editor-empty"><span className="empty-glyph">≡</span><h3>字幕将在这里出现</h3><p>可以添加手工字幕，或选择服务识别原片。</p></div>}</div>
-    {isRubricVisible && <Modal title="可疑度判断标准" onClose={() => setIsRubricVisible(false)}><ReviewRubricHelp onClose={() => setIsRubricVisible(false)} /></Modal>}
+    {dialog === 'rubric' && <Modal title="可疑度判断标准" onClose={() => setDialog(null)}><ReviewRubricHelp onClose={() => setDialog(null)} /></Modal>}
+    {dialog === 'repair' && onRepairLoop && onCancelRepair && <Modal title="字幕自动修复" className="repair-loop-dialog" onClose={() => setDialog(null)}><RepairLoopControls job={job} isBusy={isBusy} onStart={onRepairLoop} onCancel={onCancelRepair} draft={repairDraft} onDraftChange={setRepairDraft} /><p className="hint">关闭窗口不会取消正在执行的修复；可再次打开查看进度。</p></Modal>}
   </section>;
 }

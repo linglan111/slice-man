@@ -2,7 +2,7 @@ import { jobSetting, workspaceButton } from './helpers';
 import { test, expect, type ElectronApplication, type Page, type Locator } from '@playwright/test';
 import { join } from 'node:path';
 import { ONBOARDING_STORAGE_KEY } from '../../src/renderer/src/lib/onboarding-preferences';
-import { addProfile, expandSecondaryControls, importVideo, launchApp, makeVideo, startMockServer } from './helpers';
+import { addProfile, importVideo, launchApp, makeVideo, startMockServer } from './helpers';
 
 function guide(page: Page): Locator {
   return page.getByRole('dialog', { name: '功能导航', exact: true });
@@ -125,7 +125,6 @@ test('saved-project first-run and manual help preserve content and an active AI 
       if (!added.success) throw new Error(added.error);
     });
     await addProfile(launched.page, 'Guide fixture', 'openai', mock.url);
-    await expandSecondaryControls(launched.page);
     await (await jobSetting(launched.page, 'AI 检查服务（可选）')).selectOption({ label: 'Guide fixture' });
     const before = await launched.page.evaluate(async (key) => {
       // Simulate an existing project upgrading from a version without the guide preference.

@@ -24,7 +24,7 @@
 .workspace-header p { color: var(--color-muted); }
 .eyebrow { font-size: 9px; letter-spacing: 2px; font-weight: 600; color: var(--color-primary); }
 
-.work-grid__content, .work-grid__settings { min-width: 0; }
+.work-grid__content { min-width: 0; }
 .preview-panel, .subtitle-panel, .settings-panel, .style-panel, .outputs-panel { background: var(--color-panel); border: 1px solid var(--color-border); border-radius: var(--radius); }
 .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .section-heading .eyebrow { font-size: 8px; color: var(--color-muted); letter-spacing: 1px; }

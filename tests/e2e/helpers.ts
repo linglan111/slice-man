@@ -384,13 +384,6 @@ export async function configureCloud(
   await expect(page.getByRole("button", { name: "一键生成字幕", exact: true })).toBeEnabled();
 }
 
-/** Workflows that use generation/style settings deliberately open their disclosure. */
-export async function expandSecondaryControls(page: Page): Promise<void> {
-  const toggle = page.getByRole('button', { name: /生成、样式与导出/ });
-  await expect(toggle).toBeVisible();
-  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
-}
-
 /** Open actual settings dialogs; retained workflow tests use the relocated public UI. */
 export async function closeWorkspaceSettings(page: Page): Promise<void> {
   const dialog = page.getByRole('dialog').filter({ has: page.locator('.settings-panel, .style-panel') });

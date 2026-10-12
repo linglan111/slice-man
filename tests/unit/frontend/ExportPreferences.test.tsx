@@ -92,7 +92,10 @@ describe('independent export preferences and operation choices', () => {
     const job = savedJob(); const { api } = stubApi(job);
     vi.mocked(api.jobs.export).mockResolvedValue({ success: true, data: { path: 'anonymous.srt' } });
     vi.mocked(api.jobs.get).mockResolvedValue({ success: true, data: job });
-    render(<App />); await screen.findByLabelText('选择字幕 1');
+    // Finish the initial job-selection effect before opening a user operation.
+    await act(async () => { render(<App />); });
+    expect(api.jobs.playback).toHaveBeenCalledWith(job.id);
+    await screen.findByLabelText('选择字幕 1');
     expect(screen.getByRole('button', { name: '导出设置' }).closest('.sidebar__footer')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '导出作品' }));
     await screen.findByLabelText('导出格式');
@@ -107,7 +110,9 @@ describe('independent export preferences and operation choices', () => {
     let complete: ((value: { success: true; data: { path: string } }) => void) | undefined;
     vi.mocked(api.jobs.export).mockImplementation(() => new Promise((resolve) => { complete = resolve; }));
     vi.mocked(api.jobs.get).mockResolvedValue({ success: true, data: job });
-    render(<App />); await screen.findByLabelText('选择字幕 1');
+    await act(async () => { render(<App />); });
+    expect(api.jobs.playback).toHaveBeenCalledWith(job.id);
+    await screen.findByLabelText('选择字幕 1');
     fireEvent.click(screen.getByRole('button', { name: '导出作品' })); await screen.findByLabelText('视频编码');
     fireEvent.click(screen.getByRole('button', { name: '选择保存位置并导出' }));
     fireEvent.click(screen.getByRole('button', { name: '返回工作区' }));

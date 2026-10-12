@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type IconName = 'import' | 'link' | 'video' | 'engine' | 'settings' | 'download' | 'export' | 'collapse' | 'expand' | 'recognize' | 'translate' | 'review' | 'edit' | 'generate' | 'add' | 'names' | 'style';
+type IconName = 'import' | 'link' | 'video' | 'engine' | 'settings' | 'download' | 'export' | 'collapse' | 'expand' | 'recognize' | 'translate' | 'review' | 'repair' | 'edit' | 'generate' | 'add' | 'names' | 'style';
 const paths: Record<IconName, string> = {
   import: 'M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5',
   link: 'm10 13 4-4M8 15l-2 2a4 4 0 0 1-5-5l4-4a4 4 0 0 1 5 0m4 1 2-2a4 4 0 0 1 5 5l-4 4a4 4 0 0 1-5 0',
@@ -14,6 +14,7 @@ const paths: Record<IconName, string> = {
   recognize: 'M4 10v4m4-8v12m4-15v18m4-15v12m4-8v4',
   translate: 'M3 4h10M8 2v2M5 4c1 5 3 7 7 9M11 4c-1 5-3 7-7 9m9 7 4-10 4 10m-6-3h5',
   review: 'm4 12 4 4 6-8M15 3h6v18H3V3h8',
+  repair: 'M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 2M4 16l2 2a7 7 0 0 0 12-1',
   edit: 'm4 16 12-12 4 4-12 12H4zM13 7l4 4',
   generate: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z',
   add: 'M4 4h16v16H4zM12 8v8m-4-4h8',

@@ -21,7 +21,6 @@ import {
   addProfile,
   assertReferenceParity,
   exportFormat,
-  expandSecondaryControls,
   FFMPEG,
   frameDifference,
   importVideo,
@@ -48,7 +47,6 @@ async function job(page: Page): Promise<Job> {
 }
 
 async function setCloud(page: Page, profile: string): Promise<void> {
-  await expandSecondaryControls(page);
   await (await jobSetting(page, '识别方式')).selectOption("cloud");
   await (await jobSetting(page, '语音识别服务'))
     .selectOption({ label: profile });
@@ -407,9 +405,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
         .update(await readFile(source))
         .digest("hex"),
     ).toBe(sourceHash);
-    const disclosure = page.getByRole("button", { name: /生成、样式与导出/ });
-    await expect(disclosure).toHaveAttribute("aria-expanded", "true");
-    await disclosure.click();
+    await expect(page.locator('.secondary-controls')).toHaveCount(0);
     await page.getByRole("button", { name: "收起侧边栏", exact: true }).click();
     await app.close();
     app = undefined;
@@ -420,7 +416,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     ).toBeVisible();
     await expect(
       next.page.getByRole("button", { name: /生成、样式与导出/ }),
-    ).toHaveAttribute("aria-expanded", "false");
+    ).toHaveCount(0);
     await expect(
       next.page.getByRole("button", { name: "添加字幕", exact: true }),
     ).toBeVisible();
@@ -583,18 +579,14 @@ for (const orientation of ["portrait", "landscape"] as const) {
             exact: true,
           });
           if (await toggle.count()) await toggle.click();
-          for (const secondaryExpanded of [true, false]) {
-            const disclosure = page.getByRole("button", {
-              name: /生成、样式与导出/,
-            });
+          {
             const proofreadingBounds = await page
               .locator(".subtitle-panel")
               .boundingBox();
-            if (
-              ((await disclosure.getAttribute("aria-expanded")) === "true") !==
-              secondaryExpanded
-            )
-              await disclosure.click();
+            await page.locator('.sidebar__footer').getByRole('button', { name: '生成设置', exact: true }).click();
+            await expect(page.getByRole('dialog', { name: '生成设置', exact: true })).toBeVisible();
+            await closeWorkspaceSettings(page);
+            await expect(page.locator('.secondary-controls')).toHaveCount(0);
             expect(await page.locator(".subtitle-panel").boundingBox()).toEqual(
               proofreadingBounds,
             );
@@ -610,20 +602,6 @@ for (const orientation of ["portrait", "landscape"] as const) {
               )
               .toBeGreaterThan(100);
             expect(await page.locator("video").boundingBox()).toEqual(before);
-            if (secondaryExpanded) {
-              const overflows = await page.locator('.work-grid__settings').evaluate((node) => node.scrollHeight > node.clientHeight);
-              await page.locator(".work-grid__settings").hover();
-              await page.mouse.wheel(0, 700);
-              if (overflows) await expect
-                .poll(() =>
-                  page
-                    .locator(".work-grid__settings")
-                    .evaluate((node) => node.scrollTop),
-                )
-                .toBeGreaterThan(0);
-              else expect(await page.locator('.work-grid__settings').evaluate((node) => node.scrollTop)).toBe(0);
-              expect(await page.locator('video').boundingBox()).toEqual(before);
-            }
             expect(await page.evaluate(() => window.scrollY)).toBe(0);
             await (await workspaceButton(page, '添加画面字幕'))
               .click();
@@ -642,7 +620,7 @@ for (const orientation of ["portrait", "landscape"] as const) {
             await fixedWorkspace(page);
             await screenshot(
               page,
-              `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-${secondaryExpanded ? "settings-open" : "settings-closed"}-${orientation}-inline.png`,
+              `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-${orientation}-inline.png`,
             );
             await page.getByLabel("原文", { exact: true }).focus();
             await page.keyboard.press("Control+A");
@@ -689,7 +667,7 @@ for (const orientation of ["portrait", "landscape"] as const) {
             expect(await page.evaluate(() => window.scrollY)).toBe(0);
             await screenshot(
               page,
-              `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-${secondaryExpanded ? "settings-open" : "settings-closed"}-reprocess.png`,
+              `layout-${dimensions.width}x${dimensions.height}-${collapsed ? "collapsed" : "expanded"}-${orientation}-reprocess.png`,
             );
             await page.getByLabel("关闭分段处理", { exact: true }).click();
             await page.locator(".subtitle-list").evaluate((node) => {

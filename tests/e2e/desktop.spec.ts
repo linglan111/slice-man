@@ -3,7 +3,7 @@ import { test, expect, type ElectronApplication } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, rm, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { addProfile, assertReferenceParity, configureCloud, expandSecondaryControls, exportFormat, frameDifference, inspectVideo, launchApp, makeVideo, readText, renderInternalReference, saveEvidence, startMockServer, importVideo } from './helpers';
+import { addProfile, assertReferenceParity, configureCloud, exportFormat, frameDifference, inspectVideo, launchApp, makeVideo, readText, renderInternalReference, saveEvidence, startMockServer, importVideo } from './helpers';
 
 test('real desktop cloud workflow, all text protocols, corrections, rendering, exports and restart persistence', async ({ playwright: _playwright }, testInfo) => {
   const mock = await startMockServer();
@@ -112,7 +112,6 @@ test('real desktop cloud workflow, all text protocols, corrections, rendering, e
     expect(createHash('sha256').update(await readFile(input)).digest('hex')).toBe(inputHash);
     await app.close(); app = undefined;
     const restarted = await launchApp(userData, [], []); app = restarted.app;
-    await expandSecondaryControls(restarted.page);
     await expect(restarted.page.getByTestId('segment-0')).toContainText('已人工校对，世界你好。');
     await expect(restarted.page.getByText(mp4, { exact: true })).toBeVisible();
     await expect((await jobSetting(restarted.page, '双语字幕（译文 + 原文）'))).toBeChecked();
@@ -142,7 +141,6 @@ test('restart recovers interrupted work and missing original media fails without
     await app.close(); app = undefined;
     mock.behavior.translation = 'ok';
     const restarted = await launchApp(userData, [], []); app = restarted.app;
-    await expandSecondaryControls(restarted.page);
     await expect(restarted.page.getByTestId('segment-0')).toContainText('Hello world.');
     await expect(restarted.page.locator('.stage-pill').filter({ hasText: '字幕翻译' })).toContainText(/已中断|已取消/);
     await expect(restarted.page.getByRole('button', { name: '重试未完成阶段', exact: true })).toHaveCount(0);

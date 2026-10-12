@@ -10,7 +10,6 @@ import { resolve, join } from "node:path";
 import {
   addProfile,
   configureCloud,
-  expandSecondaryControls,
   importVideo,
   launchApp,
   makeVideo,
@@ -39,6 +38,7 @@ async function assertBrand(
 
 async function drag(page: Page, label: string, delta: number): Promise<void> {
   const separator = page.getByRole("separator", { name: label, exact: true });
+  await separator.focus();
   const bounds = await separator.boundingBox();
   if (!bounds) throw new Error(`Missing separator: ${label}`);
   const vertical =
@@ -47,7 +47,13 @@ async function drag(page: Page, label: string, delta: number): Promise<void> {
   const y = bounds.y + bounds.height / 2;
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   await page.mouse.move(x, y);
+  expect(await separator.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const target = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    return Boolean(target && node.contains(target));
+  }), 'Divider centre must receive the pointer before starting a drag').toBe(true);
   await page.mouse.down();
+  await expect(page.locator('body')).toHaveClass(/pane-dragging/);
   // CDP can lose release events thousands of pixels outside a native window.
   // Real viewport edges still exceed every pane limit and exercise clamping.
   await page.mouse.move(
@@ -267,7 +273,6 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
     const labels = [
       "调整侧边栏宽度",
       "调整预览与校对区宽度",
-      "调整预览与设置区高度",
     ];
     for (const size of [
       { width: 1440, height: 960 },
@@ -281,7 +286,6 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
         );
       }, size);
       await page.getByRole("button", { name: "重置布局", exact: true }).click();
-      await expandSecondaryControls(page);
       for (const [index, label] of labels.entries()) {
         const separator = page.getByRole("separator", {
           name: label,
@@ -292,7 +296,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
         const maximum = Number(await separator.getAttribute('aria-valuemax'));
         await writeFile(join(evidence, `resize-${size.width}-${index}-bounds.json`), JSON.stringify({ label, before, min: minimum, max: maximum }, null, 2));
         expect(maximum).toBeGreaterThan(minimum);
-        const preferred = index === 2 ? -25 : 25;
+        const preferred = 25;
         const delta = preferred < 0 && before <= minimum ? 25 : preferred > 0 && before >= maximum ? -25 : preferred;
         await drag(page, label, delta);
         await expect
@@ -302,14 +306,13 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
           .not.toBe(before);
         await assertWorkspace(page);
       }
-      await page
-        .getByRole("separator", { name: labels[2], exact: true })
-        .press("Home");
+      await expect(page.getByRole('button', { name: /生成、样式与导出/ })).toHaveCount(0);
+      await expect(page.getByRole('separator', { name: '调整预览与设置区高度', exact: true })).toHaveCount(0);
       await mkdir(evidence, { recursive: true });
       await page.screenshot({
         path: join(
           evidence,
-          `resize-${size.width}x${size.height}-secondary-home.png`,
+          `resize-${size.width}x${size.height}-full-preview.png`,
         ),
       });
       await assertWorkspace(page);
@@ -323,7 +326,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await page.screenshot({
         path: join(
           evidence,
-          `resize-${size.width}x${size.height}-secondary-home-playback-error.png`,
+          `resize-${size.width}x${size.height}-full-preview-playback-error.png`,
         ),
       });
       await page
@@ -332,14 +335,6 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await expect(
         page.getByRole("button", { name: "重新加载视频预览", exact: true }),
       ).toHaveCount(0);
-      await assertWorkspace(page);
-      const right = await page.locator(".subtitle-panel").boundingBox();
-      await drag(page, labels[2] ?? "", -5000);
-      expect(await page.locator(".subtitle-panel").boundingBox()).toEqual(
-        right,
-      );
-      await assertWorkspace(page);
-      await drag(page, labels[2] ?? "", 5000);
       await assertWorkspace(page);
       for (const label of labels.slice(0, 2)) {
         await drag(page, label, -5000);
@@ -410,11 +405,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await (await workspaceButton(page, '重新识别片段'))
         .click();
       await page.getByLabel("关闭分段处理", { exact: true }).click();
-      const disclosure = page.getByRole("button", { name: /生成、样式与导出/ });
-      await disclosure.click();
-      await expect(
-        page.getByRole("separator", { name: labels[2], exact: true }),
-      ).not.toBeVisible();
+      await expect(page.locator('.secondary-controls')).toHaveCount(0);
       await page
         .getByRole("button", { name: "收起侧边栏", exact: true })
         .click();
@@ -425,7 +416,6 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await page
         .getByRole("button", { name: "展开侧边栏", exact: true })
         .click();
-      await disclosure.click();
     }
     const divider = page.getByRole("separator", {
       name: labels[1],
