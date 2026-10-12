@@ -85,3 +85,43 @@ Completed approved UI layout, resizing and branding changes; independent review 
 ### Next Steps
 
 - No remaining implementation or available regression work for this task. No push or deployment requested.
+
+
+## Session 3: Batch subtitle review, bounded repair and adjustable workspace
+<!-- trellis-session: v=2 fp=05c746f19d3db648 -->
+
+**Date**: 2026-10-12
+**Task**: Batch subtitle review, bounded repair and adjustable workspace
+**Branch**: `codex/subtitle-repair-onboarding`
+
+### Summary
+
+Implemented fixed-range bounded subtitle repair, first-run/replay guide, one-request strict review, actionable services/unchecked standards, compact draggable operation panels and grounded reversible person-name batches. Independently reviewed and fully regressed; six tasks archived; original unrelated changes preserved; no push/release/version change.
+
+### Main Changes
+
+- Aggregate review preserves canonical group evidence and complete coverage; one visible correction maximum, bounded input and cancellation/credential guards.
+- Person-name apply is atomic and noncascading; persistent latest-batch compare-and-swap undo preserves later edits and explains conflicts.
+- Generation/style settings moved lower-left; seven two-column operation panels and all inputs/actions fit native default/minimum windows; guide and resizable workspace retained.
+- Independent review fixed expanded fresh-cue reassessment, immediate video-controls clearance, dense-name matching, credentials, and an inert populated-timeline retry entry.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f25688192762fe1b14959d1666639a312a7931d0` | feat(subtitles): streamline review, repair and workspace tools |
+| `ae806d19e9bf49265163fbf2f12124e52fdaec43` | docs(subtitles): document batch review and reversible name edits |
+
+### Testing
+
+- [OK] Global lint, TypeScript and production build passed.
+- [OK] 60 unit/integration files: 574 passed. Complete native Electron suite: 40 total, 37 passed, 3 explicit external download/paid AI gates skipped, 0 failed.
+- [OK] Actual CPU/CUDA Whisper, FFmpeg exports and decoded playback, 1027-cue single HTTP review, names apply/undo/restart/conflicts, all seven panels at1440x960/1050x700 and pane persistence passed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Implementation is complete. No publication performed; unrelated pre-existing work remains outside this commit batch.
