@@ -1,0 +1,15 @@
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Strict inferred schemas and complete IPC layers"}
+{"file": ".trellis/spec/shared/subtitle-contracts.md", "reason": "Job revision, content, staleness and compatibility"}
+{"file": ".trellis/spec/shared/subtitle-review-reprocessing.md", "reason": "Canonical review evidence, atomic reports and continuous repair owner"}
+{"file": ".trellis/spec/shared/native-runtime-testing.md", "reason": "Real isolated Electron evidence and precise gated skips"}
+{"file": ".trellis/spec/backend/api-module.md", "reason": "Thin IPC and domain helper ownership"}
+{"file": ".trellis/spec/backend/database.md", "reason": "Atomic validated job publication and optional JSON metadata"}
+{"file": ".trellis/spec/backend/type-safety.md", "reason": "Closed Zod wire data and Result narrowing"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Abort/error retention and trusted diagnostics"}
+{"file": ".trellis/spec/frontend/components.md", "reason": "Semantic forms and focus-restoring dialogs"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Single form owner, safe persisted preferences and busy state"}
+{"file": ".trellis/spec/frontend/css-design.md", "reason": "Measured compact layout and constrained scroll regions"}
+{"file": ".trellis/spec/frontend/ipc-electron.md", "reason": "Typed validated bridge integration"}
+{"file": ".trellis/spec/frontend/electron-browser-api-restrictions.md", "reason": "Supported modal API without native prompt/confirm"}
+{"file": ".trellis/tasks/10-11-repair-and-onboarding/research/review-one-shot.md", "reason": "Aggregate compact JSON, canonical validation, budgets and one correction"}
+{"file": ".trellis/tasks/10-11-review-reliability/design.md", "reason": "Approved-after-summary child architecture and limits"}
