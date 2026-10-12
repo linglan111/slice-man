@@ -1,0 +1,12 @@
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Strict shared schemas and inferred types"}
+{"file": ".trellis/spec/shared/subtitle-review-reprocessing.md", "reason": "Canonical risks, freshness, source-only, atomic reprocessing"}
+{"file": ".trellis/spec/shared/native-runtime-testing.md", "reason": "Real Electron validation, user-data isolation and explicit gated evidence"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend conventions"}
+{"file": ".trellis/spec/frontend/components.md", "reason": "Semantic controls, native dialogs, focus and geometry"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Safe UI preferences and run state"}
+{"file": ".trellis/spec/frontend/react-pitfalls.md", "reason": "Startup effects, StrictMode and cleanup"}
+{"file": ".trellis/spec/frontend/electron-browser-api-restrictions.md", "reason": "Supported modal APIs without native browser prompts"}
+{"file": ".trellis/tasks/10-11-repair-and-onboarding/research/repair-loop.md", "reason": "Researched loop ownership, routing, context and atomicity"}
+{"file": ".trellis/tasks/10-11-repair-and-onboarding/research/first-run-guide.md", "reason": "Researched startup/help/persistence/native tests"}
+{"file": ".trellis/tasks/10-11-repair-and-onboarding/research/repair-range.md", "reason": "Time-scope freshness, boundary decision, effective scope and regression matrix"}
+{"file": ".trellis/spec/frontend/feature-guide.md", "reason": "Executable first-run navigation, persistence, startup and native test contract"}
