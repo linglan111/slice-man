@@ -14,7 +14,7 @@ hasSeenFeatureGuide(): boolean;
 markFeatureGuideSeen(): void;
 ```
 
-Preference: `slice-man.onboarding.v1` with recognized value `seen`. Common-header help has accessible name 功能导航. Shell `data-onboarding-state` describes pending/open/settled real startup decisions for UI/test observation, not a test-only bypass.
+Preference: `slice-man.onboarding.v1` with recognized value `seen`. Lower-left sidebar-footer help has accessible name 功能导航 and remains visible as `?` when the sidebar is collapsed. Shell `data-onboarding-state` describes pending/open/settled real startup decisions for UI/test observation, not a test-only bypass.
 
 ## 3. Contracts
 

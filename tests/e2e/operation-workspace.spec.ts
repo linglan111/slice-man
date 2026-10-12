@@ -27,7 +27,7 @@ test('each operation has two columns and visible actions at default and minimum 
   const mock = await startMockServer();
   const input = info.outputPath('operations.mp4'); await makeVideo(input);
   const { app, page } = await launchApp(info.outputPath('operation-user-data'), [input], []);
-  const evidence = resolve('.trellis/tasks/10-11-repair-and-onboarding/evidence');
+  const evidence = resolve('.native-smoke/layout-controls/evidence');
   await mkdir(evidence, { recursive: true });
   try {
     await addProfile(page, 'Operation fixture', 'openai', mock.url);
@@ -47,6 +47,9 @@ test('each operation has two columns and visible actions at default and minimum 
     for (const [width, height] of [[1440, 960], [1050, 700]] as const) {
       await app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]?.setSize(size.width, size.height), { width, height });
       await page.getByRole('button', { name: '重置布局', exact: true }).click();
+      const toolbar = page.getByRole('toolbar', { name: '视频操作' });
+      expect(await toolbar.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent?.trim()))).toEqual(['生成', '重新识别片段', '重新翻译片段', '添加画面字幕', '人名检查', '样式', '导出作品']);
+      expect(await toolbar.getByRole('button').evaluateAll((buttons) => buttons.every((button) => button.querySelector('svg[aria-hidden="true"]')))).toBe(true);
       for (const operation of [
         { label: '生成', panel: '.operation-panel', grid: '.operation-panel__grid', primary: '翻译全部字幕', cancel: '取消' },
         { label: '重新识别片段', panel: '.reprocessing-panel', grid: '.reprocessing-panel', primary: '识别并替换片段', cancel: '取消' },
@@ -78,11 +81,28 @@ test('each operation has two columns and visible actions at default and minimum 
         if (operation.label === '样式') await visibleAction(page, panel.getByLabel('AI 设计描述', { exact: true }));
         expect(mock.counters).toEqual(counters);
         expect(await page.locator('video').evaluate((node) => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(100);
-        const stagesFit = await page.locator('.preview-media').evaluate((node) => {
+        const stagesFit = await page.locator('.preview-panel > .section-heading').evaluate((node) => {
+          const title = node.querySelector('h2')?.getBoundingClientRect();
           const clip = node.getBoundingClientRect();
-          return [...node.querySelectorAll('.stage-pill')].every((stage) => stage.getBoundingClientRect().bottom <= clip.bottom + 1);
+          const stages = [...node.querySelectorAll('.stage-pill')];
+          return Boolean(title && stages.length === 3 && stages.every((stage) => {
+            const rect = stage.getBoundingClientRect();
+            return rect.left >= title.right && rect.top >= clip.top - 1 && rect.bottom <= clip.bottom + 1 && rect.right <= clip.right + 1;
+          }));
         });
-        expect(stagesFit, 'Stages stay beside the video and do not overlap the toolbar').toBe(true);
+        expect(stagesFit, 'All stages stay on the preview title row to its right').toBe(true);
+        await expect(page.locator('.preview-media .stage-strip')).toHaveCount(0);
+        for (const label of ['功能导航', '重置布局']) {
+          const action = page.locator('.sidebar__footer').getByRole('button', { name: label, exact: true });
+          await expect(action).toBeVisible();
+          expect(await action.evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            const clip = node.closest('.sidebar')?.getBoundingClientRect();
+            const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return Boolean(clip && rect.left >= clip.left && rect.right <= clip.right && rect.top >= 0 && rect.bottom <= innerHeight && hit && node.contains(hit));
+          }), 'Footer controls stay inside the sidebar and are hit-testable').toBe(true);
+        }
+        await expect(page.locator('.workspace-header').getByRole('button')).toHaveCount(0);
         expect(await page.locator('.subtitle-list').evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(75);
         await page.screenshot({ path: join(evidence, `operation-${width}-${operation.label}.png`) });
         await panel.getByRole('button', { name: operation.cancel, exact: true }).click();
@@ -111,6 +131,20 @@ test('each operation has two columns and visible actions at default and minimum 
         await closeWorkspaceSettings(page);
         await expect(page.locator('.sidebar__footer').getByRole('button', { name: label, exact: true })).toBeFocused();
       }
+      await page.getByRole('button', { name: '收起侧边栏', exact: true }).click();
+      const help = page.locator('.sidebar__footer').getByRole('button', { name: '功能导航', exact: true });
+      await help.click();
+      await expect(page.getByRole('dialog', { name: '功能导航', exact: true })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(help).toBeFocused();
+      const reset = page.locator('.sidebar__footer').getByRole('button', { name: '重置布局', exact: true });
+      await reset.click();
+      expect(await reset.evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        return Boolean(rect.width > 0 && rect.height > 0 && rect.bottom <= innerHeight && hit && node.contains(hit));
+      })).toBe(true);
+      await page.getByRole('button', { name: '展开侧边栏', exact: true }).click();
     }
   } finally { await app.close(); await mock.close(); }
 });

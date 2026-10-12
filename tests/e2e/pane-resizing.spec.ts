@@ -122,6 +122,19 @@ async function assertWorkspace(page: Page): Promise<void> {
             return { bottom: rect.bottom, text: node.textContent };
           }),
         proofreading: bounds(".subtitle-panel"),
+        stagesFit: (() => {
+          const heading = document.querySelector('.preview-panel > .section-heading');
+          const title = heading?.querySelector('h2')?.getBoundingClientRect();
+          const clip = heading?.getBoundingClientRect();
+          const stages = [...(heading?.querySelectorAll('.stage-pill') ?? [])];
+          return Boolean(title && clip && stages.length >= 2 && stages.every((stage) => {
+            const rect = stage.getBoundingClientRect();
+            return rect.left >= title.right && rect.top >= clip.top - 1 && rect.bottom <= clip.bottom + 1 && rect.right <= clip.right + 1 && [...stage.querySelectorAll('strong, small')].every((text) => {
+              const textRect = text.getBoundingClientRect();
+              return textRect.right <= rect.right + 1 && text.scrollWidth <= text.clientWidth + 1;
+            });
+          }));
+        })(),
         list: bounds(".subtitle-list"),
         editorHeight: editor?.clientHeight,
         listOverflow: list ? list.scrollWidth - list.clientWidth : 0,
@@ -138,6 +151,7 @@ async function assertWorkspace(page: Page): Promise<void> {
       };
     });
     expect(sizes.preview.right).toBeLessThan(sizes.proofreading.x);
+    expect(sizes.stagesFit, 'All stage labels and states fit the preview title row even at dragged pane limits').toBe(true);
     expect(sizes.video.height).toBeGreaterThanOrEqual(108);
     expect(sizes.video.bottom).toBeLessThanOrEqual(sizes.preview.bottom);
     for (const action of sizes.previewActions) {
