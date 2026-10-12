@@ -1,0 +1,20 @@
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Strict inferred schemas and complete IPC layers"}
+{"file": ".trellis/spec/shared/subtitle-contracts.md", "reason": "Job revision, content, staleness and compatibility"}
+{"file": ".trellis/spec/shared/subtitle-review-reprocessing.md", "reason": "Canonical review evidence, atomic reports and continuous repair owner"}
+{"file": ".trellis/spec/shared/native-runtime-testing.md", "reason": "Real isolated Electron evidence and precise gated skips"}
+{"file": ".trellis/spec/frontend/components.md", "reason": "Semantic forms and focus-restoring dialogs"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Single form owner, safe persisted preferences and busy state"}
+{"file": ".trellis/spec/frontend/css-design.md", "reason": "Measured compact layout and constrained scroll regions"}
+{"file": ".trellis/spec/frontend/ipc-electron.md", "reason": "Typed validated bridge integration"}
+{"file": ".trellis/spec/frontend/electron-browser-api-restrictions.md", "reason": "Supported modal API without native prompt/confirm"}
+{"file": ".trellis/tasks/10-11-repair-and-onboarding/research/operation-workspace.md", "reason": "Toolbar, lower-left settings and actual native fit"}
+{"file": ".trellis/tasks/10-11-repair-and-onboarding/research/review-one-shot.md", "reason": "Review/standards ownership integration"}
+{"file": ".trellis/tasks/10-11-repair-and-onboarding/research/person-names.md", "reason": "Name operation integration and visible undo behavior"}
+{"file": ".trellis/spec/frontend/live-subtitle-preview.md", "reason": "Native media-control safe area and bilingual overlay"}
+{"file": ".trellis/spec/frontend/feature-guide.md", "reason": "Refresh guide copy without breaking first-run contract"}
+{"file": ".trellis/tasks/10-11-operation-workspace/design.md", "reason": "Approved-after-summary child architecture and limits"}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Independent consistency and quality gate"}
+{"file": ".trellis/spec/backend/quality.md", "reason": "Freshness/race/atomic persistence regressions"}
+{"file": ".trellis/spec/frontend/quality.md", "reason": "Native interaction and geometry coverage"}
+{"file": ".trellis/spec/shared/person-name-review.md", "reason": "Executable person-name schemas, grounding, atomic batch and conflict-preserving last undo"}
+{"file": ".trellis/spec/frontend/operation-workspace.md", "reason": "Executable operation/settings layout, all-control native geometry and lifecycle contract"}
