@@ -1,52 +1,61 @@
 import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { clamp, DEFAULT_LAYOUT, LAYOUT_KEY, parseLayoutPreferences, type LayoutPreferences } from '../lib/layout-preferences';
 
-type Measurements = { width: number; gridWidth: number; previewHeight: number; fixedHeight: number; videoMinimum: number };
+type Measurements = { width: number; gridWidth: number; leftHeight: number; fixedHeight: number; rightHeight: number; proofreadingFixed: number };
 type Allocation = { value: number; minimum: number; maximum: number; update: (value: number, commit: boolean) => void; cancel: () => void; position?: number };
-export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, hasInlineForm: boolean): {
-  rootRef: RefObject<HTMLDivElement | null>; gridRef: RefObject<HTMLDivElement | null>; leftRef: RefObject<HTMLDivElement | null>; previewRef: RefObject<HTMLElement | null>;
-  style: CSSProperties; sidebar: Allocation; columns: Allocation; editor: Allocation; reset: () => void;
+function pixels(value: string): number { return parseFloat(value) || 0; }
+function outerHeight(node: HTMLElement): number {
+  const style = getComputedStyle(node);
+  return node.getBoundingClientRect().height + pixels(style.marginTop) + pixels(style.marginBottom);
+}
+export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, hasOperation: boolean, hasResults = false): {
+  rootRef: RefObject<HTMLDivElement | null>; gridRef: RefObject<HTMLDivElement | null>; leftRef: RefObject<HTMLDivElement | null>; previewRef: RefObject<HTMLElement | null>; rightRef: RefObject<HTMLDivElement | null>; resultsRef: RefObject<HTMLElement | null>;
+  style: CSSProperties; sidebar: Allocation; columns: Allocation; results: Allocation; reset: () => void;
 } {
   const [preferences, setPreferences] = useState(() => { try { return parseLayoutPreferences(localStorage.getItem(LAYOUT_KEY)); } catch { return { ...DEFAULT_LAYOUT }; } });
   const preferenceRef = useRef(preferences);
   preferenceRef.current = preferences;
   const dragPreference = useRef<LayoutPreferences | null>(null);
   const rootRef = useRef<HTMLDivElement>(null); const gridRef = useRef<HTMLDivElement>(null); const leftRef = useRef<HTMLDivElement>(null); const previewRef = useRef<HTMLElement>(null);
-  const [measurements, setMeasurements] = useState<Measurements>({ width: 1440, gridWidth: 1160, previewHeight: 450, fixedHeight: 120, videoMinimum: 160 });
+  const rightRef = useRef<HTMLDivElement>(null); const resultsRef = useRef<HTMLElement>(null);
+  const [measurements, setMeasurements] = useState<Measurements>({ width: 1440, gridWidth: 1160, leftHeight: 700, fixedHeight: 180, rightHeight: 700, proofreadingFixed: 150 });
   const measure = useCallback(() => {
-    const root = rootRef.current; const grid = gridRef.current; const left = leftRef.current; const preview = previewRef.current;
+    const root = rootRef.current; const grid = gridRef.current; const left = leftRef.current; const preview = previewRef.current; const right = rightRef.current;
     if (!root || !root.clientWidth) return;
     if (!grid || !left || !preview || !grid.clientWidth || !left.clientHeight) {
       setMeasurements((current) => current.width === root.clientWidth ? current : { ...current, width: root.clientWidth });
       return;
     }
     const previewStyle = getComputedStyle(preview);
-    let fixedHeight = parseFloat(previewStyle.paddingTop) + parseFloat(previewStyle.paddingBottom) + 2;
+    let fixedHeight = pixels(previewStyle.paddingTop) + pixels(previewStyle.paddingBottom) + 2;
     for (const node of [...preview.children]) {
-      if (!(node instanceof HTMLElement) || node.matches('.video-stage, .preview-media, .preview-editor, .reprocessing-panel, .operation-panel, .pane-divider')) continue;
-      const style = getComputedStyle(node);
-      fixedHeight += node.getBoundingClientRect().height + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+      if (!(node instanceof HTMLElement) || node.matches('.video-stage, .preview-media')) continue;
+      fixedHeight += outerHeight(node);
     }
-    const videoStage = preview.querySelector('.video-stage');
-    const next = { width: root.clientWidth, gridWidth: grid.clientWidth, previewHeight: preview.clientHeight,
-      fixedHeight,
-      videoMinimum: videoStage ? parseFloat(getComputedStyle(videoStage).minHeight) || 110 : 110 };
+    const proofreading = right?.querySelector('.subtitle-panel');
+    const proofreadingStyle = proofreading ? getComputedStyle(proofreading) : null;
+    let proofreadingFixed = proofreadingStyle ? pixels(proofreadingStyle.paddingTop) + pixels(proofreadingStyle.paddingBottom) + 2 : 150;
+    for (const node of [...(proofreading?.children ?? [])]) {
+      // Native dialogs render in the top layer and never consume flex space.
+      if (node instanceof HTMLElement && !node.matches('.subtitle-list, dialog')) proofreadingFixed += outerHeight(node);
+    }
+    const next = { width: root.clientWidth, gridWidth: grid.clientWidth, leftHeight: left.clientHeight, fixedHeight, rightHeight: right?.clientHeight || left.clientHeight, proofreadingFixed };
     setMeasurements((current) => Object.keys(next).every((key) => Math.abs(next[key as keyof Measurements] - current[key as keyof Measurements]) < .5) ? current : next);
   }, []);
   useLayoutEffect(() => {
-    measure();
     const observer = new ResizeObserver(measure);
     function observeCurrentChildren(): void {
       observer.disconnect();
-      for (const node of [rootRef.current, gridRef.current, leftRef.current, previewRef.current, ...(previewRef.current?.children ?? [])]) if (node) observer.observe(node);
+      const nodes = [rootRef.current, gridRef.current, leftRef.current, previewRef.current, rightRef.current, resultsRef.current, ...(previewRef.current?.children ?? []), ...(rightRef.current?.querySelector('.subtitle-panel')?.children ?? [])];
+      for (const node of nodes) if (node) observer.observe(node);
       measure();
     }
     observeCurrentChildren();
-    // Errors and reload actions can arrive without changing the job/form state.
+    // Dynamic errors, filter tools and row editors can change available space.
     const mutationObserver = new MutationObserver(observeCurrentChildren);
-    if (previewRef.current) mutationObserver.observe(previewRef.current, { childList: true });
+    for (const node of [leftRef.current, rightRef.current]) if (node) mutationObserver.observe(node, { childList: true, subtree: true, characterData: true });
     return () => { mutationObserver.disconnect(); observer.disconnect(); };
-  }, [measure, jobId, hasInlineForm, isSidebarCollapsed]);
+  }, [measure, jobId, hasOperation, hasResults, isSidebarCollapsed]);
   function update(key: keyof LayoutPreferences, value: number, commit: boolean): void {
     if (!commit && !dragPreference.current) dragPreference.current = preferenceRef.current;
     const next = { ...preferenceRef.current, [key]: value };
@@ -65,16 +74,18 @@ export function useWorkspaceLayout(isSidebarCollapsed: boolean, jobId: string, h
   const columnSpace = Math.max(1, measurements.gridWidth - gap);
   const leftMinimum = Math.min(320, columnSpace / 2); const leftMaximum = Math.max(leftMinimum, columnSpace - 350);
   const leftWidth = clamp(preferences.columns * columnSpace, leftMinimum, leftMaximum);
-  // Reserve room for a compact two-column form, including all export choices
-  // above its pinned footer, before allocating the remaining space to video.
-  const formMinimum = hasInlineForm ? 320 : 85;
-  const editorSpace = Math.max(measurements.videoMinimum + formMinimum, measurements.previewHeight - measurements.fixedHeight - 16);
-  const videoHeight = clamp(preferences.editor * editorSpace, measurements.videoMinimum, editorSpace - formMinimum);
-  return { rootRef, gridRef, leftRef, previewRef,
-    style: { '--sidebar-width': `${sidebarValue}px`, '--left-width': `${leftWidth}px`, '--inline-video-height': `${videoHeight}px` } as CSSProperties,
+  // The operation's natural content determines its height. Only the viewport
+  // caps it; every extra pixel belongs to the preview, never a blank form.
+  const operationMaximum = Math.max(85, measurements.leftHeight - measurements.fixedHeight - 110 - (compact ? 8 : 10));
+  const resultsSpace = Math.max(1, measurements.rightHeight - 10);
+  const proofreadingMinimum = Math.min(resultsSpace - 64, measurements.proofreadingFixed + 75);
+  const proofreadingMaximum = Math.max(proofreadingMinimum, resultsSpace - 64);
+  const proofreadingHeight = clamp((1 - preferences.results) * resultsSpace, proofreadingMinimum, proofreadingMaximum);
+  return { rootRef, gridRef, leftRef, previewRef, rightRef, resultsRef,
+    style: { '--sidebar-width': `${sidebarValue}px`, '--left-width': `${leftWidth}px`, '--operation-max-height': `${operationMaximum}px`, '--results-height': `${resultsSpace - proofreadingHeight}px` } as CSSProperties,
     sidebar: { value: sidebarValue, minimum: 160, maximum: sidebarMaximum, update: (value, commit) => update('sidebar', value, commit), cancel },
     columns: { value: leftWidth, minimum: leftMinimum, maximum: leftMaximum, position: leftWidth + gap / 2, update: (value, commit) => update('columns', value / columnSpace, commit), cancel },
-    editor: { value: videoHeight, minimum: measurements.videoMinimum, maximum: editorSpace - formMinimum, update: (value, commit) => update('editor', value / editorSpace, commit), cancel },
+    results: { value: proofreadingHeight, minimum: proofreadingMinimum, maximum: proofreadingMaximum, update: (value, commit) => update('results', 1 - value / resultsSpace, commit), cancel },
     reset: () => { dragPreference.current = null; setPreferences({ ...DEFAULT_LAYOUT }); preferenceRef.current = { ...DEFAULT_LAYOUT }; try { localStorage.removeItem(LAYOUT_KEY); } catch { /* Reset remains available without persistence. */ } },
   };
 }

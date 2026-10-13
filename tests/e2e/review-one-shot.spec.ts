@@ -1,3 +1,4 @@
+import { reviewFilterChoice } from './helpers';
 import { test, expect } from "@playwright/test";
 import {
   addProfile,
@@ -54,8 +55,7 @@ test("anonymous 1027-cue review uses one HTTP request per complete selected set 
         job = added.data;
       }
     });
-    const filter = page.getByLabel("可疑度筛选");
-    await expect(filter.locator('option[value="unchecked"]')).toHaveText(
+    await expect(await reviewFilterChoice(page, 'unchecked')).toHaveAccessibleName(
       "未检查（1027）",
     );
     for (const length of [31, 65, 1027]) {
@@ -107,7 +107,7 @@ test("anonymous 1027-cue review uses one HTTP request per complete selected set 
     }
     expect(mock.counters.recognition).toBe(0);
     expect(mock.counters.translation).toBe(0);
-    await expect(filter.locator('option[value="unchecked"]')).toHaveText(
+    await expect(await reviewFilterChoice(page, 'unchecked')).toHaveAccessibleName(
       "未检查（0）",
     );
     await page.screenshot({
@@ -153,11 +153,10 @@ test("review service entry and one visible evidence correction preserve the last
         job = result.data;
       }
     });
-    const filter = page.getByLabel("可疑度筛选");
-    await expect(filter.locator('option[value="unchecked"]')).toHaveText(
+    await expect(await reviewFilterChoice(page, 'unchecked')).toHaveAccessibleName(
       "未检查（4）",
     );
-    await expect(filter.locator('option[value="pending"]')).toHaveText(
+    await expect(await reviewFilterChoice(page, 'pending')).toHaveAccessibleName(
       "待检查（4）",
     );
     await page
@@ -178,7 +177,7 @@ test("review service entry and one visible evidence correction preserve the last
     await picker
       .getByRole("button", { name: "保存并检查", exact: true })
       .click();
-    await expect(filter.locator('option[value="unchecked"]')).toHaveText(
+    await expect(await reviewFilterChoice(page, 'unchecked')).toHaveAccessibleName(
       "未检查（0）",
     );
     expect(mock.counters.review).toBe(2);

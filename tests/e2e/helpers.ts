@@ -3,6 +3,7 @@ import {
   expect,
   type ElectronApplication,
   type Page,
+  type Locator,
 } from "@playwright/test";
 import { createServer, type Server } from "node:http";
 import { createReadStream } from "node:fs";
@@ -382,6 +383,18 @@ export async function configureCloud(
   await closeWorkspaceSettings(page);
   await page.getByRole("button", { name: "生成", exact: true }).click();
   await expect(page.getByRole("button", { name: "一键生成字幕", exact: true })).toBeEnabled();
+}
+
+const reviewFilterLabels: Record<string, string> = { all: '全部', unchecked: '未检查', pending: '待检查', none: '无', low: '低', medium: '中', high: '高' };
+export async function reviewFilterChoice(page: Page, key: string): Promise<Locator> {
+  const trigger = page.getByRole('button', { name: '可疑度筛选', exact: true });
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+  return page.getByRole('group', { name: '可疑度筛选选项', exact: true }).getByRole('checkbox', { name: new RegExp(`^${reviewFilterLabels[key]}（`) });
+}
+export async function selectReviewFilters(page: Page, ...keys: string[]): Promise<void> {
+  await (await reviewFilterChoice(page, 'all')).check();
+  for (const key of keys) if (key !== 'all') await (await reviewFilterChoice(page, key)).check();
+  await page.keyboard.press('Escape');
 }
 
 /** Open actual settings dialogs; retained workflow tests use the relocated public UI. */

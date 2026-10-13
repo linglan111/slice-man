@@ -273,6 +273,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
     const labels = [
       "调整侧边栏宽度",
       "调整预览与校对区宽度",
+      "调整字幕校对与结果区高度",
     ];
     for (const size of [
       { width: 1440, height: 960 },
@@ -353,10 +354,11 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await page
         .getByLabel("译文", { exact: true })
         .fill("长双语校对表单\n".repeat(80));
-      const inline = "调整预览与编辑区高度";
-      await drag(page, inline, -5000);
+      const resultsDivider = "调整字幕校对与结果区高度";
+      await expect(page.getByRole('separator', { name: '调整预览与编辑区高度', exact: true })).toHaveCount(0);
+      await drag(page, resultsDivider, -5000);
       await assertWorkspace(page);
-      await drag(page, inline, 5000);
+      await drag(page, resultsDivider, 5000);
       await assertWorkspace(page);
       await page
         .getByRole("button", { name: "保存字幕", exact: true })
@@ -377,7 +379,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await expect(page.locator(".reprocessing-panel")).toBeVisible();
       await expect(page.locator(".preview-editor")).not.toBeVisible();
       await expect(
-        page.getByRole("separator", { name: inline, exact: true }),
+        page.getByRole("separator", { name: resultsDivider, exact: true }),
       ).toHaveCount(1);
       await assertWorkspace(page);
       await page.getByLabel("关闭分段处理", { exact: true }).click();
@@ -392,9 +394,9 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
       await page.getByRole("button", { name: "取消", exact: true }).click();
       await (await workspaceButton(page, '重新识别片段'))
         .click();
-      await drag(page, inline, -5000);
+      await drag(page, resultsDivider, -5000);
       await assertWorkspace(page);
-      await drag(page, inline, 5000);
+      await drag(page, resultsDivider, 5000);
       await assertWorkspace(page);
       await (await workspaceButton(page, '添加画面字幕'))
         .click();

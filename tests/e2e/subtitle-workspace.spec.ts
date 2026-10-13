@@ -1,3 +1,4 @@
+import { selectReviewFilters } from './helpers';
 import { jobSetting, workspaceButton, closeWorkspaceSettings } from './helpers';
 import {
   test,
@@ -282,10 +283,8 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     expect(mock.counters.review).toBe(1);
     expect(mock.counters.recognition).toBe(recognitionBeforeReview);
     expect(mock.counters.translation).toBe(0);
-    await page
-      .getByLabel("可疑度筛选", { exact: true })
-      .selectOption("pending");
-    await page.getByRole("button", { name: "选择待检查", exact: true }).click();
+    await selectReviewFilters(page, "pending");
+    await page.getByRole("button", { name: "全选", exact: true }).click();
     await expect(page.getByLabel("选择字幕 1", { exact: true })).toBeChecked();
     await expect(page.getByLabel("选择字幕 2", { exact: true })).toBeChecked();
     await page
@@ -305,9 +304,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       .click();
     await expect.poll(() => mock.counters.review).toBe(2);
     await expect(page.locator(".review-finding--pending")).toHaveCount(2);
-    await page
-      .getByLabel("可疑度筛选", { exact: true })
-      .selectOption("pending");
+    await selectReviewFilters(page, "pending");
     const firstIssue = page.getByTestId("segment-0");
     await firstIssue
       .getByRole("button", { name: "定位播放", exact: true })
@@ -350,7 +347,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       .getByTestId("segment-1")
       .getByRole("button", { name: "忽略", exact: true })
       .click();
-    await page.getByLabel("可疑度筛选", { exact: true }).selectOption("all");
+    await selectReviewFilters(page, "all");
     // Stored translations are preserved but cannot leak into source-mode display/export.
     await page.evaluate(async () => {
       const listed = await window.api.jobs.list();

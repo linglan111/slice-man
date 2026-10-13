@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { SubtitleList } from '../../../src/renderer/src/components/SubtitleList';
+import { setReviewFilters } from './review-filter-helpers';
 import { savedJob } from './app-fixtures';
 
 afterEach(cleanup);
@@ -12,7 +13,7 @@ describe('SubtitleList playback following', () => {
     job.reviewReport = { id: 'report', profileId: 'review', providerFingerprint: 'configuration', completedAt: 10, state: 'stale', reviewedSegmentIds: ['removed'], fingerprints: { removed: 'old' }, findings: [{ id: 'old-finding', segmentId: 'removed', startMs: 2000, endMs: 3000, category: 'source', reason: '旧片段疑似异常', status: 'recheck' }] };
     const onRepairRange = vi.fn(); const onSeek = vi.fn();
     render(<SubtitleList job={job} selectedIds={[]} activeIds={[]} isBusy={false} isEditing={false} editor={null} onAdd={vi.fn()} onRemove={vi.fn()} onSelect={vi.fn()} onEdit={vi.fn()} onSeek={onSeek} onRetranslate={vi.fn()} onReview={vi.fn()} onRepairRange={onRepairRange} />);
-    fireEvent.change(screen.getByLabelText('可疑度筛选'), { target: { value: 'pending' } });
+    setReviewFilters('pending');
     expect(screen.queryByText('没有待检查字幕')).toBeNull();
     expect(screen.getByText('原片段需复查')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '定位播放' }));

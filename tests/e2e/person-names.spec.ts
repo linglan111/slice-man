@@ -281,6 +281,15 @@ test("names explicit service setup, recommendations, no-op/cancel, atomic edited
     await restarted.page.screenshot({
       path: info.outputPath("names-restart-conflict-undo.png"),
     });
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setSize(1050, 700));
+    await restarted.page.getByRole('button', { name: '重置布局', exact: true }).click();
+    await visibleWithoutScrolling(restarted.page, panel.getByRole('button', { name: '取消人名修改', exact: true }));
+    await visibleWithoutScrolling(restarted.page, panel.getByRole('button', { name: '应用选中人名', exact: true }));
+    await restarted.page.screenshot({ path: info.outputPath('names-restart-conflict-undo-minimum.png') });
+    await panel.getByText('查看上次人名检查结果', { exact: true }).click();
+    await visibleWithoutScrolling(restarted.page, panel.getByRole('button', { name: '取消人名修改', exact: true }));
+    await visibleWithoutScrolling(restarted.page, panel.getByRole('button', { name: '应用选中人名', exact: true }));
+    await restarted.page.screenshot({ path: info.outputPath('names-restart-conflict-undo-history-minimum.png') });
     expect(mock.counters.names).toBe(1);
     expect(mock.counters.recognition).toBe(0);
     expect(mock.counters.translation).toBe(0);

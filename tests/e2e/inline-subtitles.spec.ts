@@ -58,7 +58,7 @@ test('inline timeline CRUD from preview and list preserves drafts, exact cue tar
     await seek(page, .4); await page.locator('video').evaluate(async (video: HTMLVideoElement) => { await video.play(); });
     await page.getByRole('button', { name: '校对画面字幕：List target', exact: true }).click();
     expect(await page.locator('video').evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
-    await expect(page.locator('.preview-panel .segment-editor')).toBeVisible();
+    await expect(page.locator('.workspace-operation-card .segment-editor')).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.getByLabel('原文', { exact: true }).fill('Preview cancelled draft');
     await page.getByRole('button', { name: '取消', exact: true }).click();

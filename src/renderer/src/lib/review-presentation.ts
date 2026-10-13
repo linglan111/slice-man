@@ -97,3 +97,21 @@ export function filteredReviewIds(
     })
     .map((segment) => segment.id);
 }
+
+/** Multiple grades form a union, with IDs kept in the original video order. */
+export function multiFilteredReviewIds(
+  job: Job,
+  filters: ReviewFilter[],
+  grades: ReturnType<typeof reviewGrades>,
+): string[] {
+  if (!filters.length || filters.includes('all')) return job.segments.map((segment) => segment.id);
+  const pendingIds = new Set(grades.pendingIds);
+  const uncheckedIds = new Set(grades.uncheckedIds);
+  const selectedFilters = new Set(filters);
+  return job.segments.filter((segment) => {
+    if (selectedFilters.has('pending') && pendingIds.has(segment.id)) return true;
+    if (selectedFilters.has('unchecked') && uncheckedIds.has(segment.id)) return true;
+    const view = grades.views.get(segment.id);
+    return view?.state === 'current' && view.riskLevel !== undefined && selectedFilters.has(view.riskLevel);
+  }).map((segment) => segment.id);
+}

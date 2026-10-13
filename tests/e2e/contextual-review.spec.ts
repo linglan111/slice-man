@@ -1,3 +1,4 @@
+import { selectReviewFilters, reviewFilterChoice } from './helpers';
 import {
   test,
   expect,
@@ -279,7 +280,6 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       });
       video.pause();
     });
-    const filter = page.getByLabel("可疑度筛选", { exact: true });
     await mkdir(evidence, { recursive: true });
     await page.screenshot({
       path: join(evidence, "contextual-four-grade-overview.png"),
@@ -290,10 +290,10 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       ["medium", 2],
       ["high", 1],
     ] as const) {
-      await expect(filter.locator(`option[value="${level}"]`)).toContainText(
-        `（${count}）`,
+      await expect(await reviewFilterChoice(page, level)).toHaveAccessibleName(new RegExp(
+        `（${count}）`),
       );
-      await filter.selectOption(level);
+      await selectReviewFilters(page, level);
       await expect(page.locator(".subtitle-row")).toHaveCount(count);
       await page.screenshot({
         path: join(evidence, `contextual-grade-${level}.png`),
@@ -303,7 +303,7 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       page.getByTestId("segment-3").getByLabel("可疑度：高", { exact: true }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "选择当前等级", exact: true })
+      .getByRole("button", { name: "全选", exact: true })
       .click();
     await expect(page.getByLabel("选择字幕 4", { exact: true })).toBeChecked();
     await page
@@ -367,7 +367,7 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
           assessment.segmentId === fresh.id && assessment.status === "current",
       ),
     ).toBe(false);
-    await filter.selectOption("all");
+    await selectReviewFilters(page, "all");
     await expect(
       page.getByTestId("segment-3").getByLabel("未检查", { exact: true }),
     ).toBeVisible();
@@ -411,12 +411,12 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
         .getByTestId("segment-0")
         .getByLabel("上次可疑度：无，需复查", { exact: true }),
     ).toBeVisible();
-    await expect(filter.locator('option[value="none"]')).toHaveText("无（3）");
+    await expect(await reviewFilterChoice(page, 'none')).toHaveAccessibleName("无（3）");
     await page.screenshot({
       path: join(evidence, "contextual-neighbour-change-stale.png"),
     });
-    await filter.selectOption("pending");
-    await page.getByRole("button", { name: "选择待检查", exact: true }).click();
+    await selectReviewFilters(page, "pending");
+    await page.getByRole("button", { name: "全选", exact: true }).click();
     await app.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0]?.setSize(1050, 700);
     });
@@ -450,8 +450,8 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       await page.locator(".subtitle-list").evaluate((node) => node.scrollTop),
     ).toBe(previousListScroll);
     expect(await page.evaluate(() => scrollY)).toBe(0);
-    await page.getByLabel("关闭判断标准", { exact: true }).click();
-    await filter.selectOption("all");
+    await page.getByRole('dialog', { name: '可疑度判断标准', exact: true }).getByRole('button', { name: '关闭对话框', exact: true }).click();
+    await selectReviewFilters(page, "all");
     await app.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0]?.setSize(1440, 960);
     });

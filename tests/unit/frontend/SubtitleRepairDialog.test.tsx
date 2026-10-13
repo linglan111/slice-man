@@ -65,7 +65,7 @@ describe('subtitle automatic repair dialog', () => {
     expect(screen.queryByRole('dialog', { name: '字幕自动修复' })).toBeNull();
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     expect(screen.getByRole('dialog', { name: '可疑度判断标准' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '关闭判断标准' }));
+    fireEvent.click(screen.getByRole('button', { name: '关闭对话框' }));
     fireEvent.click(screen.getByRole('button', { name: '字幕自动修复' }));
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     expect(screen.queryByRole('dialog', { name: '可疑度判断标准' })).toBeNull();

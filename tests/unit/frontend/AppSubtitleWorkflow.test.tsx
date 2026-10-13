@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../../src/renderer/src/App';
+import { setReviewFilters } from './review-filter-helpers';
 import { savedJob, stubApi } from './app-fixtures';
 import { REVIEW_RUBRIC_VERSION, REVIEW_RULES, type ReviewReport } from '../../../src/shared/contracts';
 
@@ -23,8 +24,8 @@ describe('optional translation and subtitle repair workspace', () => {
     vi.mocked(api.jobs.recognizePartial).mockResolvedValue({ success: true, data: { ...job, revision: 8, updatedAt: 11 } });
     render(<App />);
     await screen.findByLabelText('可疑度：高');
-    fireEvent.change(screen.getByLabelText('可疑度筛选'), { target: { value: 'high' } });
-    fireEvent.click(screen.getByRole('button', { name: '选择当前等级' }));
+    setReviewFilters('high');
+    fireEvent.click(screen.getByRole('button', { name: '全选' }));
     expect((screen.getByLabelText('选择字幕 1') as HTMLInputElement).checked).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: '重新识别选中' }));
     await within(screen.getByRole('region', { name: '分段处理' })).findByText('00:00.100 → 00:01.800');
@@ -108,7 +109,7 @@ describe('optional translation and subtitle repair workspace', () => {
     await screen.findByText(/句意可能重复/);
     expect(api.jobs.reviewSubtitles).toHaveBeenCalledExactlyOnceWith({ jobId: previous.id, revision: 7 });
     expect(api.jobs.recognize).not.toHaveBeenCalled(); expect(api.jobs.translate).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText('可疑度筛选'), { target: { value: 'pending' } });
+    setReviewFilters('pending');
     fireEvent.click(screen.getByRole('button', { name: '忽略' }));
     await screen.findByText('没有待检查字幕');
     expect(api.jobs.acknowledgeFinding).toHaveBeenCalledExactlyOnceWith({ jobId: previous.id, reportId: 'report', findingId: 'issue', status: 'ignored' });

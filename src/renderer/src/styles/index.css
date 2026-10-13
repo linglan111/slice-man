@@ -6,3 +6,5 @@
 @import './editor-layout.css';
 @import './review-grades.css';
 @import './operation-workspace.css';
+@import './operation-panels.css';
+@import './selection-controls.css';

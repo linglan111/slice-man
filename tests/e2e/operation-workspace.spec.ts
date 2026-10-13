@@ -2,6 +2,7 @@ import { test, expect, type Page, type Locator } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { addProfile, configureCloud, importVideo, launchApp, makeVideo, startMockServer, workspaceButton, closeWorkspaceSettings, jobSetting } from './helpers';
+import { selectReviewFilters } from './helpers';
 
 async function visibleAction(page: Page, action: Locator): Promise<void> {
   await expect(action).toBeVisible();
@@ -22,12 +23,12 @@ async function visibleAction(page: Page, action: Locator): Promise<void> {
   expect(bounds.scrollTop, 'Opening an operation should require no form scrolling').toBe(0);
 }
 
-test('each operation has two columns and visible actions at default and minimum native sizes', async ({ playwright: _playwright }, info) => {
+test('each operation has a compact content-sized bottom card and visible actions at native sizes', async ({ playwright: _playwright }, info) => {
   test.setTimeout(120000);
   const mock = await startMockServer();
   const input = info.outputPath('operations.mp4'); await makeVideo(input);
   const { app, page } = await launchApp(info.outputPath('operation-user-data'), [input], []);
-  const evidence = resolve('.native-smoke/layout-controls/evidence');
+  const evidence = resolve('.native-smoke/layout-preview4/evidence');
   await mkdir(evidence, { recursive: true });
   try {
     await addProfile(page, 'Operation fixture', 'openai', mock.url);
@@ -44,7 +45,7 @@ test('each operation has two columns and visible actions at default and minimum 
     });
     // UI reload reads the isolated job rather than mutating renderer state.
     await page.reload(); await expect(page.getByTestId('segment-29')).toBeAttached();
-    for (const [width, height] of [[1440, 960], [1050, 700]] as const) {
+    for (const [width, height] of [[1920, 1080], [1440, 960], [1050, 700]] as const) {
       await app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]?.setSize(size.width, size.height), { width, height });
       await page.getByRole('button', { name: '重置布局', exact: true }).click();
       await expect(page.locator('.preview-panel > .workspace-header h1')).toHaveText('operations.mp4');
@@ -67,9 +68,20 @@ test('each operation has two columns and visible actions at default and minimum 
         const panel = page.locator(operation.panel);
         await expect(panel).toBeVisible();
         if (operation.label === '导出作品') await expect(page.getByLabel('导出格式')).toBeEnabled();
-        const grid = operation.grid === operation.panel ? panel : panel.locator(operation.grid);
-        const columns = await grid.evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(' ').length);
-        expect(columns).toBe(2);
+        const card = page.locator('.workspace-operation-card');
+        await expect(card).toBeVisible();
+        const geometry = await card.evaluate((node) => {
+          const rect = node.getBoundingClientRect();
+          const left = node.closest('.work-grid__content')?.getBoundingClientRect();
+          const preview = document.querySelector('.preview-panel')?.getBoundingClientRect();
+          const content = [...node.querySelectorAll('button, input, select, textarea, p, h3')].map((element) => element.getBoundingClientRect()).filter((bounds) => bounds.height > 0 && bounds.top >= rect.top && bounds.bottom <= rect.bottom + 1);
+          return { bottom: rect.bottom, leftBottom: left?.bottom, top: rect.top, previewBottom: preview?.bottom, blankBelow: rect.bottom - Math.max(...content.map((bounds) => bounds.bottom)), scrollTop: node.scrollTop };
+        });
+        expect(geometry.previewBottom).toBeLessThan(geometry.top);
+        expect(Math.abs(geometry.bottom - (geometry.leftBottom ?? 0))).toBeLessThanOrEqual(1);
+        expect(geometry.blankBelow, 'Content-sized panels leave no large empty area below their final action').toBeLessThanOrEqual(24);
+        expect(geometry.scrollTop).toBe(0);
+        await expect(page.getByRole('separator', { name: '调整预览与编辑区高度', exact: true })).toHaveCount(0);
         await visibleAction(page, panel.getByRole('button', { name: operation.primary, exact: true }));
         await visibleAction(page, panel.getByRole('button', { name: operation.cancel, exact: true }));
         if (operation.label === '导出作品') {
@@ -119,10 +131,33 @@ test('each operation has two columns and visible actions at default and minimum 
       const placement = await page.evaluate(() => {
         const review = [...document.querySelectorAll('.subtitle-panel .section-heading button')];
         const follow = document.querySelector('.review-toolbar__follow');
-        return { heading: review.map((node) => node.textContent?.trim()), standardsAfterFollow: follow?.nextElementSibling?.getAttribute('aria-label') };
+        return { heading: review.map((node) => node.textContent?.trim()), selectionBeforeFollow: follow?.previousElementSibling?.textContent?.trim(), standardAfterFilter: document.querySelector('.review-toolbar__filter-group .review-filter')?.nextElementSibling?.textContent?.trim() };
       });
       expect(placement.heading).toEqual(['字幕自动修复', 'AI 检查字幕', '添加字幕']);
-      expect(placement.standardsAfterFollow).toBe('可疑度判断标准');
+      expect(placement.selectionBeforeFollow).toBe('选择时间范围');
+      expect(placement.standardAfterFilter).toBe('可疑度标准');
+      await expect(page.getByRole('checkbox', { name: '选择当前等级', exact: true })).toHaveCount(0);
+      await selectReviewFilters(page, 'unchecked', 'pending');
+      await expect(page.locator('.subtitle-row')).toHaveCount(30);
+      await page.getByRole('button', { name: '全选', exact: true }).click();
+      await expect(page.locator('.subtitle-row > input:checked')).toHaveCount(30);
+      await page.getByRole('button', { name: '取消全选', exact: true }).click();
+      await expect(page.locator('.subtitle-row > input:checked')).toHaveCount(0);
+      const countersBeforeSelection = { ...mock.counters };
+      await page.getByRole('button', { name: '选择时间范围', exact: true }).click();
+      const rangeDialog = page.getByRole('dialog', { name: '选择时间范围', exact: true });
+      await expect(rangeDialog).toBeVisible();
+      await rangeDialog.getByLabel('选择范围开始（秒）', { exact: true }).fill('0.000');
+      await rangeDialog.getByLabel('选择范围结束（秒）', { exact: true }).fill('0.500');
+      await visibleAction(page, rangeDialog.getByRole('button', { name: '选择此范围', exact: true }));
+      await rangeDialog.getByRole('button', { name: '选择此范围', exact: true }).click();
+      await expect(rangeDialog).not.toBeVisible();
+      await expect(page.getByLabel('选择字幕 1', { exact: true })).toBeChecked();
+      await expect(page.locator('.subtitle-row > input:checked')).toHaveCount(1);
+      expect(mock.counters).toEqual(countersBeforeSelection);
+      await page.getByRole('button', { name: '全选', exact: true }).click();
+      await page.getByRole('button', { name: '取消全选', exact: true }).click();
+      await selectReviewFilters(page, 'all');
       const headingActions = page.locator('.subtitle-panel__actions');
       expect(await headingActions.evaluate((node) => {
         const [repair, review, add] = [...node.querySelectorAll('button')].map((button) => button.getBoundingClientRect());

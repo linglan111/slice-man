@@ -41,4 +41,23 @@ describe('workspace settings entry points', () => {
     expect(document.querySelector('.work-grid__proofreading .workspace-header')).toBeNull();
     expect(within(preview).getByText(/640 × 360/)).toBeTruthy();
   });
+
+  it('opens a separate operation card and groups right-side messages behind one height divider', async () => {
+    const job = savedJob();
+    job.stages.recognize.message = '识别已完成';
+    job.stages.recognize.state = 'succeeded';
+    job.outputs = ['F:/Exports/字幕作品.mp4'];
+    stubApi(job); render(<App />);
+    const preview = await screen.findByRole('region', { name: '视频预览' });
+    fireEvent.click(within(preview).getByRole('button', { name: '生成' }));
+    const operation = screen.getByRole('region', { name: '生成操作面板' });
+    expect(preview.contains(operation)).toBe(false);
+    expect(operation.parentElement?.className).toBe('workspace-operation-card');
+    expect(operation.parentElement?.parentElement).toBe(preview.parentElement);
+    expect(screen.queryByRole('separator', { name: '调整预览与编辑区高度' })).toBeNull();
+    const results = screen.getByRole('region', { name: '处理信息与结果' });
+    expect(within(results).getByText('识别已完成')).toBeTruthy();
+    expect(within(results).getByText('F:/Exports/字幕作品.mp4')).toBeTruthy();
+    expect(screen.getByRole('separator', { name: '调整字幕校对与结果区高度' }).nextElementSibling).toBe(results);
+  });
 });

@@ -6,11 +6,16 @@ describe('bounded layout preferences', () => {
     expect(parseLayoutPreferences(raw)).toEqual(DEFAULT_LAYOUT);
   });
   it('retains valid fields while recovering invalid fields and clamps extreme values', () => {
-    expect(parseLayoutPreferences('{"sidebar":500,"columns":0.7,"secondary":"large","editor":-50}')).toEqual({ sidebar: 300, columns: .7, editor: .1 });
-    expect(parseLayoutPreferences('{"sidebar":160,"columns":1e999,"secondary":0.3,"editor":0.5}')).toEqual({ sidebar: 160, columns: .5, editor: .5 });
+    expect(parseLayoutPreferences('{"sidebar":500,"columns":0.7,"secondary":"large","editor":-50}')).toEqual({ sidebar: 300, columns: .7, results: .2 });
+    expect(parseLayoutPreferences('{"sidebar":160,"columns":1e999,"secondary":0.3,"editor":0.5}')).toEqual({ sidebar: 160, columns: .5, results: .2 });
   });
-  it('ignores obsolete secondary allocation while preserving user widths and editor size', () => {
-    expect(parseLayoutPreferences('{"sidebar":230,"columns":0.6,"secondary":0.8,"editor":0.7}')).toEqual({ sidebar: 230, columns: .6, editor: .7 });
+  it('ignores obsolete secondary allocation while preserving user widths', () => {
+    expect(parseLayoutPreferences('{"sidebar":230,"columns":0.6,"secondary":0.8,"editor":0.7}')).toEqual({ sidebar: 230, columns: .6, results: .2 });
+  });
+  it('clamps new results allocations and recovers malformed values', () => {
+    expect(parseLayoutPreferences('{"results":20}').results).toBe(.8);
+    expect(parseLayoutPreferences('{"results":-1}').results).toBe(.05);
+    expect(parseLayoutPreferences('{"results":"large"}').results).toBe(.2);
   });
   it('preserves pane minimum when container maximum becomes smaller', () => {
     expect(clamp(200, 110, 50)).toBe(110);

@@ -77,7 +77,7 @@ describe('inline subtitle editing and manual timeline integration', () => {
     fireEvent.click(screen.getByRole('button', { name: '重新识别片段' }));
     await screen.findByLabelText('关闭分段处理');
     expect(screen.getByRole('region', { name: '校对字幕' }).closest('.subtitle-panel')).toBeTruthy();
-    expect(screen.getByRole('region', { name: '分段处理' }).closest('.preview-panel')).toBeTruthy();
+    expect(screen.getByRole('region', { name: '分段处理' }).closest('.workspace-operation-card')).toBeTruthy();
   });
 
   it('opens a keyboard-accessible preview form, pauses video and saves captured cue/revision without AI', async () => {
@@ -90,7 +90,7 @@ describe('inline subtitle editing and manual timeline integration', () => {
     target.focus(); await userEvent.keyboard('{Enter}');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.querySelector('video')?.pause).toHaveBeenCalled();
-    expect(screen.getByRole('region', { name: '校对字幕' }).closest('.preview-panel')).toBeTruthy();
+    expect(screen.getByRole('region', { name: '校对字幕' }).closest('.workspace-operation-card')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('开始时间（秒）'), { target: { value: '0.200' } });
     fireEvent.change(screen.getByLabelText('结束时间（秒）'), { target: { value: '1.500' } });
     fireEvent.change(screen.getByLabelText('原文'), { target: { value: 'Edited source' } });

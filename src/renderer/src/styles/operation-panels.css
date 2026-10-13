@@ -1,0 +1,132 @@
+/* Operation content shares a compact, neutral form treatment. Card geometry is
+   owned by the workspace layout; these rules never stretch a form to fill it. */
+.workspace-operation-card {
+  container-name: operation;
+  container-type: inline-size;
+  background: var(--color-panel);
+  border-color: var(--color-border);
+}
+
+.workspace-operation-card :is(.operation-panel, .reprocessing-panel, .preview-editor .segment-editor) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.workspace-operation-card :is(.section-heading, .segment-editor > h3) {
+  margin-bottom: 8px;
+}
+
+.workspace-operation-card :is(h3, strong) { font-size: 13px; }
+.workspace-operation-card label { margin: 0; font-size: 11px; }
+.workspace-operation-card :is(input:not([type='checkbox']), select, textarea) {
+  margin-top: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.workspace-operation-card textarea { min-height: 56px; max-height: 120px; }
+.workspace-operation-card .button { padding: 6px 9px; font-size: 11px; }
+.workspace-operation-card .hint { margin: 0; line-height: 1.6; }
+.workspace-operation-card :is(.error-message, [role='alert']) {
+  margin: 6px 0 0;
+  max-height: 72px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.workspace-operation-card :is(.operation-panel__actions, .modal__footer, .reprocessing-panel__actions, .segment-editor__actions, .person-names__footer) {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 6px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--color-border);
+  background: transparent;
+}
+
+.workspace-operation-card .operation-panel__grid { gap: 8px 12px; }
+.workspace-operation-card .reprocessing-panel { display: block; }
+.reprocessing-panel__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.reprocessing-panel__controls { display: grid; gap: 8px; min-width: 0; }
+.reprocessing-panel__summary { min-width: 0; }
+.workspace-operation-card .reprocessing-panel__scope {
+  padding: 8px 10px;
+  background: var(--color-surface);
+  border-radius: 7px;
+  color: var(--color-text);
+  max-height: 110px;
+  scrollbar-gutter: stable;
+  overflow-wrap: anywhere;
+}
+.workspace-operation-card .reprocessing-panel__scope p { margin: 3px 0; font-variant-numeric: tabular-nums; }
+.workspace-operation-card .reprocessing-panel__summary > .hint { margin-top: 5px; }
+.workspace-operation-card .reprocessing-panel__translation { margin-right: auto; }
+
+.workspace-operation-card .style-operation { grid-template-columns: minmax(0, 1fr); }
+.workspace-operation-card .style-operation__settings { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.style-operation__settings > .hint { flex: 1 1 210px; }
+.style-operation__settings > .hint:last-child:not(:first-child) { flex-basis: 100%; }
+
+.workspace-operation-card .preview-editor .segment-editor form { gap: 8px 12px; }
+.workspace-operation-card .preview-editor .segment-editor form > label:only-of-type { grid-column: 1 / -1; }
+.export-form__types { display: flex; flex-wrap: wrap; gap: 7px; grid-column: 1 / -1; }
+.workspace-operation-card .export-form__directory { align-self: center; }
+.workspace-operation-card .export-form__path { margin-block: 3px; }
+
+.workspace-operation-card .person-names { gap: 8px; height: auto; }
+.workspace-operation-card .person-names__overview { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px; }
+.workspace-operation-card .person-names__overview > div:first-child { flex: 1 1 220px; }
+.workspace-operation-card .person-names__overview > .person-names__actions { margin-left: auto; }
+.workspace-operation-card .person-names__candidates {
+  flex: 0 1 auto;
+  max-height: 170px;
+  scrollbar-gutter: stable;
+}
+.workspace-operation-card .person-names__candidate { background: var(--color-surface); }
+.workspace-operation-card .person-names__context { font-size: 11px; max-height: 70px; overflow: auto; }
+.workspace-operation-card .person-names__choice { font-size: 11px; overflow-wrap: anywhere; }
+.workspace-operation-card .person-names__history { min-height: 0; }
+.workspace-operation-card .person-names__history > summary { cursor: pointer; font-size: 11px; color: var(--color-muted); }
+.workspace-operation-card .person-names__history .person-names__candidates { max-height: 80px; margin-top: 6px; }
+/* Previous results are read-only. Keep their disclosure from displacing the
+   available recheck/cancel actions, without covering any editable current data. */
+.workspace-operation-card .person-names:has(.person-names__history) .person-names__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--color-panel);
+}
+
+@container operation (min-width: 620px) {
+  .reprocessing-panel__body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  .workspace-operation-card .style-operation { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+}
+
+@container operation (max-width: 320px) {
+  .workspace-operation-card .preview-editor .segment-editor form > label { grid-column: 1 / -1; }
+  .workspace-operation-card .person-names__candidates { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-height: 760px) {
+  .workspace-operation-card .section-heading { margin-bottom: 5px; }
+  .workspace-operation-card .reprocessing-panel__body,
+  .workspace-operation-card .reprocessing-panel__controls { gap: 6px; }
+  .workspace-operation-card .reprocessing-panel__scope { padding: 6px 8px; }
+  .workspace-operation-card .person-names__candidates { max-height: 95px; }
+  .workspace-operation-card .person-names__context { max-height: 36px; }
+  .workspace-operation-card .person-names__undo { max-height: 45px; }
+  .workspace-operation-card .person-names__history .person-names__candidates { max-height: 36px; margin-top: 4px; }
+  .workspace-operation-card:has(.export-form) { padding: 8px 10px; }
+  .workspace-operation-card:has(.export-form) .section-heading { margin-bottom: 4px; }
+  .workspace-operation-card .export-form { row-gap: 4px; }
+  .workspace-operation-card .export-form select { height: 27px; margin-top: 2px; padding: 3px 6px; font-size: 11px; }
+  .workspace-operation-card .export-form__types .button { padding: 4px 7px; }
+  .workspace-operation-card .export-form__path { margin-block: 2px; }
+  .workspace-operation-card .export-form__directory small { font-size: 9px; line-height: 1.3; }
+  .workspace-operation-card .export-form > .modal__footer { margin-top: 0; padding-top: 5px; }
+}
