@@ -120,6 +120,65 @@ async function editCue(
   await expect(editor).not.toBeVisible();
 }
 
+test('global name variants form one confirmed mapping and undo restores each observed spelling', async ({ playwright: _playwright }, info) => {
+  const mock = await startMockServer();
+  mock.behavior.names = 'variants';
+  const source = info.outputPath('name-variants.mp4');
+  await makeVideo(source);
+  const { app, page } = await launchApp(info.outputPath('name-variants-user-data'), [source], []);
+  try {
+    await importVideo(page);
+    await addProfile(page, 'Global names fixture', 'openai', mock.url);
+    await page.evaluate(async () => {
+      const jobs = await window.api.jobs.list();
+      const profiles = await window.api.profiles.list();
+      if (!jobs.success || !jobs.data[0] || !profiles.success || !profiles.data[0]) throw new Error('Missing name variants fixture');
+      let job = jobs.data[0];
+      const configured = await window.api.jobs.updateOptions({ jobId: job.id, options: { ...job.options, reviewProfileId: profiles.data[0].id } });
+      if (!configured.success) throw new Error(configured.error);
+      job = configured.data;
+      for (const cue of [
+        { startMs: 100, endMs: 1000, sourceText: 'Ann, our guide, arrives.', translatedText: '向导安娜来了。' },
+        { startMs: 1200, endMs: 2100, sourceText: 'Anna is another person.', translatedText: '另一个人叫安妮塔。' },
+        { startMs: 3000, endMs: 3800, sourceText: 'Our guide An leads us home.', translatedText: '向导安纳带我们回家。' },
+      ]) {
+        const added = await window.api.jobs.addSegment({ jobId: job.id, revision: job.revision, segment: cue });
+        if (!added.success) throw new Error(added.error);
+        job = added.data;
+      }
+    });
+    await page.reload();
+    await expect(page.locator('.subtitle-row')).toHaveCount(3);
+    const before = await currentJob(page);
+    const panel = await openNames(page);
+    await panel.getByRole('button', { name: 'AI 检查人名', exact: true }).click();
+    await expect(panel.getByLabel('Anne 替换原名')).toHaveValue('Anne');
+    await expect(panel).toContainText('同一人名的识别写法：Ann、An；译名写法：安娜、安纳');
+    const analyzed = await currentJob(page);
+    expect(analyzed.segments).toEqual(before.segments);
+    expect(analyzed.nameReport?.candidates).toHaveLength(1);
+    expect(analyzed.nameReport?.candidates[0]).toMatchObject({ cueCount: 2, sourceCount: 2, translatedCount: 2 });
+    expect(mock.namePrompts).toHaveLength(1);
+    const payload = JSON.parse(mock.namePrompts[0]?.split('\n').at(-1) ?? '{}') as { cues: { sourceText: string }[] };
+    expect(payload.cues.map((cue) => cue.sourceText)).toEqual(before.segments.map((cue) => cue.sourceText));
+    await panel.getByRole('button', { name: '应用选中人名', exact: true }).click();
+    await expect.poll(async () => (await currentJob(page)).revision).toBe(before.revision + 1);
+    const applied = await currentJob(page);
+    expect(applied.segments.map((cue) => [cue.sourceText, cue.translatedText])).toEqual([
+      ['Anne, our guide, arrives.', '向导安妮来了。'],
+      [before.segments[1]?.sourceText, before.segments[1]?.translatedText],
+      ['Our guide Anne leads us home.', '向导安妮带我们回家。'],
+    ]);
+    await panel.getByRole('button', { name: '撤销上次人名修改', exact: true }).click();
+    await expect.poll(async () => (await currentJob(page)).nameBatch?.state).toBe('consumed');
+    const undone = await currentJob(page);
+    expect(undone.segments.map((cue) => [cue.sourceText, cue.translatedText])).toEqual(before.segments.map((cue) => [cue.sourceText, cue.translatedText]));
+    expect(mock.counters.names).toBe(1);
+    expect(mock.counters.recognition).toBe(0);
+    expect(mock.counters.translation).toBe(0);
+  } finally { await app.close(); await mock.close(); }
+});
+
 test("names explicit service setup, recommendations, no-op/cancel, atomic edited apply, corrected export and restart-safe conflict undo", async ({
   playwright: _playwright,
 }, info) => {
@@ -332,7 +391,9 @@ test("source-only names omit stored translations and cancel held analysis withou
     await expect(panel.getByLabel("Anne 替换原名")).toHaveValue("Anne");
     await expect(panel.getByLabel("Anne 替换译名")).toHaveCount(0);
     expect(mock.namePrompts[0]).not.toContain("安娜");
-    expect(mock.namePrompts[0]).not.toContain("translatedText");
+    const sourcePayload = JSON.parse(mock.namePrompts[0]?.split('\n').at(-1) ?? '{}') as { cues: Record<string, unknown>[]; targetLanguage?: string };
+    expect(sourcePayload.targetLanguage).toBeUndefined();
+    expect(sourcePayload.cues.every((cue) => !Object.hasOwn(cue, 'translatedText'))).toBe(true);
     await panel
       .getByRole("button", { name: "应用选中人名", exact: true })
       .click();

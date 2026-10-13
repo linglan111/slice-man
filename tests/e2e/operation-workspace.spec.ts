@@ -28,7 +28,7 @@ test('each operation has a compact content-sized bottom card and visible actions
   const mock = await startMockServer();
   const input = info.outputPath('operations.mp4'); await makeVideo(input);
   const { app, page } = await launchApp(info.outputPath('operation-user-data'), [input], []);
-  const evidence = resolve('.native-smoke/layout-preview4/evidence');
+  const evidence = resolve('.native-smoke/layout-preview5/evidence');
   await mkdir(evidence, { recursive: true });
   try {
     await addProfile(page, 'Operation fixture', 'openai', mock.url);
@@ -137,7 +137,7 @@ test('each operation has a compact content-sized bottom card and visible actions
       expect(placement.selectionBeforeFollow).toBe('选择时间范围');
       expect(placement.standardAfterFilter).toBe('可疑度标准');
       await expect(page.getByRole('checkbox', { name: '选择当前等级', exact: true })).toHaveCount(0);
-      await selectReviewFilters(page, 'unchecked', 'pending');
+      await selectReviewFilters(page, 'unchecked', 'medium');
       await expect(page.locator('.subtitle-row')).toHaveCount(30);
       await page.getByRole('button', { name: '全选', exact: true }).click();
       await expect(page.locator('.subtitle-row > input:checked')).toHaveCount(30);

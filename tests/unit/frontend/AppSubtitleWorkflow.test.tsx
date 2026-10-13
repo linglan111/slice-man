@@ -109,9 +109,10 @@ describe('optional translation and subtitle repair workspace', () => {
     await screen.findByText(/句意可能重复/);
     expect(api.jobs.reviewSubtitles).toHaveBeenCalledExactlyOnceWith({ jobId: previous.id, revision: 7 });
     expect(api.jobs.recognize).not.toHaveBeenCalled(); expect(api.jobs.translate).not.toHaveBeenCalled();
-    setReviewFilters('pending');
+    setReviewFilters('medium');
     fireEvent.click(screen.getByRole('button', { name: '忽略' }));
-    await screen.findByText('没有待检查字幕');
+    await screen.findByText('已忽略');
+    expect(screen.getByLabelText('可疑度：中')).toBeTruthy();
     expect(api.jobs.acknowledgeFinding).toHaveBeenCalledExactlyOnceWith({ jobId: previous.id, reportId: 'report', findingId: 'issue', status: 'ignored' });
     expect(api.jobs.editSegment).not.toHaveBeenCalled();
   });

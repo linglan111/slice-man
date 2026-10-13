@@ -156,9 +156,7 @@ test("review service entry and one visible evidence correction preserve the last
     await expect(await reviewFilterChoice(page, 'unchecked')).toHaveAccessibleName(
       "未检查（4）",
     );
-    await expect(await reviewFilterChoice(page, 'pending')).toHaveAccessibleName(
-      "待检查（4）",
-    );
+    await expect(page.getByRole('group', { name: '可疑度筛选选项', exact: true }).getByRole('checkbox', { name: /^待检查/ })).toHaveCount(0);
     await page
       .getByRole("button", { name: "AI 检查字幕", exact: true })
       .click();

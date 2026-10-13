@@ -33,6 +33,41 @@ function applyInput(job: Job): ApplyNamesInput {
 }
 async function analyzed(f: Awaited<ReturnType<typeof fixture>>): Promise<Job> { return f.service.analyzeNames({ jobId: f.job.id, revision: f.store.getJob(f.job.id).revision }); }
 describe('grounded names service and persistent field undo', () => {
+  it('uses one complete global request for distant once-only variants and safely applies and undoes a combined identity', async () => {
+    const f = await fixture();
+    const value = f.store.getJob(f.job.id);
+    value.media.durationMs = 180000;
+    value.segments = [
+      { id: 'intro', startMs: 100, endMs: 1800, sourceText: 'Ann the guide leads our group.', translatedText: '向导安娜带领我们。', translationStale: false },
+      { id: 'other-person', startMs: 10000, endMs: 12000, sourceText: 'Anna the cook stays at the camp.', translatedText: '厨师安妮留在营地。', translationStale: false },
+      { id: 'narrative', startMs: 60000, endMs: 62000, sourceText: 'We followed the guide through the valley.', translatedText: '我们跟着向导穿过山谷。', translationStale: false },
+      { id: 'return', startMs: 160000, endMs: 162000, sourceText: 'An the guide returned with our group.', translatedText: '向导安纳带着我们回来了。', translationStale: false },
+    ];
+    f.store.saveJob(value);
+    f.generate.mockResolvedValue(JSON.stringify({ candidates: [{ sourceAliases: ['Ann', 'An'], translatedAliases: ['安娜', '安纳'], sourceName: 'Anne', translatedName: '艾妮', reason: '第1、4句均指带领队伍的向导；第2句厨师Anna为另一人。统一向导的两种识别与译名写法。' }] }));
+    const result = await analyzed(f);
+    expect(f.generate).toHaveBeenCalledTimes(1);
+    const prompt = f.generate.mock.calls[0]?.[2];
+    if (!prompt) throw new Error('missing names prompt');
+    const payload = JSON.parse(prompt.split('\n').at(-1) ?? '{}');
+    expect(payload.cues).toEqual(value.segments.map((cue, index) => ({ ordinal: index + 1, id: cue.id, startMs: cue.startMs, endMs: cue.endMs, sourceText: cue.sourceText, translatedText: cue.translatedText })));
+    expect(result.segments).toEqual(value.segments);
+    expect(result.revision).toBe(value.revision);
+    expect(result.nameReport?.candidates).toHaveLength(1);
+    expect(result.nameReport?.candidates[0]).toMatchObject({ cueCount: 2, sourceCount: 2, translatedCount: 2, sourceAliases: ['Ann', 'An'], translatedAliases: ['安娜', '安纳'] });
+    const applied = f.service.applyNames(applyInput(result));
+    expect(applied.revision).toBe(result.revision + 1);
+    expect(applied.segments.map((cue) => cue.sourceText)).toEqual(['Anne the guide leads our group.', 'Anna the cook stays at the camp.', 'We followed the guide through the valley.', 'Anne the guide returned with our group.']);
+    expect(applied.segments[1]).toEqual(value.segments[1]);
+    expect(applied.segments[2]).toEqual(value.segments[2]);
+    if (!applied.nameBatch) throw new Error('missing names batch');
+    const undone = f.service.undoNames({ jobId: applied.id, revision: applied.revision, batchId: applied.nameBatch.id });
+    expect(undone.segments.map((cue) => [cue.id, cue.startMs, cue.endMs, cue.sourceText, cue.translatedText])).toEqual(value.segments.map((cue) => [cue.id, cue.startMs, cue.endMs, cue.sourceText, cue.translatedText]));
+    expect(undone.nameBatch?.undo).toMatchObject({ restoredFields: 4, skippedFields: 0 });
+    expect(f.generate).toHaveBeenCalledTimes(1);
+    expect(f.transcribe).not.toHaveBeenCalled();
+    expect(f.translate).not.toHaveBeenCalled();
+  });
   it('a new successful batch replaces undo while stale revisions cannot apply or consume it', async () => {
     const f = await fixture();
     const first = f.service.applyNames(applyInput(await analyzed(f)));
@@ -139,6 +174,18 @@ describe('grounded names service and persistent field undo', () => {
     f.generate.mockClear(); const many = f.store.getJob(first.id); many.segments = Array.from({ length: 2001 }, (_, n) => ({ ...many.segments[0] as Job['segments'][number], id: `n${n}` })); f.store.saveJob(many);
     await expect(analyzed(f)).rejects.toMatchObject({ code: 'TEXT_LIMIT' }); expect(f.generate).not.toHaveBeenCalled();
   });
+  it('rejects an oversized UTF-8 global name request before generation and preserves the prior report', async () => {
+    const f = await fixture();
+    const previous = await analyzed(f);
+    const value = f.store.getJob(previous.id);
+    value.segments = Array.from({ length: 10 }, (_, index) => ({ id: `large-${index}`, startMs: index * 400, endMs: index * 400 + 350, sourceText: `Ann ${'山'.repeat(18000)}`, translatedText: '', translationStale: false }));
+    f.store.saveJob(value);
+    f.generate.mockClear();
+    await expect(analyzed(f)).rejects.toMatchObject({ code: 'TEXT_LIMIT' });
+    expect(f.generate).not.toHaveBeenCalled();
+    expect(f.store.getJob(previous.id).nameReport?.id).toBe(previous.nameReport?.id);
+    expect(f.store.getJob(previous.id).segments).toEqual(value.segments);
+  });
   it('holds busy lock throughout cancellable analysis and retains previous report on cancel', async () => {
     const f = await fixture(); const first = await analyzed(f);
     f.generate.mockImplementation(async (_profile, _key, _prompt, signal) => new Promise<string>((_resolve, reject) => signal?.addEventListener('abort', () => reject(new AppError('CANCELLED', 'cancelled')), { once: true })));
@@ -153,6 +200,10 @@ describe('grounded names service and persistent field undo', () => {
     f.generate.mockResolvedValue(JSON.stringify({ candidates: [{ sourceAliases: ['Ann'], translatedAliases: [], sourceName: 'Anne', reason: 'x' }] }));
     const analyzedOriginal = await analyzed(f); const input = applyInput(analyzedOriginal); const before = analyzedOriginal.segments.map((s) => s.translatedText); const applied = f.service.applyNames(input);
     expect(applied.segments.map((s) => s.translatedText)).toEqual(before); expect(f.generate.mock.calls.at(-1)?.[2]).not.toContain('安娜'); expect(f.transcribe).not.toHaveBeenCalled(); expect(f.translate).not.toHaveBeenCalled();
+    const originalPrompt = f.generate.mock.calls.at(-1)?.[2];
+    const payload = JSON.parse(originalPrompt?.split('\n').at(-1) ?? '{}');
+    expect(payload).not.toHaveProperty('targetLanguage');
+    expect(payload.cues).toEqual(original.segments.map((cue, index) => ({ ordinal: index + 1, id: cue.id, startMs: cue.startMs, endMs: cue.endMs, sourceText: cue.sourceText })));
   });
   it('rejects corrupted persisted spans before any write and preflights undo budget', async () => {
     const f = await fixture(); const first = await analyzed(f); const corrupt = f.store.getJob(first.id); const occurrence = corrupt.nameReport?.candidates[0]?.occurrences[0]; if (!occurrence) throw new Error('missing'); occurrence.end += 1; f.store.saveJob(corrupt);

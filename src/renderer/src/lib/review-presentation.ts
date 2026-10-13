@@ -5,7 +5,7 @@ import {
   type ReviewRiskLevel,
 } from "../../../shared/contracts";
 
-export type ReviewFilter = "all" | "pending" | "unchecked" | ReviewRiskLevel;
+export type ReviewFilter = "all" | "unchecked" | ReviewRiskLevel;
 export type ReviewGradeView = {
   state: "current" | "stale" | "legacy" | "unreviewed";
   riskLevel?: ReviewRiskLevel;
@@ -76,8 +76,10 @@ export function reviewGrades(job: Job): {
     pendingIds: job.segments
       .filter((segment) => pending.has(segment.id))
       .map((segment) => segment.id),
+    // One visible unchecked category covers absent and invalidated assessments.
+    // Current graded findings remain in their grade even while repair is pending.
     uncheckedIds: job.segments
-      .filter((segment) => views.get(segment.id)?.state === "unreviewed")
+      .filter((segment) => views.get(segment.id)?.state !== "current")
       .map((segment) => segment.id),
   };
 }
@@ -87,7 +89,6 @@ export function filteredReviewIds(
   filter: ReviewFilter,
   grades: ReturnType<typeof reviewGrades>,
 ): string[] {
-  if (filter === "pending") return grades.pendingIds;
   if (filter === "unchecked") return grades.uncheckedIds;
   if (filter === "all") return job.segments.map((segment) => segment.id);
   return job.segments
@@ -105,11 +106,9 @@ export function multiFilteredReviewIds(
   grades: ReturnType<typeof reviewGrades>,
 ): string[] {
   if (!filters.length || filters.includes('all')) return job.segments.map((segment) => segment.id);
-  const pendingIds = new Set(grades.pendingIds);
   const uncheckedIds = new Set(grades.uncheckedIds);
   const selectedFilters = new Set(filters);
   return job.segments.filter((segment) => {
-    if (selectedFilters.has('pending') && pendingIds.has(segment.id)) return true;
     if (selectedFilters.has('unchecked') && uncheckedIds.has(segment.id)) return true;
     const view = grades.views.get(segment.id);
     return view?.state === 'current' && view.riskLevel !== undefined && selectedFilters.has(view.riskLevel);

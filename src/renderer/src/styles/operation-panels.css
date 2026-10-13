@@ -67,10 +67,18 @@
 .workspace-operation-card .reprocessing-panel__summary > .hint { margin-top: 5px; }
 .workspace-operation-card .reprocessing-panel__translation { margin-right: auto; }
 
-.workspace-operation-card .style-operation { grid-template-columns: minmax(0, 1fr); }
-.workspace-operation-card .style-operation__settings { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
-.style-operation__settings > .hint { flex: 1 1 210px; }
-.style-operation__settings > .hint:last-child:not(:first-child) { flex-basis: 100%; }
+.workspace-operation-card .style-operation { display: grid; gap: 8px; }
+.style-operation__composer { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface); }
+.style-operation__heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 7px; }
+.style-operation__intro { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1 1 160px; }
+.style-operation__intro > div { min-width: 0; }
+.style-operation__icon { display: flex; align-items: center; justify-content: center; flex: 0 0 30px; height: 30px; border-radius: 7px; background: var(--color-panel); color: var(--color-primary); }
+.workspace-operation-card .style-operation__intro label { font-size: 12px; font-weight: 600; }
+.workspace-operation-card .style-operation__intro .hint { font-size: 10px; }
+.workspace-operation-card .style-operation__settings { margin-left: auto; white-space: nowrap; }
+.workspace-operation-card .style-operation textarea { display: block; width: 100%; min-height: 58px; margin-top: 0; background: var(--color-panel); resize: vertical; }
+.workspace-operation-card .style-operation__actions { margin-top: 0; padding-top: 0; border-top: 0; }
+.workspace-operation-card .style-operation__actions > .hint { flex: 1 1 180px; margin-right: auto; font-size: 10px; }
 
 .workspace-operation-card .preview-editor .segment-editor form { gap: 8px 12px; }
 .workspace-operation-card .preview-editor .segment-editor form > label:only-of-type { grid-column: 1 / -1; }
@@ -104,7 +112,6 @@
 
 @container operation (min-width: 620px) {
   .reprocessing-panel__body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-  .workspace-operation-card .style-operation { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
 }
 
 @container operation (max-width: 320px) {

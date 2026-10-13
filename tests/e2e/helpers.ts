@@ -40,7 +40,7 @@ export type MockServer = {
     artifact: "ok" | "corrupt" | "slow";
     recognition: "full" | "partial";
     review: "findings" | "empty" | "slow" | "graded" | "evidence-corrected" | "evidence-invalid";
-    names: "ok" | "slow" | "empty";
+    names: "ok" | "slow" | "empty" | "variants";
   };
   close: () => Promise<void>;
 };
@@ -146,7 +146,7 @@ export async function startMockServer(): Promise<MockServer> {
         namePrompts.push(prompt);
         if (behavior.names === "slow") return;
         const payload = z.object({ translationEnabled: z.boolean() }).passthrough().parse(JSON.parse(prompt.split("\n").at(-1) ?? "{}") as unknown);
-        content = { candidates: behavior.names === "empty" ? [] : [{ sourceAliases: ["Ann"], translatedAliases: payload.translationEnabled ? ["安娜"] : [], sourceName: "Anne", ...(payload.translationEnabled ? { translatedName: "安妮" } : {}), reason: "同一姓名在两条字幕中重复出现，请核对上下文后统一。" }] };
+        content = { candidates: behavior.names === "empty" ? [] : [{ sourceAliases: behavior.names === "variants" ? ["Ann", "An"] : ["Ann"], translatedAliases: payload.translationEnabled ? behavior.names === "variants" ? ["安娜", "安纳"] : ["安娜"] : [], sourceName: "Anne", ...(payload.translationEnabled ? { translatedName: "安妮" } : {}), reason: "同一姓名在两条字幕中重复出现，请核对上下文后统一。" }] };
       } else if (prompt.startsWith("Review subtitle text and timing.")) {
         counters.review++;
         reviewPrompts.push(prompt);
@@ -385,7 +385,7 @@ export async function configureCloud(
   await expect(page.getByRole("button", { name: "一键生成字幕", exact: true })).toBeEnabled();
 }
 
-const reviewFilterLabels: Record<string, string> = { all: '全部', unchecked: '未检查', pending: '待检查', none: '无', low: '低', medium: '中', high: '高' };
+const reviewFilterLabels: Record<string, string> = { all: '全部', unchecked: '未检查', none: '无', low: '低', medium: '中', high: '高' };
 export async function reviewFilterChoice(page: Page, key: string): Promise<Locator> {
   const trigger = page.getByRole('button', { name: '可疑度筛选', exact: true });
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();

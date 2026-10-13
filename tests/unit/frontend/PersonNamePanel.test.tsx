@@ -12,6 +12,17 @@ function props(): Parameters<typeof PersonNamePanel>[0] {
   return { job, isBusy: false, onAnalyze: vi.fn(), onApply: vi.fn(), onUndo: vi.fn(), onCancel: vi.fn(), onChooseProfile: vi.fn() };
 }
 describe('reviewable names panel', () => {
+  it('shows global identity grouping and each observed name spelling before explicit application', () => {
+    const p = props();
+    const candidate = p.job.nameReport?.candidates[0];
+    if (!candidate) throw new Error('missing name candidate');
+    candidate.sourceAliases = ['Ann', 'An'];
+    candidate.translatedAliases = ['安娜', '安纳'];
+    render(<PersonNamePanel {...p} />);
+    expect(screen.getByText(/结合全片字幕/)).toBeTruthy();
+    expect(screen.getByText(/同一人名的识别写法：Ann、An；译名写法：安娜、安纳/)).toBeTruthy();
+    expect(p.onApply).not.toHaveBeenCalled();
+  });
   it('initializes editable recommended values without mutation, retains input during rerender and sends current revision', () => {
     const p = props(); const view = render(<PersonNamePanel {...p} />);
     expect((screen.getByLabelText('Anne 替换原名') as HTMLInputElement).value).toBe('Anne'); expect(p.onApply).not.toHaveBeenCalled();

@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import type { ReviewFilter } from '../../../src/renderer/src/lib/review-presentation';
 
-const LABELS: Record<ReviewFilter, string> = { all: '全部', pending: '待检查', unchecked: '未检查', none: '无', low: '低', medium: '中', high: '高' };
+const LABELS: Record<ReviewFilter, string> = { all: '全部', unchecked: '未检查', none: '无', low: '低', medium: '中', high: '高' };
 export function setReviewFilters(...filters: ReviewFilter[]): void {
   const trigger = screen.getByRole('button', { name: '可疑度筛选' });
   fireEvent.click(trigger);

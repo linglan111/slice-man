@@ -415,7 +415,7 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
     await page.screenshot({
       path: join(evidence, "contextual-neighbour-change-stale.png"),
     });
-    await selectReviewFilters(page, "pending");
+    await selectReviewFilters(page, "unchecked");
     await page.getByRole("button", { name: "全选", exact: true }).click();
     await app.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()[0]?.setSize(1050, 700);

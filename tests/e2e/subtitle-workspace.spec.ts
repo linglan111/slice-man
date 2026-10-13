@@ -283,7 +283,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     expect(mock.counters.review).toBe(1);
     expect(mock.counters.recognition).toBe(recognitionBeforeReview);
     expect(mock.counters.translation).toBe(0);
-    await selectReviewFilters(page, "pending");
+    await selectReviewFilters(page, "medium");
     await page.getByRole("button", { name: "全选", exact: true }).click();
     await expect(page.getByLabel("选择字幕 1", { exact: true })).toBeChecked();
     await expect(page.getByLabel("选择字幕 2", { exact: true })).toBeChecked();
@@ -299,12 +299,13 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     await expect
       .poll(() => mock.counters.recognition)
       .toBe(recognitionBeforeReview + 2);
+    await selectReviewFilters(page, "unchecked");
     await expect(page.locator(".review-finding--recheck")).toHaveCount(2);
     await (await workspaceButton(page, 'AI 检查字幕'))
       .click();
     await expect.poll(() => mock.counters.review).toBe(2);
+    await selectReviewFilters(page, "medium");
     await expect(page.locator(".review-finding--pending")).toHaveCount(2);
-    await selectReviewFilters(page, "pending");
     const firstIssue = page.getByTestId("segment-0");
     await firstIssue
       .getByRole("button", { name: "定位播放", exact: true })
@@ -317,11 +318,11 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       )
       .toBeGreaterThanOrEqual(0.1);
     await firstIssue.getByRole("button", { name: "忽略", exact: true }).click();
-    await expect(page.locator(".subtitle-row")).toHaveCount(1);
+    await expect(page.locator(".subtitle-row")).toHaveCount(2);
     expect((await job(page)).reviewReport?.findings[0]?.status).toBe("ignored");
     await screenshot(page, "original-review-pending.png");
     await page
-      .locator(".subtitle-row")
+      .getByTestId("segment-1")
       .getByRole("button", { name: "重新识别", exact: true })
       .click();
     await expect(page.locator(".reprocessing-panel__scope")).toBeVisible();
@@ -335,11 +336,13 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
         ),
       )
       .toBe(true);
+    await selectReviewFilters(page, "unchecked");
     await expect(page.getByTestId("segment-1")).toContainText("需复查");
     await page
       .getByTestId("segment-1")
       .getByRole("button", { name: "复查", exact: true })
       .click();
+    await selectReviewFilters(page, "medium");
     await expect(
       page.locator(".subtitle-row .review-finding--pending"),
     ).toHaveCount(1);

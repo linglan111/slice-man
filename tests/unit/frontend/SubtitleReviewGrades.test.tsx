@@ -85,15 +85,15 @@ describe('contextual four-level review presentation', () => {
     expect(screen.getByText('已选 5 条')).toBeTruthy();
   });
 
-  it('deduplicates pending and unchecked filters and restores all when the final choice is cleared', () => {
+  it('has one unchecked filter and restores all when the final choice is cleared', () => {
     const job = gradedJob(); job.reviewReport = undefined;
     render(<SubtitleList {...props(job)} />);
-    setReviewFilters('pending', 'unchecked');
+    setReviewFilters('unchecked');
     expect(screen.getAllByRole('article')).toHaveLength(4);
     const trigger = screen.getByRole('button', { name: '可疑度筛选' });
     fireEvent.click(trigger);
     const group = screen.getByRole('group', { name: '可疑度筛选选项' });
-    fireEvent.click(within(group).getByRole('checkbox', { name: '待检查（4）' }));
+    expect(within(group).queryByRole('checkbox', { name: /待检查|待检测/ })).toBeNull();
     fireEvent.click(within(group).getByRole('checkbox', { name: '未检查（4）' }));
     expect((within(group).getByRole('checkbox', { name: '全部（4）' }) as HTMLInputElement).checked).toBe(true);
     fireEvent.keyDown(group, { key: 'Escape' });
@@ -115,6 +115,26 @@ describe('contextual four-level review presentation', () => {
     expect((screen.getByRole('button', { name: '选择时间范围' }) as HTMLButtonElement).disabled).toBe(true);
     rerender(<SubtitleList {...input} onSelectMany={undefined} />);
     expect((screen.getByRole('button', { name: '全选' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('unifies missing, legacy and stale assessments without including current unresolved findings', () => {
+    const job = gradedJob(['none', 'low', 'high', 'medium']);
+    const report = job.reviewReport;
+    if (!report?.assessments) throw new Error('Graded fixture absent');
+    report.assessments = report.assessments.filter((assessment) => assessment.segmentId !== 'cue-3').map((assessment) => assessment.segmentId === 'cue-1' ? { ...assessment, status: 'recheck' } : assessment);
+    report.findings = [{ id: 'current-issue', segmentId: 'cue-2', category: 'source', reason: 'A current unresolved finding', status: 'pending' }];
+    job.segments.push({ id: 'new-cue', startMs: 2400, endMs: 2900, sourceText: 'Never reviewed', translatedText: '', translationStale: false });
+    const input = props(job); render(<SubtitleList {...input} />);
+    expect(reviewFilterChoice('未检查（3）')).toBeTruthy();
+    expect(reviewFilterChoice('高（1）')).toBeTruthy();
+    setReviewFilters('unchecked');
+    expect(screen.getAllByRole('article').map((row) => row.getAttribute('data-testid'))).toEqual(['segment-1', 'segment-3', 'segment-4']);
+    expect(screen.queryByText('A current unresolved finding')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '检查未检查字幕' }));
+    expect(input.onReview).toHaveBeenCalledExactlyOnceWith(['cue-1', 'cue-3', 'new-cue']);
+    setReviewFilters('unchecked', 'high');
+    expect(screen.getAllByRole('article').map((row) => row.getAttribute('data-testid'))).toEqual(['segment-1', 'segment-2', 'segment-3', 'segment-4']);
+    expect(screen.getByText(/A current unresolved finding/)).toBeTruthy();
   });
 
   it('selects only overlapping filtered cues, retaining prior selections and range drafts', () => {
@@ -178,9 +198,10 @@ describe('contextual four-level review presentation', () => {
     expect(reviewFilterChoice('无（0）')).toBeTruthy();
     fireEvent.click(within(screen.getByTestId('segment-0')).getByRole('button', { name: '复查' }));
     expect(input.onReview).toHaveBeenCalledWith(['cue-0']);
-    setReviewFilters('pending');
+    setReviewFilters('unchecked');
     expect(screen.getAllByRole('article')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: '复查待检查' }));
+    expect(reviewFilterChoice('未检查（1）')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '检查未检查字幕' }));
     expect(input.onReview).toHaveBeenLastCalledWith(['cue-0']);
   });
 
@@ -192,7 +213,7 @@ describe('contextual four-level review presentation', () => {
     rerender(<SubtitleList {...props(legacy)} />);
     expect(screen.getByLabelText('待重新检查')).toBeTruthy();
     expect(reviewFilterChoice('无（0）')).toBeTruthy();
-    setReviewFilters('pending');
+    setReviewFilters('unchecked');
     expect(screen.getAllByRole('article')).toHaveLength(1);
   });
 

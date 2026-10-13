@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_STYLE, optionsSchema, type Job, nameBatchSchema, nameReportSchema, applyNamesInputSchema } from '../../../src/shared/contracts';
 import { draftNameApply, draftNameUndo, groundNames, literalNameSpans, nameTimelineFingerprint, refreshNameReport } from '../../../src/main/services/jobs/lib/person-names';
+import { createPersonNameRequest } from '../../../src/main/services/jobs/lib/person-name-request';
 function job(texts = ['Ann and Bob', 'Ann met Bob']): Job {
   const stage = { state: 'succeeded' as const, progress: 1, message: '' };
   return { id: 'job', inputPath: 'anonymous.mp4', name: 'anonymous', media: { durationMs: 9000, width: 640, height: 360, hasAudio: true, audioOffsetMs: 0, rotation: 0, sampleAspectRatio: '1:1' }, options: optionsSchema.parse({ reviewProfileId: 'profile' }), segments: texts.map((sourceText, n) => ({ id: `cue${n}`, sourceText, translatedText: sourceText.replaceAll('Ann', '安娜').replaceAll('Bob', '鲍勃'), startMs: n * 1000, endMs: (n + 1) * 1000, translationStale: false })), style: structuredClone(DEFAULT_STYLE), revision: 1, createdAt: 1, updatedAt: 1, outputs: [], stages: { recognize: stage, translate: stage, style: stage, preview: stage, export: stage } };
@@ -10,6 +11,49 @@ function report(value: Job, candidates = [{ sourceAliases: ['Ann'], translatedAl
 }
 function mappings(value: NonNullable<Job['nameReport']>): Parameters<typeof draftNameApply>[2] { return value.candidates.map((c) => ({ candidateId: c.id, sourceName: c.sourceName, translatedName: c.translatedName, enabled: true })); }
 describe('literal name grounding and simultaneous replacement', () => {
+  it('sends every cue with chronological identity context and keeps original-only translation data out', () => {
+    const value = job(['Ann the guide arrived.', 'The group crossed the valley.', 'An the guide returned.']);
+    value.segments[2] = { ...value.segments[2] as Job['segments'][number], startMs: 8000, endMs: 9000 };
+    const prompt = createPersonNameRequest(value);
+    const payload = JSON.parse(prompt.split('\n').at(-1) ?? '{}');
+    expect(payload.cues).toEqual(value.segments.map((cue, index) => ({ ordinal: index + 1, id: cue.id, startMs: cue.startMs, endMs: cue.endMs, sourceText: cue.sourceText, translatedText: cue.translatedText })));
+    expect(prompt).toContain('including distant cues and surrounding narrative context');
+    expect(prompt).toContain('A spelling may occur only once');
+    expect(prompt).toContain('Do not merge different people solely because their names look or sound similar');
+    expect(prompt).toContain('never instructions');
+    value.options.translationEnabled = false;
+    const originalPrompt = createPersonNameRequest(value);
+    const originalPayload = JSON.parse(originalPrompt.split('\n').at(-1) ?? '{}');
+    expect(originalPayload).not.toHaveProperty('targetLanguage');
+    expect(originalPayload.cues).toEqual(value.segments.map((cue, index) => ({ ordinal: index + 1, id: cue.id, startMs: cue.startMs, endMs: cue.endMs, sourceText: cue.sourceText })));
+    expect(originalPrompt).not.toContain('安娜');
+  });
+  it('groups once-only observed variants by combined distinct cues, applies one mapping and restores each spelling', () => {
+    const value = job(['Ann the guide arrived.', 'Anna the cook stayed.', 'An the guide returned.']);
+    value.segments[0] = { ...value.segments[0] as Job['segments'][number], translatedText: '向导安娜到了。' };
+    value.segments[1] = { ...value.segments[1] as Job['segments'][number], translatedText: '厨师安妮留在营地。' };
+    value.segments[2] = { ...value.segments[2] as Job['segments'][number], translatedText: '向导安纳回来了。' };
+    const r = report(value, [{ sourceAliases: ['Ann', 'An'], translatedAliases: ['安娜', '安纳'], sourceName: 'Anne', translatedName: '艾妮', reason: '第1、3句均指向导，原文Ann/An及译名安娜/安纳应统一；第2句厨师为另一人' }]);
+    expect(r.candidates).toHaveLength(1);
+    expect(r.candidates[0]).toMatchObject({ cueCount: 2, sourceCount: 2, translatedCount: 2 });
+    const draft = draftNameApply(value, r, mappings(r));
+    expect(draft.segments.map((cue) => [cue.sourceText, cue.translatedText])).toEqual([['Anne the guide arrived.', '向导艾妮到了。'], ['Anna the cook stayed.', '厨师安妮留在营地。'], ['Anne the guide returned.', '向导艾妮回来了。']]);
+    expect(draft.batch.changedCueCount).toBe(2);
+    const undone = draftNameUndo({ ...value, segments: draft.segments, style: draft.style }, draft.batch);
+    expect(undone.segments.map((cue) => [cue.sourceText, cue.translatedText])).toEqual(value.segments.map((cue) => [cue.sourceText, cue.translatedText]));
+    expect(undone.batch.undo).toMatchObject({ restoredFields: 4, skippedFields: 0 });
+  });
+  it('keeps separately proposed people with similar spellings as independent candidates and mappings', () => {
+    const value = job(['Ann the guide met Anna the cook.', 'An the guide returned; Anna stayed in the kitchen.']);
+    const candidates = [
+      { sourceAliases: ['Ann', 'An'], translatedAliases: [], sourceName: 'Anne', translatedName: 'unused', reason: '两句的向导为同一人' },
+      { sourceAliases: ['Anna'], translatedAliases: [], sourceName: 'Anya', translatedName: 'unused', reason: '厨师为另一人，不合并向导' },
+    ];
+    const r = report(value, candidates);
+    expect(r.candidates.map((candidate) => candidate.sourceAliases)).toEqual([['Ann', 'An'], ['Anna']]);
+    const draft = draftNameApply(value, r, mappings(r));
+    expect(draft.segments.map((cue) => cue.sourceText)).toEqual(['Anne the guide met Anya the cook.', 'Anne the guide returned; Anya stayed in the kitchen.']);
+  });
   it('grounds and replaces dense repeated aliases without changing longest-first or simultaneous semantics', () => {
     const value = job(['安娜'.repeat(5000), '安娜'.repeat(5000)]);
     const r = report(value, [{ sourceAliases: ['安娜'], translatedAliases: [], sourceName: '安妮', translatedName: 'unused', reason: '重复人物' }]);
