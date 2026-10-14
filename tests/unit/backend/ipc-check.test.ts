@@ -5,6 +5,9 @@ import type { JobService } from "../../../src/main/services/jobs/lib/job-service
 import type { RuntimeService } from "../../../src/main/services/runtime/runtime-service";
 import type { DownloadService } from "../../../src/main/services/download/lib/download-service";
 import type { ExportSettingsService } from "../../../src/main/services/export-settings/lib/export-settings-service";
+import type { ProviderDiagnosticsRepository } from '../../../src/main/db/provider-diagnostics';
+import type { ChapterCriteriaRepository } from '../../../src/main/db/chapter-criteria';
+import type { ChapterExportService } from '../../../src/main/services/chapters/chapter-export-service';
 
 const mocks = vi.hoisted(() => ({
   handlers: new Map<
@@ -15,6 +18,14 @@ const mocks = vi.hoisted(() => ({
   listProfiles: vi.fn(() => []),
   saveProfile: vi.fn(),
   assertProfileWritable: vi.fn(),
+  assertIdle: vi.fn(),
+  diagnosticList: vi.fn(() => []),
+  diagnosticAnswer: vi.fn(async () => 'x'.repeat(20001)),
+  diagnosticClear: vi.fn(async () => {}),
+  planChapters: vi.fn(async () => ({ id: 'test-job' })),
+  updateChapters: vi.fn(() => ({ id: 'test-job' })),
+  criterionSnapshot: vi.fn((id: string) => ({ id, revision: 1, name: '核心', instructions: '保留核心内容' })),
+  chapterExport: vi.fn(async () => ({ id: 'test-run' })),
   repairLoop: vi.fn(async () => ({ id: "test-job" })),
   analyzeNames: vi.fn(async () => ({ id: "test-job" })),
   applyNames: vi.fn(() => ({ id: "test-job" })),
@@ -89,6 +100,9 @@ describe("independent narrow IPC trust boundary", () => {
         removeSegment: mocks.removeSegment,
         export: mocks.exportJob,
         assertProfileWritable: mocks.assertProfileWritable,
+        assertIdle: mocks.assertIdle,
+        planChapters: mocks.planChapters,
+        updateChapters: mocks.updateChapters,
         repairLoop: mocks.repairLoop,
         analyzeNames: mocks.analyzeNames,
         applyNames: mocks.applyNames,
@@ -96,6 +110,9 @@ describe("independent narrow IPC trust boundary", () => {
       } as unknown as JobService,
       runtime: {} as RuntimeService,
       download: { cancel: vi.fn() } as unknown as DownloadService,
+      diagnostics: { list: mocks.diagnosticList, readAnswer: mocks.diagnosticAnswer, clear: mocks.diagnosticClear } as unknown as ProviderDiagnosticsRepository,
+      chapterCriteria: { snapshot: mocks.criterionSnapshot } as unknown as ChapterCriteriaRepository,
+      chapterExports: { export: mocks.chapterExport } as unknown as ChapterExportService,
       exportSettings: {
         status: mocks.exportSettingsStatus,
         saveSettings: mocks.exportSettingsSave,
@@ -211,6 +228,40 @@ describe("independent narrow IPC trust boundary", () => {
     expect(new Set(mocks.removed)).toEqual(new Set(
       Object.entries(IPC_CHANNELS).flatMap(([group, methods]) => methods.map((method) => `${group}:${method}`)),
     ));
+  });
+  it('resolves saved custom criteria in main and rejects renderer-supplied criterion contents', async () => {
+    const f = fixture();
+    const input = { jobId: 'test-job', revision: 2, kind: 'custom', criterionId: 'criterion' };
+    expect(await f.invoke('jobs:planChapters', input)).toMatchObject({ success: true });
+    expect(mocks.criterionSnapshot).toHaveBeenCalledExactlyOnceWith('criterion');
+    expect(mocks.planChapters).toHaveBeenCalledExactlyOnceWith(input, { id: 'criterion', revision: 1, name: '核心', instructions: '保留核心内容' });
+    expect(await f.invoke('jobs:planChapters', { ...input, instructions: 'untrusted override' })).toMatchObject({ success: false, code: 'VALIDATION_ERROR' });
+    expect(mocks.planChapters).toHaveBeenCalledTimes(1);
+  });
+  it('bounds response previews and prevents log deletion while an operation is active', async () => {
+    const f = fixture();
+    const id = '11111111-1111-4111-8111-111111111111';
+    expect(await f.invoke('diagnostics:readAnswer', id)).toEqual({ success: true, data: { text: 'x'.repeat(20000), truncated: true } });
+    expect(await f.invoke('diagnostics:readAnswer', '../../other.txt')).toMatchObject({ success: false, code: 'VALIDATION_ERROR' });
+    expect(mocks.diagnosticAnswer).toHaveBeenCalledTimes(1);
+    mocks.assertIdle.mockImplementationOnce(() => { throw new AppError('JOB_BUSY', 'busy'); });
+    expect(await f.invoke('diagnostics:clear', [id])).toMatchObject({ success: false, code: 'JOB_BUSY' });
+    expect(mocks.diagnosticClear).not.toHaveBeenCalled();
+    expect(await f.invoke('diagnostics:clear', [id])).toMatchObject({ success: true });
+    expect(mocks.diagnosticClear).toHaveBeenCalledExactlyOnceWith([id]);
+  });
+  it('resumes a chapter export using its saved directory without reopening a native picker', async () => {
+    const f = fixture();
+    const input = { jobId: 'test-job', revision: 2, planId: 'plan', planRevision: 0, chapterIds: ['chapter'], format: 'srt', runId: 'run' };
+    expect(await f.invoke('chapterExports:export', input)).toMatchObject({ success: true });
+    expect(mocks.chapterExport).toHaveBeenCalledExactlyOnceWith(input);
+    expect(mocks.showOpenDialog).not.toHaveBeenCalled();
+  });
+  it('cancelling the chapter export directory leaves the batch unstarted', async () => {
+    const f = fixture();
+    const input = { jobId: 'test-job', revision: 2, planId: 'plan', planRevision: 0, chapterIds: ['chapter'], format: 'srt' };
+    expect(await f.invoke('chapterExports:export', input)).toEqual({ success: true, data: null });
+    expect(mocks.chapterExport).not.toHaveBeenCalled();
   });
   it("validates automatic loop input before invocation and guards active provider edits", async () => {
     const f = fixture();

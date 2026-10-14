@@ -252,17 +252,26 @@ test('one-click real CPU installation, real Whisper inference and failed/cancell
     await page.getByLabel('安装并验证 NVIDIA 加速（若可用）', { exact: true }).uncheck();
     await page.getByRole('button', { name: '一键安装所选模型', exact: true }).click();
     await expect(page.getByText('CPU 识别已通过实际测试。', { exact: true })).toBeVisible({ timeout: 90000 });
-    await expect(page.getByRole('button', { name: '一键安装所选模型', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '继续安装所选模型', exact: true })).toBeEnabled();
     const stateBefore = await readText(resolve(userData, 'runtime-state.json'));
+    // Verified downloads are deliberately reusable. Clear only their cache before
+    // fault injection so these cases really contact the slow/corrupt server.
+    await page.getByRole('button', { name: '清除下载缓存', exact: true }).click();
+    await expect(page.getByRole('button', { name: '一键安装所选模型', exact: true })).toBeEnabled();
+    expect(await readText(resolve(userData, 'runtime-state.json'))).toBe(stateBefore);
     mock.behavior.artifact = 'slow';
     await page.getByRole('button', { name: '一键安装所选模型', exact: true }).click();
-    await expect(page.getByRole('button', { name: '取消安装', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '取消安装', exact: true }).click();
+    await expect(page.getByRole('button', { name: '取消安装（保留下载）', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '取消安装（保留下载）', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('CANCELLED');
     expect(await readText(resolve(userData, 'runtime-state.json'))).toBe(stateBefore);
+    const clearCache = page.getByRole('button', { name: '清除下载缓存', exact: true });
+    if (await clearCache.isVisible()) await clearCache.click();
+    await expect(page.getByRole('button', { name: '一键安装所选模型', exact: true })).toBeEnabled();
     mock.behavior.artifact = 'corrupt';
     await page.getByRole('button', { name: '一键安装所选模型', exact: true }).click();
-    await expect(page.getByRole('alert')).toContainText(/校验|完整|大小/);
+    await expect(page.getByRole('alert')).toContainText(/校验失败|响应长度与预期范围不一致/);
+    await expect(page.getByRole('alert')).toContainText('INSTALL_INTEGRITY');
     expect(await readText(resolve(userData, 'runtime-state.json'))).toBe(stateBefore);
     await page.getByRole('button', { name: '关闭', exact: true }).click();
     await addProfile(page, 'Mock translator', 'openai', mock.url);

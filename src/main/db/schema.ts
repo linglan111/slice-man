@@ -16,6 +16,11 @@ export const profiles = sqliteTable("profiles", {
   encryptedKey: text("encrypted_key"),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
+export const aiRequests = sqliteTable("ai_requests", {
+  id: text("id").primaryKey(), jobId: text("job_id"), state: text("state").notNull(),
+  startedAt: integer("started_at", { mode: "timestamp_ms" }).notNull(),
+  endedAt: integer("ended_at", { mode: "timestamp_ms" }), payload: text("payload").notNull(),
+});
 export const segments = sqliteTable(
   "segments",
   {

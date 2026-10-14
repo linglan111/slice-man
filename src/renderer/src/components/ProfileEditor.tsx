@@ -15,13 +15,15 @@ export function ProfileEditor({ profile, onSave, onClose }: Props): ReactNode {
   const [sessionOnly, setSessionOnly] = useState(profile?.sessionOnly ?? false);
   const [structuredOutput, setStructuredOutput] = useState(profile?.structuredOutput ?? false);
   const [timeoutSeconds, setTimeoutSeconds] = useState(String((profile?.timeoutMs ?? 120000) / 1000));
+  const [streaming, setStreaming] = useState<'auto' | 'disabled'>(profile?.streaming ?? 'auto');
+  const [textMinutes, setTextMinutes] = useState(String((profile?.textTimeoutMs ?? 1800000) / 60000));
   const [uploadMb, setUploadMb] = useState(String((profile?.maxUploadBytes ?? 24000000) / 1e6));
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   async function save(): Promise<void> {
-    const input = { ...(profile ? { id: profile.id } : {}), name: name.trim(), protocol, mode, baseUrl: baseUrl.trim(), model: model.trim(), ...(apiKey ? { apiKey } : {}), sessionOnly, structuredOutput, timeoutMs: Number(timeoutSeconds) * 1000, maxUploadBytes: Number(uploadMb) * 1e6 };
+    const input = { ...(profile ? { id: profile.id } : {}), name: name.trim(), protocol, mode, baseUrl: baseUrl.trim(), model: model.trim(), ...(apiKey ? { apiKey } : {}), sessionOnly, structuredOutput, streaming, textTimeoutMs: Number(textMinutes) * 60000, timeoutMs: Number(timeoutSeconds) * 1000, maxUploadBytes: Number(uploadMb) * 1e6 };
     const parsed = profileInputSchema.safeParse(input);
-    if (!parsed.success) { setError('请检查名称、有效接口地址、模型、超时（1–300 秒）和上传限制（0.1–100 MB）。'); return; }
+    if (!parsed.success) { setError('请检查名称、有效接口地址、模型、请求超时（1–300 秒）、生成总时限（1–60 分钟）和上传限制（0.1–100 MB）。'); return; }
     setError(''); setIsBusy(true);
     try { await onSave(parsed.data); setApiKey(''); onClose(); }
     catch (cause) { setError(cause instanceof Error ? cause.message : '配置保存失败，请重试。'); }
@@ -41,6 +43,8 @@ export function ProfileEditor({ profile, onSave, onClose }: Props): ReactNode {
       <div className="form-grid"><label>请求超时（秒）<input aria-label="请求超时（秒）" type="number" min={1} max={300} value={timeoutSeconds} onChange={(event) => setTimeoutSeconds(event.target.value)} /></label>
         <label>音频上传上限（MB）<input aria-label="音频上传上限（MB）" type="number" min={.1} max={100} step={.1} value={uploadMb} onChange={(event) => setUploadMb(event.target.value)} /></label></div>
       <label className="check-label"><input type="checkbox" checked={sessionOnly} onChange={(event) => setSessionOnly(event.target.checked)} />仅本次会话使用密钥</label>
+      <div className="form-grid"><label>文字响应方式<select aria-label="文字响应方式" value={streaming} onChange={(event) => setStreaming(event.target.value === 'disabled' ? 'disabled' : 'auto')}><option value="auto">自动流式（推荐）</option><option value="disabled">非流式兼容</option></select></label><label>文字生成总时限（分钟）<input aria-label="文字生成总时限（分钟）" type="number" min={1} max={60} step={1} value={textMinutes} onChange={(event) => setTextMinutes(event.target.value)} /></label></div>
+      <p className="hint">请求超时限制等待响应和流式停顿；总时限独立限制整次生成。接收内容保存在本地；超时不会自动重复长请求。</p>
       {protocol === 'openai' && <label className="check-label"><input type="checkbox" checked={structuredOutput} onChange={(event) => setStructuredOutput(event.target.checked)} />服务已确认支持 JSON 输出模式</label>}
       {error && <p className="error-message" role="alert">{error}</p>}
       <footer className="modal__footer"><button type="button" className="button" disabled={isBusy} onClick={onClose}>取消</button><button className="button button--primary" disabled={isBusy}>{isBusy ? '保存中…' : '保存配置'}</button></footer>

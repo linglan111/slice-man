@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { providerDiagnosticSchema } from './provider-diagnostics-contracts';
+import { criterionLibrarySchema, chapterExportRunSchema } from './chapter-export-contracts';
+import { artifactCacheSummarySchema } from "./artifact-cache-contracts";
 import { exportSettingsSchema } from "./export-contracts";
 import { downloadStatusSchema } from "./download-contracts";
 import {
@@ -10,6 +13,7 @@ import {
 } from "./contracts";
 export const runtimeStatusSchema: z.ZodType<RuntimeStatus> = z
   .object({
+    downloadCache: artifactCacheSummarySchema.optional(),
     installed: z.boolean(),
     cpuReady: z.boolean(),
     gpuReady: z.boolean(),
@@ -42,6 +46,7 @@ export const progressSchema: z.ZodType<ProgressEvent> = z
       "review",
       "repair",
       "names",
+      "chapters",
     ]),
     progress: z.number().min(0).max(1),
     message: z.string(),
@@ -50,6 +55,17 @@ export const progressSchema: z.ZodType<ProgressEvent> = z
   })
   .strict();
 const outputSchemas: Record<string, z.ZodType> = {
+  "diagnostics:list": z.array(providerDiagnosticSchema).max(100),
+  "diagnostics:detail": providerDiagnosticSchema,
+  "diagnostics:readAnswer": z.object({ text: z.string().max(20000), truncated: z.boolean() }).strict(),
+  "diagnostics:clear": z.undefined(),
+  "chapterCriteria:list": criterionLibrarySchema,
+  "chapterCriteria:save": criterionLibrarySchema,
+  "chapterCriteria:copy": criterionLibrarySchema,
+  "chapterCriteria:remove": criterionLibrarySchema,
+  "chapterCriteria:select": criterionLibrarySchema,
+  "chapterExports:export": chapterExportRunSchema.nullable(),
+  "chapterExports:list": z.array(chapterExportRunSchema).max(100),
   "exportSettings:status": exportSettingsSchema,
   "exportSettings:saveSettings": exportSettingsSchema,
   "exportSettings:chooseDirectory": exportSettingsSchema.nullable(),
@@ -59,6 +75,7 @@ const outputSchemas: Record<string, z.ZodType> = {
   "download:install": downloadStatusSchema,
   "download:importUrl": jobSchema,
   "download:cancel": z.undefined(),
+  "download:clearDownloadCache": downloadStatusSchema,
   "profiles:list": z.array(profileSchema),
   "profiles:save": profileSchema,
   "profiles:remove": z.undefined(),
@@ -66,9 +83,12 @@ const outputSchemas: Record<string, z.ZodType> = {
   "runtime:status": runtimeStatusSchema,
   "runtime:install": runtimeStatusSchema,
   "runtime:cancel": z.undefined(),
+  "runtime:clearDownloadCache": runtimeStatusSchema,
   "jobs:list": z.array(jobSchema),
   "jobs:get": jobSchema,
   "jobs:importVideo": jobSchema.nullable(),
+  "jobs:planChapters": jobSchema,
+  "jobs:updateChapters": jobSchema,
   "jobs:updateOptions": jobSchema,
   "jobs:recognize": jobSchema,
   "jobs:recognizeAgain": jobSchema,

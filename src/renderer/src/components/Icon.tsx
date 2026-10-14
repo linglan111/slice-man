@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type IconName = 'import' | 'link' | 'video' | 'engine' | 'settings' | 'download' | 'export' | 'collapse' | 'expand' | 'recognize' | 'translate' | 'review' | 'repair' | 'edit' | 'generate' | 'add' | 'names' | 'style';
+type IconName = 'import' | 'link' | 'video' | 'engine' | 'settings' | 'download' | 'export' | 'collapse' | 'expand' | 'recognize' | 'translate' | 'review' | 'repair' | 'edit' | 'generate' | 'add' | 'names' | 'style' | 'chapters';
 const paths: Record<IconName, string> = {
   import: 'M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5',
   link: 'm10 13 4-4M8 15l-2 2a4 4 0 0 1-5-5l4-4a4 4 0 0 1 5 0m4 1 2-2a4 4 0 0 1 5 5l-4 4a4 4 0 0 1-5 0',
@@ -20,6 +20,7 @@ const paths: Record<IconName, string> = {
   add: 'M4 4h16v16H4zM12 8v8m-4-4h8',
   names: 'M14 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M3 21v-2a7 7 0 0 1 10-6m3 5 2 2 4-5',
   style: 'M4 5h12M10 5v14m-4 0h8M18 3v6m-3-3h6',
+  chapters: 'M3 4h7v16H3zM14 4h7v7h-7zM14 15h7m-7 5h7',
 };
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }): ReactNode {
   return <svg className="ui-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]} /></svg>;

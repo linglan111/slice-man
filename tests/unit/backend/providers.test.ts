@@ -132,9 +132,9 @@ describe("required text protocols use native request/auth/response mappings", ()
       await generateText(profile(url, "anthropic"), "secret", "hello"),
     ).toBe('{"ok":true}');
   });
-  it("Gemini native content generation", async () => {
+  it.each(["auto", "disabled"] as const)("Gemini native content generation (%s)", async (streaming) => {
     const url = await mock((path, headers, text) => {
-      expect(path).toBe("/v1/models/test-model:generateContent");
+      expect(path).toBe(`/v1/models/test-model:${streaming === "auto" ? "streamGenerateContent?alt=sse" : "generateContent"}`);
       expect(headers["x-goog-api-key"]).toBe("secret");
       expect(JSON.parse(text).contents[0].parts[0].text).toBe("hello");
       return {
@@ -148,7 +148,7 @@ describe("required text protocols use native request/auth/response mappings", ()
         },
       };
     });
-    expect(await generateText(profile(url, "gemini"), "secret", "hello")).toBe(
+    expect(await generateText({ ...profile(url, "gemini"), streaming }, "secret", "hello")).toBe(
       '{"ok":true}',
     );
   });

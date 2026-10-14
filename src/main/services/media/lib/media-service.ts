@@ -101,6 +101,24 @@ function softwareProfile(
 export class MediaService {
   private readonly proxies = new Map<string, Promise<string>>();
   constructor(readonly paths: MediaPaths) {}
+  private async hasAudioInRange(input: string, range: {startMs: number; endMs: number}, signal?: AbortSignal): Promise<boolean> {
+    const result = await runProcess(this.paths.ffprobe, ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', input], {signal});
+    const raw = z.object({streams: z.array(z.object({codec_type: z.string().optional(), start_time: z.string().optional(), duration: z.string().optional(), tags: z.object({DURATION: z.string().optional()}).optional()})), format: z.object({start_time: z.string().optional()})}).parse(JSON.parse(result.stdout));
+    const origin = Number(raw.format.start_time ?? 0) * 1000;
+    return raw.streams.filter((stream) => stream.codec_type === 'audio').some((stream) => {
+      const startMs = Number(stream.start_time ?? 0) * 1000 - origin;
+      const value = stream.duration ?? stream.tags?.DURATION;
+      const clock = value ? /^(\d+):(\d{2}):(\d{2}(?:\.\d+)?)$/.exec(value) : null;
+      const seconds = clock ? Number(clock[1]) * 3600 + Number(clock[2]) * 60 + Number(clock[3]) : Number(value);
+      // Unknown container duration remains conservatively present. A known ended
+      // stream must not make a legitimate silent tail fail output validation.
+      // Matroska DURATION tags describe the stream end timestamp; MP4's
+      // stream.duration describes its length. Adding start_time twice would
+      // incorrectly claim audio exists in the tail of a delayed stream.
+      const endMs = Number.isFinite(seconds) && seconds >= 0 ? (stream.duration !== undefined ? startMs + seconds * 1000 : seconds * 1000 - origin) : Infinity;
+      return startMs < range.endMs && endMs > range.startMs;
+    });
+  }
   private async encodingInfo(
     path: string,
     signal?: AbortSignal,
@@ -230,8 +248,14 @@ export class MediaService {
     previewAtMs?: number,
     onProgress?: (value: number) => void,
     videoOptions?: ExportVideoOptions,
+    range?: { startMs: number; endMs: number },
   ): Promise<void> {
     checkAbort(signal);
+    if (range) {
+      if (previewAtMs !== undefined || !Number.isSafeInteger(range.startMs) || !Number.isSafeInteger(range.endMs) || range.startMs < 0 || range.endMs <= range.startMs || range.endMs > media.durationMs)
+        throw new AppError('TIMING_INVALID', '章节导出范围无效');
+      media = { ...media, durationMs: range.endMs - range.startMs, hasAudio: media.hasAudio && await this.hasAudioInRange(input, range, signal), audioOffsetMs: Math.max(0, media.audioOffsetMs - range.startMs) };
+    }
     const options =
       previewAtMs === undefined
         ? exportVideoOptionsSchema.parse(videoOptions ?? {})
@@ -309,8 +333,10 @@ export class MediaService {
       "-loglevel",
       "error",
       "-y",
+      ...(range ? ['-ss', (range.startMs / 1000).toFixed(3)] : []),
       "-i",
       input,
+      ...(range ? ['-t', (media.durationMs / 1000).toFixed(3)] : []),
       "-vf",
       filter,
     ];
@@ -327,8 +353,7 @@ export class MediaService {
       args.push(
         "-map",
         "0:v:0",
-        "-map",
-        "0:a?",
+        ...(range && !media.hasAudio ? ['-an'] : ['-map', '0:a?']),
         "-c:v",
         encoder,
         ...profile.args,

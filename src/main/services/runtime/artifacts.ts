@@ -1,13 +1,12 @@
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rm, stat } from "node:fs/promises";
+import { mkdir, stat } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
-import { Readable } from "node:stream";
-import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import { pipeline } from "node:stream/promises";
 import * as yauzl from "yauzl";
 import { AppError, checkAbort } from "../../lib/errors";
 import type { Artifact } from "./manifest";
+import { ArtifactCache, type ArtifactDownloadOptions } from "./artifact-cache";
 
 export async function sha256(path: string): Promise<string> {
   const hash = createHash("sha256");
@@ -36,69 +35,11 @@ export async function downloadArtifact(
   destination: string,
   signal: AbortSignal,
   progress: (ratio: number) => void,
+  options?: ArtifactDownloadOptions,
 ): Promise<void> {
-  await mkdir(dirname(destination), { recursive: true });
-  for (let attempt = 0; attempt < 3; attempt++) {
-    checkAbort(signal);
-    try {
-      const response = await fetch(artifact.url, {
-        signal: AbortSignal.any([signal, AbortSignal.timeout(30 * 60_000)]),
-      });
-      if (!response.ok || !response.body)
-        throw new AppError(
-          "INSTALL_NETWORK",
-          `下载失败（HTTP ${response.status}），请检查网络并重试。`,
-        );
-      const length =
-        artifact.sizeBytes ||
-        Number(response.headers.get("content-length")) ||
-        1;
-      let received = 0;
-      const input = Readable.fromWeb(
-        response.body as WebReadableStream<Uint8Array>,
-      );
-      input.on("data", (chunk: Buffer) => {
-        received += chunk.length;
-        if (received > (artifact.sizeBytes || 4_000_000_000)) {
-          input.destroy(
-            new AppError("INSTALL_INTEGRITY", "下载文件超过预期大小。"),
-          );
-          return;
-        }
-        progress(Math.min(0.99, received / length));
-      });
-      await pipeline(input, createWriteStream(destination, { flags: "w" }), {
-        signal,
-      });
-      await verifyArtifact(destination, artifact);
-      progress(1);
-      return;
-    } catch (error) {
-      await rm(destination, { force: true });
-      checkAbort(signal);
-      if (error instanceof AppError && error.code === "INSTALL_INTEGRITY")
-        throw error;
-      if (attempt === 2)
-        throw new AppError(
-          "INSTALL_NETWORK",
-          "下载失败，请检查网络连接并重试。",
-        );
-      await new Promise<void>((resolvePromise, reject) => {
-        const cancel = (): void => {
-          clearTimeout(timer);
-          reject(new AppError("CANCELLED", "操作已取消"));
-        };
-        const timer = setTimeout(
-          () => {
-            signal.removeEventListener("abort", cancel);
-            resolvePromise();
-          },
-          300 * (attempt + 1),
-        );
-        signal.addEventListener("abort", cancel, { once: true });
-      });
-    }
-  }
+  const cache = options?.cache ?? new ArtifactCache(dirname(destination), "runtime");
+  const asset = options?.asset ?? { id: "model-base" as const, name: "下载文件", artifact };
+  await cache.acquire(asset, destination, signal, progress, options?.onPhase);
 }
 
 export function archiveDestination(root: string, name: string): string {

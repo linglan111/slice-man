@@ -13,6 +13,7 @@ import {
   verifyArtifact,
 } from "../../../src/main/services/runtime/artifacts";
 import { RuntimeService } from "../../../src/main/services/runtime";
+import { ArtifactCache } from "../../../src/main/services/runtime/artifact-cache";
 import { AppError } from "../../../src/main/lib/errors";
 import type { runProcess } from "../../../src/main/lib/process";
 
@@ -104,13 +105,12 @@ describe("runtime installation", () => {
     expect(requests).toBe(3);
     expect(await readFile(path)).toEqual(f.model);
   });
-  it("cancels an active streamed download and removes its partial file", async () => {
+  it("cancels an active streamed download, removes install staging and retains its durable prefix", async () => {
     const f = await fixture();
     const controller = new AbortController();
     const server = createServer((_request, response) => {
       response.writeHead(200, { "content-length": 100000 });
       response.write(Buffer.alloc(1000));
-      controller.abort();
     });
     servers.push(server);
     await new Promise<void>((resolve) =>
@@ -120,19 +120,20 @@ describe("runtime installation", () => {
     if (!address || typeof address === "string")
       throw new Error("Address unavailable");
     const path = join(f.root, "cancel-model");
+    const artifact = { ...f.modelArtifact, sizeBytes: 100000, url: `http://127.0.0.1:${address.port}` };
+    const cache = new ArtifactCache(f.root, "runtime");
+    const asset = { id: "model-base" as const, name: "Base", artifact };
     await expect(
       downloadArtifact(
-        {
-          ...f.modelArtifact,
-          sizeBytes: 100000,
-          url: `http://127.0.0.1:${address.port}`,
-        },
+        artifact,
         path,
         controller.signal,
-        (): void => {},
+        (ratio): void => { if (ratio > 0) controller.abort(); },
+        { cache, asset },
       ),
     ).rejects.toMatchObject({ code: "CANCELLED" });
     await expect(readFile(path)).rejects.toMatchObject({ code: "ENOENT" });
+    expect((await new ArtifactCache(f.root, "runtime").summary([asset])).totalBytes).toBe(1000);
   });
   it("downloads, verifies, smoke-tests, activates and reloads; GPU failure retains CPU", async () => {
     const f = await fixture();

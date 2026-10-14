@@ -4,6 +4,7 @@ import type {
   DownloadStatus,
 } from "../../../shared/contracts";
 import { Modal } from "./Modal";
+import { DownloadCacheInfo } from "./DownloadCacheInfo";
 import { downloadSettingsSchema } from "../../../shared/download-contracts";
 
 export function DownloaderDialog({
@@ -86,6 +87,15 @@ export function DownloaderDialog({
       setIsSaving(false);
     }
   }
+  async function clearCache(): Promise<void> {
+    setError(""); setIsSaving(true);
+    try {
+      const result = await window.api.download.clearDownloadCache();
+      if (result.success === true) setStatus(result.data);
+      else setError(result.error);
+    } catch { setError("下载缓存无法清除，请重试。"); }
+    finally { setIsSaving(false); }
+  }
   return (
     <Modal title="链接导入设置" onClose={onClose} isBusy={isBusy}>
       <p role="status">
@@ -97,6 +107,7 @@ export function DownloaderDialog({
         {Math.ceil((status?.sizeBytes ?? 0) / 1_000_000)}{" "}
         MB。失败更新保留原有可用安装。
       </p>
+      <DownloadCacheInfo cache={status?.downloadCache} isBusy={isBusy} onClear={() => void clearCache()} />
       <label>
         下载位置
         <input
@@ -232,7 +243,7 @@ export function DownloaderDialog({
             className="button"
             onClick={() => void window.api.download.cancel()}
           >
-            取消安装或下载
+            {status?.state === "installing" ? "取消安装（保留下载）" : "取消视频下载"}
           </button>
         ) : (
           <button className="button" onClick={onClose}>
@@ -251,7 +262,7 @@ export function DownloaderDialog({
           disabled={isBusy || !isLoaded || !status}
           onClick={() => void install()}
         >
-          {status?.ready ? "重新安装固定版本" : "一键安装下载工具"}
+          {status?.downloadCache?.assets.length ? "继续安装下载工具" : status?.ready ? "重新安装固定版本" : "一键安装下载工具"}
         </button>
       </footer>
     </Modal>

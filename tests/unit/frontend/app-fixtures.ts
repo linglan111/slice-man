@@ -22,15 +22,19 @@ export function stubApi(job: Job, options: { firstRun?: boolean } = {}): { api: 
   if (typeof ResizeObserver === 'undefined') vi.stubGlobal('ResizeObserver', class { observe(): void {} disconnect(): void {} });
   let handler: ((event: ProgressEvent) => void) | undefined;
   const api: AppApi = {
+    diagnostics: { list: vi.fn().mockResolvedValue({ success: true, data: [] }), detail: vi.fn(), readAnswer: vi.fn(), clear: vi.fn().mockResolvedValue({ success: true }) },
+    chapterCriteria: { list: vi.fn().mockResolvedValue({ success: true, data: { items: [] } }), save: vi.fn(), copy: vi.fn(), remove: vi.fn(), select: vi.fn() },
+    chapterExports: { list: vi.fn().mockResolvedValue({ success: true, data: [] }), export: vi.fn() },
     exportSettings: { status: vi.fn().mockResolvedValue({ success: true, data: { ...SAVED_EXPORT_SETTINGS } }), saveSettings: vi.fn(), chooseDirectory: vi.fn().mockResolvedValue({ success: true, data: null }) },
     profiles: { list: vi.fn().mockResolvedValue({ success: true, data: [] }), save: vi.fn(), remove: vi.fn(), test: vi.fn() },
-    runtime: { status: vi.fn().mockResolvedValue({ success: true, data: { installed: true, cpuReady: true, gpuReady: false, actualBackend: 'cpu', message: 'CPU ready', installedModels: ['base'], totalMemoryGb: 16, catalog: [] } }), install: vi.fn(), cancel: vi.fn() },
-    download: { status: vi.fn().mockResolvedValue({ success: true, data: { ready: false, version: '2026.08.19', denoVersion: '2.9.7', sizeBytes: 60470620, settings: downloadSettingsSchema.parse({ proxy: '' }), defaultDirectory: 'anonymous-downloads', state: 'idle', progress: 0, message: '' } }), saveSettings: vi.fn(), chooseDirectory: vi.fn().mockResolvedValue({ success: true, data: null }), install: vi.fn(), importUrl: vi.fn(), cancel: vi.fn() },
+    runtime: { status: vi.fn().mockResolvedValue({ success: true, data: { installed: true, cpuReady: true, gpuReady: false, actualBackend: 'cpu', message: 'CPU ready', installedModels: ['base'], totalMemoryGb: 16, catalog: [] } }), install: vi.fn(), cancel: vi.fn(), clearDownloadCache: vi.fn(async () => api.runtime.status()) },
+    download: { status: vi.fn().mockResolvedValue({ success: true, data: { ready: false, version: '2026.08.19', denoVersion: '2.9.7', sizeBytes: 60470620, settings: downloadSettingsSchema.parse({ proxy: '' }), defaultDirectory: 'anonymous-downloads', state: 'idle', progress: 0, message: '' } }), saveSettings: vi.fn(), chooseDirectory: vi.fn().mockResolvedValue({ success: true, data: null }), install: vi.fn(), importUrl: vi.fn(), cancel: vi.fn(), clearDownloadCache: vi.fn(async () => api.download.status()) },
     onDownloadStatus: vi.fn(() => vi.fn()),
     jobs: {
       list: vi.fn().mockResolvedValue({ success: true, data: [job] }), get: vi.fn(), importVideo: vi.fn(), updateOptions: vi.fn(), recognize: vi.fn(), recognizeAgain: vi.fn(), translate: vi.fn(),
       planReprocess: vi.fn(), recognizePartial: vi.fn(), translatePartial: vi.fn(), reviewSubtitles: vi.fn(), repairLoop: vi.fn(), acknowledgeFinding: vi.fn(),
       analyzeNames: vi.fn(), applyNames: vi.fn(), undoNames: vi.fn(),
+      planChapters: vi.fn(), updateChapters: vi.fn(),
       editSegment: vi.fn(), addSegment: vi.fn(), removeSegment: vi.fn(), setStyle: vi.fn(), designStyle: vi.fn(), preview: vi.fn(), playback: vi.fn().mockResolvedValue({ success: true, data: { url: '' } }), export: vi.fn(), cancel: vi.fn(),
     },
     onProgress: vi.fn((nextHandler) => { handler = nextHandler; return vi.fn(); }),

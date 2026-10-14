@@ -1,0 +1,143 @@
+# Research: Streaming diagnostics and chapter review
+
+- Query: Implement provider streaming into owned files with SQLite diagnostics; translate by chapters by default; review by chapters only when media duration is strictly over 30 minutes, preserving global evidence; keep recurring-name analysis global.
+- Scope: mixed (read-only repository and official protocol documentation)
+- Date: 2026-10-13
+- Status: planning only. No production credential access, live generation, paid calls, code changes, migrations or task activation.
+
+## Findings
+
+### Accepted direction and superseded recommendations
+
+This document supplements `ai-latency-and-translation.md`. User decisions supplied by the main session supersede its optional/default questions: text generation **streams to local files**, diagnostic metadata goes in **SQLite**, chapter translation is **default**, subtitle review partitions by chapters when `media.durationMs > 1_800_000` (exactly 30 minutes stays one original logical selection), and names remains **one global chronological analysis**. The user subsequently approved **retaining completed valid chapters on failure/cancellation and manually resuming only remaining chapters**. Therefore incremental chapter publication (option B below) is the chosen plan; option A is recorded only as the prior alternative.
+
+### Files found / code patterns
+
+| File / line | Existing responsibility and impact |
+| --- | --- |
+| `src/main/services/providers/lib/text-provider.ts:21–66,81–208` | Non-streamed fetch/body, three retries with resettable per-attempt timeout, protocol mapping. Introduce protocol stream readers and shared bounded diagnostic/file sink. Keep cloudASR multipart path distinct. |
+| `src/main/services/providers/lib/text-provider.ts:210–289` | Strict complete selected-ID translation + one correction; terminal streaming success does not replace this validation. |
+| `src/main/services/jobs/lib/job-service.ts:337–365,1050–1081,1113–1139,1186–1278` | Names/review continuous operation lease, report retention, strict validation and immediate prepublication profile/key/mode/revision guards. Add run identity without allowing files to publish Job results directly. |
+| `src/main/services/jobs/lib/review-request.ts:15–17,58–129,147–244` | Up to2000 targets and512KiB prompt, full-timeline sorted ordinals and canonical groups; pass entire originaltimeline as `all`, only chapter-owned selected targets as `selected`. |
+| `src/main/services/jobs/lib/reprocessing.ts:102,106–151,190–253` | Provider fingerprint, dependent report staleness, canonical30target/34context windows. Chaptertransport must not redefine thesewindows. |
+| `src/shared/reprocessing-contracts.ts:52–105` | Strict finding/assessment/contextGroup/report schemas. Report state has only `complete`/`stale`; assessments optional forlegacy, group max30/34, max10000assessments, findings max30000. No partial-run/coverage field. |
+| `src/shared/contracts.ts:68–79,264–275,303–312` | Profile timeout default120s/max300s, strict optionalJob metadata, transient progress stages. Add explicitstream/deadline settings and typed diagnostics separately. |
+| `src/shared/person-name-contracts.ts:12–17` | Strict complete candidate/report; file fragments cannot be a current nameReport. |
+| `src/main/db/migrations.ts:1–8`, `schema.ts:7–20`, `store.ts:23–75` | Bundled versionedSQL migrations currentlyv1; WAL/foreignkeys, transactional `PRAGMA user_version`, startup interrupted-state recovery. Add append-only migration and diagnostics repository; never rewritev1. |
+| `src/main/db/store.ts:113–145` | Validated atomic Job save with monotonicupdatedAt; publishing chapter report checkpoints requires existing save discipline. |
+| `src/main/index.ts:55–69`, `env-setup.ts:3–12` | userData app.db, dev/isolation paths; owned textfiles must stay in correspondingdata-root, not installedresources or repository. |
+| `src/main/lib/errors.ts:13–25`, `ipc/index.ts:83–90` | Sanitized errors; no arbitraryprovider message may leak throughnewdiagnostics. |
+| `tests/unit/backend/providers.test.ts`, `review-request.test.ts` | Existing protocol/429/strictJSON/correction tests; extend with SSEmockheaders/body/errors. |
+| `tests/integration/backend/reprocessing.test.ts:1113,1442,1516,1544,1562,1576,1608` | Originalcanonical equality, aggregate1027, boundedcorrection, terminalfailure and cancellation retention. Preserve <=30min expectations; add >30min fixtures. |
+| `tests/integration/backend/person-names.test.ts:36,89,177,189,196` | Global distant aliasgrouping, profile/key/mode freshness, size/cancel/source-only retention; remainglobal regardless duration. |
+
+### Official protocol facts (primary sources)
+
+| Surface | Request / extracted output / completion / usage |
+| --- | --- |
+| **OpenAI Chat** | `stream:true`; append only choice0 `delta.content`, track refusals and `finish_reason`. Normal text expects `stop`; `length` is truncation, filter/tool branches are not usable text. SSE terminator `[DONE]`; optional `stream_options.include_usage:true` adds an emptychoices usage chunk before it. Missing usage on interruptedstream is unknown, notzero. [Chat events](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events), [Chat create](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create). |
+| **OpenAI Responses** | Stream typed events. Accumulate `response.output_text.delta` peritem/content indexes. `response.output_text.done` finalizes thatpart; overall success requires `response.completed` with complete status. `response.incomplete`, `response.failed`, error/refusal events fail this workflow. Completed response carriesusage; avoid doublecounting finalizedtext and deltas. [Responses events](https://developers.openai.com/api/reference/resources/responses/streaming-events). |
+| **Anthropic Messages** | `stream:true` on existingmessages endpoint. Events run message_start, indexedcontent_block_start/delta/stop, message_delta, message_stop; append text_delta only. message_delta usage is cumulative. Ping can occur; HTTP200 may still emit an error event such as overloaded_error. Track stop_reason and require normalend_turn (max_tokens→truncated); ignore thinking/signaturepayload for savedtext. [Anthropic streaming](https://platform.claude.com/docs/en/build-with-claude/streaming). |
+| **Gemini** | Use `models/{id}:streamGenerateContent?alt=sse`, samebody and existingheaderkey. SSEdata are GenerateContentResponse chunks; append selectedcandidate nonthought textparts, preserve candidateindex. Require terminalfinishReason STOP; MAX_TOKENS means truncation, safety/other reasons fail. `usageMetadata` contains prompt/candidate/total/thought/cachetokencounts whenavailable. [Gemini API](https://ai.google.dev/api/generate-content#method:-models.streamgeneratecontent). |
+| **DeepSeek Chat compatibility** | Uses chatdeltas and `[DONE]`. `reasoning_content` precedes finalanswer and must NOT enter JSONtextfiles/logs. Usage can be on final ordinarychoicechunk, unlike OpenAI's emptychoicesusage chunk; parseboth. Nonstop `insufficient_system_resource`/`aborted` fail. [DeepSeek Chat](https://api-docs.deepseek.com/api/create-chat-completion/). Queueing may send SSEcomment `: keep-alive`; nonstream queueing may sendemptylines; provider closes after10min withoutinference. [DeepSeek keepalive](https://api-docs.deepseek.com/quick_start/rate_limit/). |
+
+The exact requestmodel/thirdpartyendpoint remains usersupplied. Do not hardcode currentmodelnames, silently enableextra thinking fields or infer that every OpenAI-compatibleendpoint supports Responses, include_usage or SSE. Repoprotocolheaders/basepath must remain authoritative.
+
+### SSE reader contract (application recommendation)
+
+Use one shared bounded framing layer and separate protocol semantic adapters. [WHATWG SSE](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation) specifies UTF-8, blankline event dispatch, `data:` linejoining and comment handling; the application must implement these independently of networkchunk boundaries. It should use incrementalUTF-8decoder, accept CRLF/LF/CR across chunks, optional leadingBOM, concatenate multiline data withnewlines, discardcomments without treating them asJSON, and ignore irrelevant fields. Never apply `split('\n\n')` to individualreadchunks or parseeverychunk ascompleteJSON. A final undelimited frame is not proof ofcompletedSSE.
+
+Maintain bounded unreadframebytes, totalwirebytes, acceptedfinaltextbytes, eventcount/rate and protocolstate. UTF-8decoder malformedinput, oversizeframe/body, malformedJSONevent, impossibleindex/changeofresponseidentity or inconsistentterminalsequence fails safely. Future unknown **well-formed** eventtypes can beignored asheartbeat, but malformed requiredevents cannot be silentlyskipped. Only one supportedassistanttextanswer isallowed for thispipeline; reject unexpectedtoolcalls rather than concatenatearguments into subtitles. Track protocolfinish +streamterminal; **EOF beforeterminal fails even if accumulatedtext happens toparse asvalidJSON**. ForGemini require STOP +cleanstreamcompletion rather thanChat's `[DONE]`.
+
+Reasoning_content / Anthropicthinking / Gemini thoughtparts / Responsesreasoning events are heartbeat/metrics only: record counts/bytecounts and timestamps, **discardtext immediately**, neverpersist/display reasoning or rawframes. Finalanswertext may itself include citedsubtitles; keep itlocalowned and never dump it into diagnosticmetadata.
+
+Normalfinaltext retains currentstrictJSON parser and operationvalidators. Streaming output does not authorize fabricatedmissingassessments, repairedtimestamps or incompletecandidates. Updatefinishreason detection in nonstreamcompatpath too; currentChatcode explicitly tests onlylength/refusal and could otherwise accept unsupportedprovider stopreasons (`text-provider.ts:197–207`).
+
+### Custom endpoint compatibility without duplicate paid requests
+
+Recommend strictprofile setting `streaming: auto | required | disabled`, legacydefault auto. Streamingenabled requests set only knownprotocolfields; usagecapture can be an explicitcapability or omittedfor unknowncustomendpoint to avoidunsupportedoptions. Requestcapabilityschema changes need backwardcompatibledefaults and rendererhelp.
+
+- If an attempted streamingrequest returns successful `application/json` containing the **full existingprotocolresponse**, consume **that same response** via theexistingadapter as compatibilityfallback. Do not POSTagain justbecause Content-Type differs. Logrequestedstream=true/actualstream=false and keep boundedheader/body deadlines.
+- If explicitpre-generationHTTP400/404/405/501 indicates unsupportedstreamoption/route, show actionableprofilemodehelp. Do **not** automaticallyissue nonstreamgeneration because statusalone does notprovably guarantee nocost, and customprovider errorbodies may besecret-bearing. Usercan selectdisabled and manuallyretry; futurecapability detection must be explicit and tested.
+- Timeout, partialstream, EOF, terminalerror, networkfailure or malformedstream nevertrigger automaticnonstreamfallback, concatenation withanewgeneration or transparentwhole-request replay. Retainpartialfile/diagnostics and priorpublishedresult. Existingallowed one contentcorrection is a separatelylogged fresh logicalgeneration aftercomplete outputvalidation, not transportrecovery.
+- AutomaticboundedHTTP429/503 retries **beforeacceptedbody** canremain underdefinedpolicy withcappedRetry-After/jitter and totalrunbudget. Midstreamprovidererror afterHTTP200 mustterminate theattempt; automaticreplayrisksduplicatepaidwork. Logallattempts. Names/reviewcorrectionlimits remain unchanged; a singlelogicalgeneration maystillhave explicitpre-bodytransient retries.
+
+### Header / idle / overall deadlines
+
+Currentprofile.timeoutMs gates theentire nonstreamresponse. Replacing itrequires documentedmigrationsemantics; proposal:
+
+1. **Headerdeadline**: from requeststart until headers, boundedconfiguredvalue (retain legacy120s defaultasheader/idle proposal).
+2. **Streamidledeadline**: after headers, reset on validprovideractivity, includingkeepalivecomments/ping and reasoningheartbeat. Counttransportbytes separately fromacceptedanswerdeltas; whitespace/keepalive can showqueued/alivewithout implying answerprogress.
+3. **Overallattemptdeadline**: independent finite cap, **30 minutes default with configurable 1–60 minutes** is the main session's reviewable-plan proposal; never reset by heartbeats. Logs distinguish header_timeout/idle_timeout/overall_timeout. When the overall cap is shorter than a header/idle duration, the overall deadline wins. The 10-minute DeepSeek queue possibility helps explain why the existing 120-second whole deadline can fail but does not mandate waiting indefinitely.
+4. **Wholeoperationdeadline**: optional largerboundedbudget for multiplechapters, backoff andonecorrection; eachattempt consumesbudget. Do notreuse one15mincap aswholelongvideo limit withoutcommunicating thatchoice.
+
+Use main-ownedAbortController plusclearabletimers in finally; separateusercancellation precedence fromdeadlinecode. Await/cancelreader andclosefiles onallpaths before leaseisreleased; noorphaned promises. Track lastvalidactivity/lastanswerdelta separately; overallcap preventsunendingping/whitespace. Localfswrite time counts inoverallelapsed, but distinguishlocal I/Ostall fromnetworkidle toavoidslowdisk misdiagnosis. Exactdefaults/caps andprofile UIwording needplanningapproval. Streaming improvesvisibility and idlebehavior, not actualmodelspeed.
+
+### Owned partial files and validated final artifacts
+
+Recommendedowner: onegenerationattempt UUID directory under `userData/ai-runs/<runId>/<requestId>/`; appgenerates relativefileidentifiers, notprovider/user suppliedpaths. Exclusivecreate, no pathtraversal/symlinkescape or clobber. Use only finalanswerdeltas in `answer.partial.txt`, boundedUTF-8bytes; noheaders,prompt,cookies,key,rawSSE,reasoning orprovidererrortext. A separatetrusted metadatajson is optional, SQLiteownsdiagnostics. Responsefilecontains potentiallyprivate generatedsubtitletext and shouldnotautoopen orautoexporttoGitHub.
+
+- Awaitorderedfilewrites and respectbackpressure before readingmore. Do notenqueueunboundedpendingwrites orwrite DBoncepertoken. Throttlecounter/checkpoint commits; maintain boundedbuffers. [Node24 FileHandle](https://nodejs.org/docs/latest-v24.x/api/fs.html#filehandlewritestring-position-encoding) documentswrite/sync primitives; serializedwrites andexplicitflush areapplicationchoices.
+- Aprocesscrash shouldretain completedflushedbytes; close/sync atboundedcheckpoints/terminal. Describe these ascrashrecoverable, notguaranteedpowerfail durability for eachtoken. Fsync cadence balanceslatency/diskload. Nodepartialwrites andENOSPC needtests; localfilewritefailure abortsnetwork and marksfile/logfailed, preservingpreviouspublishedJob.
+- After normalprotocolterminal, sync/close; parsecompleteanswer andperformtrustedoperationvalidation. Write `validated-result.json.tmp` thenrename/no-clobberownfinal withsize/hash. `answer.complete.txt` means transportcomplete; only `validated-result.json` meansdomainvalidated. Invalid/truncatedoutput stayspartial/invaliddiagnosticartifact, nevercurrentreport.
+- Filesystemrename andSQLite transaction are **not one atomiccommit**. Use explicitstates (receiving → transport_complete → validated → published), contenthash/size andidempotentrecovery. Writefinalfilefirst, thenSQLite references/status; orphanfile recoveryis safe. Do not markpublishedbeforeJobsave; optionallylink acceptedresultandJobreportID inone DBtransaction. [SQLite atomiccommit](https://www.sqlite.org/atomiccommit.html) guarantees database transactionproperties, notcrossfilesystempair atomicity.
+- Startupreconcilesrows inreceiving/validating tointerrupted, inspects onlyownedboundedfiles, and nevercreatespaidrequests automatically. A completevalidatedfile matchingrun/targets/source/profile/key/rubricidentity mightbe acceptedwithoutproviderreplay onlythroughan explicittrustedresume path andfreshnesschecks. Partialtext cannot beresumed byHTTPRange; aLLMcontinuation is anewgeneration withschema/coverage risk. NoautomaticJSONfragment splicing.
+
+### SQLite diagnostics and migration shape
+
+Appendmigrationv2+ to `MIGRATIONS` withnewtables, keepbundledASARmigrationdelivery. Store currentlyruns eachmigration transactionwithuser_version (`store.ts:29–42`); testupgradefromexistingv1withoutmutatingJobs/keys andnewerDBguard. Preferseparatediagnosticrepo, notad-hocJSONproperties inside strictJobpayload orthousands ofprogressJobsaveupdates.
+
+Proposed strict records:
+
+- `ai_runs`: UUID, optionaljobID, operationenum(review/names/translate/chapters/style), requestedrevision, profileID/fingerprint snapshot, chapterplanID/sourcefingerprint/selectiondigest/rubricversion whereapplicable, startedAt/completedAtms, state(running/completed/failed/cancelled/interrupted), requested/validated/publishedtargetcounts, requested/completedchaptercounts, selectedorderedIDs/checkpoint references ifresumable. UseboundedtrustedIDarrays in dedicatedcoverage table/JSON, notrawprompt.
+- `ai_requests`: requestUUID, runUUID, chapterID/workunit, attempt/correctionordinal, protocol/mode/model snapshot, streamrequested/actual, requestedtimeoutsettings, promptUTF-8bytecount/cuecount, headersAt/firstByteAt/firstAnswerAt/lastByteAt/completedAtms, monotonicelapsedmeasurements, HTTPstatus, normalizedfinishreason/errorcode/errorphase, providerrequestID(optionallyboundedASCII), wire/textbytes, event/heartbeatcounts, optionalusageJSON(numbersonly), ownedrelativeartifactIDs,size/hash, state andvalidated/publishedflags. State lifecyclewithSQLuniqueness guardspreventsduplicateattemptcompletion.
+- NoSQLcolumn forkey/rawURL/baseURLquery/authorization/headers/prompt/subtitles/rawprovidererror/reasoning. ProfileID remainsuseful afterprofiledeletion via nullable/setnull ornosnapshotFK; jobdeletionretention policy must beexplicit. Do notcascade logspoorly orleavefiles orphaned.
+- Unknownusage isNULL, not0. OpenAI/Responses/DeepSeek tokenize usage differently fromGemini/Anthropic; preservebounded normalizednumericfields plusprovidernumericdetails. Anthropic cumulative counters overwritelatest; never sumallstreamvalues. Separatemultipleattemptusage so totalsreflect retries whenknown; noestimatedbilledcostwithoutpriceconfig.
+- Usecursorpaginatedlist/detailsandlocalopenartifact commands withallowlistedopaqueIDs; preload/IPCvalidated. Display phase, elapsed, first/lastbyte, attempts, completedchaptercoverage, optionalusage andstableerror. No automaticupload orrawtextdiagnosticsharing.
+- Retention requires age/count/bytebudgets (e.g.30days/last200runs/cap500MiB proposals, finalproductdecision), noactivefile deletion, separatelyconfigurable sensitiveanswerfiles vsmetadata. Purgeonlyresolvedownedpaths underdata-root; DB/files are reconciled onrestart. Offlineinspection/export canbeuser-triggered; exportmust excludesensitivefiles bydefault unlesschosen.
+
+### Chapter review with original global context
+
+**Policy dispatch**: compare validatedmedia duration to1,800,000ms, notselectedduration, cuecount, estimatedspeech orfirst-lastcue span. Exactly30min andbelow keeporiginalcomplete-selectionrequest; namesneveruses thisswitch. Longer videosuse reusablecompletecoverage chapterplan (<20min constraint tobedefinedexactly), intersectrequestedselection witheachchapter; highlight-onlyplans cannotownordinaryreviewcoverage. Aonecue selectedrecheck inlongvideo stillusesglobalcontexts; skipemptychapterrequests.
+
+**Deterministic ownership**: sort originalglobaltimeline sameasexistingrequestbuilder. Assign eachselectedID toonechapter only (recommendcue.startMs inhalf-open `[chapter.startMs,chapter.endMs)`, with explicitlastend/in-media logic). Edge-crossing cues remainwhole andsingleowned; overlapdoesnot duplicatereviewtargets. RequireunionofownedIDs equalrequestedIDs, noduplicate/unknown/omittedIDs beforeprovider work. Coverageplans needexplicitgap/silencepolicy; acueoutsideallchapters isplaninvalid, notsilentlyskipped.
+
+**Reuse `createReviewRequest(allGlobal, chapterTargets, mode)`**. Thisalreadycalls `reviewWindows(allGlobal, mode)` andfilters itsoriginalwindowtargets (`review-request.ts:72–90`), retainingglobalordinalaliases evenifselectedIDs havegaps. Neverpasschapter-sliced `all`. Aglobalcanonicalgroup straddlingchapterboundary canappearinmultiplechapterrequests withdifferenttargets butidenticalfullcontext/groupID/fingerprints. Twoadjacentneighbors outsidechapter remainadmittedbecause groupdepends onglobaltimeline, notchaptercut. Chaptersorganize transport only; theycannotbroadenallowedreviewevidence tootherchaptertablecues.
+
+**Validation remainsstrict**: everychapter-ownedtarget exactlyone tuple; explicit[] meansnone, missingmeansfailure; originalgroups/admittedneighbor/timing rulesunchanged (`validateReviewResponse`, `validateAssessments`). Perchapterrequest keeps2000target/512KiB+correctionreserveguards; densechapteroverlimit needsanexplicitboundedwork-unit ruleinplanning, notconcealedpayloadtruncation. For<=30min oversizerequires explicitsmallerselection, preservingcurrentcontract. Chapterboundary cannotremovegradingdependency: editoutsideownedchapter butinsidecanonicalcontext invalidatesdependentassessments asbefore. Atmostonefullchapter-target correction (notwholevideo replay) perdefinedpolicy; fixedglobalcontext mustremainidenticaloncorrection. Overallcorrectionrequest budget maybeneededtoavoidNchapters multiplyingcost silently.
+
+**Lease/freshness**: oneowner holdsrun acrosschapterpreparation/generation/correction/validation/aggregation. Anyconcurrencyreturnsdrafts only, coordinatoralonecommitsintrustedsortedorder. Beforeeachcheckpointandfinalpublish recheckrevision, rubric, mode, source/contextfingerprints, profileidentity/key. Cancellationstopsqueuedwork/inflightstreams andawaitssettlement; nofurtherpublishes. Repairautomaticreassessment mustuse samepolicy yet preservecommittedround andunknownremainingcount iffcoverage incomplete.
+
+### Publication decision: incremental chapter results approved
+
+Current `reviewReportSchema` hasstrict `complete|stale` andnomode/remainingcoverage/runmetadata (`reprocessing-contracts.ts:87–105`). Existing `reviewDraft` saves onlyaftereveryrequestedtargetvalidates, constructsonecomplete report andchecksabortimmediately (`job-service.ts:1186–1278`). Its `complete` meanscomplete for theexplicitreviewselection, notnecessarilyallvideo. Newlongvideooperation must neverreuse itas "entirerequestedrun complete" afteronlyonechapter. Currentlegacyfiltersemantics relyonexplicitassessments andmustnotinfernoneforabsenttargets.
+
+**A. Final atomic report (prior alternative, not selected):** persist validated chapter drafts/checkpoints independently, keep the prior published report visible throughout, then merge once after all requested chapters validate. This minimizes legacy behavior changes but does not meet the newly approved incremental-results direction.
+
+**B. Incremental atomic chapter publication (approved):** each complete chapter merge publishes legitimate grades for its requested targets; earlier chapter results survive later failure/cancellation and resume processes only remaining targets. Need explicit run requested IDs/published IDs/pending IDs and state, avoiding whole-run complete/all-clear claims. Preserve previous compatible grades/findings for unprocessed chapters and show their real applicability according to fingerprints; a replaced chapter loses its own prior findings only after a validated replacement. Report-ID changes affect acknowledgment guards; ignored intent requires compatible identity checked before each merge. Whole-request completion occurs only when all requested coverage finishes. Add strict optional `reviewRun`/report-coverage metadata rather than injecting undeclared fields into the existing strict schema. Partial grades are usable results, but pending cues remain unreviewed/recheck according to existing metadata; never fill pending coverage with none.
+
+Eitherchoice canresume**completevalidatedchapters**, notpartialJSON orhalfgrade. Onrestart running→interrupted, noautomaticpaidcall; revalidatecheckpoint/source/profile/rubric/selectedIDs/context andownedartifacthashes. Keyrotationisnotpersistableasplaintextfingerprint; useexistingkeycomparison duringlivework andconservativeresumevalidation/credentialgenerationidentity, withschema decisions. Reportmetadata changes donotincrementcontentrevision orinvalidatevideoexports. Namesstillretainsoneglobalfinalatomicreport. Repairmustnot declareconvergenceuntilallrequiredreassessmentscomplete.
+
+### Validation plan
+
+- SSEframing acrossbyte/surrogate/multiline/CRLF boundaries; validcomments/ping/reasoningonly; hugeframes/whitespace/unknownfutureevents; response-ID/indexmismatch; tool/refusal/length/EOF/errorafter200; malformedfinalJSON despiteSTOP; validJSON despiteEOF remainsfailure.
+- Protocolfixtures forChat extraemptyusagechunk andDeepSeek samefinalchoiceusage; Responsesdeltas+done+completed cannotdoubleappend; Anthropic cumulativeusage/blockindexes/message_stop/overload; GeminiSTOP/thoughtparts/usage/safety/max; same-responseapplicationJSONfallback; unsupportedstream nosecondPOST.
+- Deadlines: headerstall, heartbeatalivewithoutanswer, idleafterpartial, totalcapdespitecontinuouskeepalive, bounded429Retry-After/backoff, usercancelprecedence, noauto localtimeoutretry, cancelcleantimer/reader/files/listeners. ValidatewithlocalHTTPserverandactualElectronruntime, nopaidprovider.
+- Fileownership: exclusivefiles, serializedpartialwrites, boundedbytes, ENOSPC/write/syncfailure, restartbetweenfileandDBstates, interruptedreconciliation, hash mismatch, noJSONfragmentpublication; nochainofthought orsecretstoredanywhere, retentioncannotdeleteactive/unownedpaths.
+- Migrationv1existingjobs/protectedkeys unchanged, freshDB/newerDBguard, paginateddiagnosticrecords, provider/jobdeletionandpurge reconciliation, NULLusage semantics, noSQLprogresswritepertoken.
+- Chapterduration boundary1,799,999/1,800,000/1,800,001ms, selectiononecue inlongmedia, disjointselectedtargets, nohighlightcoveragegaps, singleownershipforcrossing/overlappingcues; reuseglobalcontextIDs/ordinals atcut andseverecontext/timingrules; strictperchaptercoverage, correctionlimit, failure/cancel/stale retention and explicitlychosenpublicationbehavior; resumeonlyfreshvalidatedcheckpoint without falseallclear.
+- Preserveexistingnamesglobaldistantvariantsin>30minfixture, source-onlyzero translation, originalreviewone-logicalselection for<=30min, allcurrentignore/repair/contextstalenesscases.
+
+## Related specs and references
+
+- `.trellis/spec/shared/subtitle-review-reprocessing.md`: previous onecomplete-selection reviewcontract must beupdatedonlyfor accepted >30mintransportpolicy; canonicalevidence/invalidation/atomicrepair remainsunchanged.
+- `.trellis/spec/shared/person-name-review.md`: fullglobalnames, literalgrounding andoldreportretention stayunchanged.
+- `.trellis/spec/shared/subtitle-contracts.md`: strictIPC/preload/main schemas, no secretsinlogs/artifacts, mainownership, per-batchretention andexport integrity.
+- `.trellis/spec/backend/database.md`, `logging.md`: transactional versionedmigrations, timestampms andscoped structuredsanitizeddiagnostics. Actualcode usesbundledSQLarray, notspec's illustrativeDrizzlemigrationfolder; followcurrentimplementation.
+- Official URLs above accessed2026-10-13; applicationpackages remain Electron42.11.11, Nodeengine24.17.x, Zod4.6.5, better-sqlite3 12.11.1. Officialdocs canaddprotocolevents: semanticparserignoreoptionalunknown butrequireknownnormalterminal, ratherthanstrictclosedwireobjectforallproviderfields.
+
+## Caveats / Not Found
+
+- Actualuserprofile/network/model/queue timingsremainunknown; streaming/loggingprovidesfutureevidence, cannotretroactivelyproveoriginaltimeoutcause. Noactualprovider behaviorverified.
+- Incremental chapter publication is now approved. Header/idle reuse of the profile's existing 120-second default, 30-minute overall default with configurable 1–60 minutes, and stream auto/disabled compatibility are the main session's reviewable-plan proposals. Log/file retention budgets, precise capability UI and dense-chapter work-unit limits still require explicit design bounds; no new user question is implied where the plan can state reasonable defaults for review.
+- Thisresearch doesnotpromisestreamingmakesAIcompute faster, lowersbillabletokens, makespartialLLMresponse resumable, orprovidesfilesystem+SQLite distributedatomicity.

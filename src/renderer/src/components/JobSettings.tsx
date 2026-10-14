@@ -6,7 +6,7 @@ type Props = { job: Job; profiles: Profile[]; runtime: RuntimeStatus | null; isB
 export function JobSettings({ job, profiles, runtime, isBusy, onChange, onInstall, onProfiles }: Props): ReactNode {
   const options = job.options;
   function update(patch: Partial<JobOptions>): void { onChange({ ...options, ...patch }); }
-  function profileSelect(label: string, key: 'recognitionProfileId' | 'translationProfileId' | 'styleProfileId' | 'reviewProfileId', onlyOpenai = false): ReactNode {
+  function profileSelect(label: string, key: 'recognitionProfileId' | 'translationProfileId' | 'styleProfileId' | 'reviewProfileId' | 'chapterProfileId', onlyOpenai = false): ReactNode {
     return <label>{label}<select aria-label={label} disabled={isBusy} value={options[key] ?? ''} onChange={(event) => update({ [key]: event.target.value || undefined })}>
       <option value="">选择 API 服务</option>{profiles.filter((profile) => !onlyOpenai || profile.protocol === 'openai').map((profile) => <option value={profile.id} key={profile.id}>{profile.name}</option>)}</select></label>;
   }
@@ -27,6 +27,9 @@ export function JobSettings({ job, profiles, runtime, isBusy, onChange, onInstal
     {options.translationEnabled && profileSelect('翻译服务', 'translationProfileId')}
     {profileSelect('AI 检查服务（可选）', 'reviewProfileId')}
     {profileSelect('AI 样式服务（可选）', 'styleProfileId')}
+    {profileSelect('章节分析服务（可选）', 'chapterProfileId')}
+    <label>章节并发数<select aria-label="章节并发数" disabled={isBusy} value={options.chapterConcurrency ?? 2} onChange={(event) => update({chapterConcurrency: Number(event.target.value)})}><option value={1}>1 · 顺序处理</option><option value={2}>2 · 默认</option><option value={3}>3 · 并行处理</option></select></label>
+    <p className="hint">默认按不超过 20 分钟的章节翻译；超过 30 分钟的视频按章节检查。未指定章节服务时，使用本次翻译或检查所选服务；人名检查结合全片字幕。</p>
     <button className="text-button" onClick={onProfiles}>管理 API 服务 →</button>
   </section>;
 }

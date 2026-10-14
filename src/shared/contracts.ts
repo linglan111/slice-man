@@ -1,4 +1,10 @@
 import { z } from "zod";
+import type { ProviderDiagnostic, DiagnosticsListInput } from './provider-diagnostics-contracts';
+import type { CriterionLibrary, SaveCriterionInput, CriterionIdentity, ChapterExportInput, ChapterExportRun } from './chapter-export-contracts';
+import type { ArtifactCacheSummary } from "./artifact-cache-contracts";
+import { chapterPlanSchema, chapterReviewRunSchema } from './chapter-contracts';
+import type { ChapterPlan, ChapterReviewRun, PlanChaptersInput, UpdateChaptersInput } from './chapter-contracts';
+export * from './chapter-contracts';
 import { nameReportSchema, nameBatchSchema } from './person-name-contracts';
 import type { NameReport, NameBatch, AnalyzeNamesInput, ApplyNamesInput, UndoNamesInput } from './person-name-contracts';
 export * from './person-name-contracts';
@@ -77,6 +83,8 @@ export const profileInputSchema = z
     apiKey: z.string().max(10000).optional(),
     sessionOnly: z.boolean().default(false),
     timeoutMs: z.number().int().min(1000).max(300000).default(120000),
+    streaming: z.enum(["auto", "disabled"]).optional(),
+    textTimeoutMs: z.number().int().min(60000).max(3600000).optional(),
     maxUploadBytes: z
       .number()
       .int()
@@ -170,6 +178,8 @@ export const optionsSchema = z
     recognitionProfileId: idSchema.optional(),
     translationProfileId: idSchema.optional(),
     reviewProfileId: idSchema.optional(),
+    chapterProfileId: idSchema.optional(),
+    chapterConcurrency: z.number().int().min(1).max(3).optional(),
     translationEnabled: z.boolean().default(true),
     styleProfileId: idSchema.optional(),
     modelId: z.enum(["base", "small", "large-v3-turbo"]).default("base"),
@@ -224,6 +234,9 @@ export type Job = {
   repairRun?: RepairRun;
   nameReport?: NameReport;
   nameBatch?: NameBatch;
+  chapterPlan?: ChapterPlan;
+  customChapterPlan?: ChapterPlan;
+  reviewRun?: ChapterReviewRun;
 };
 export const stageSchema: z.ZodType<Stage> = z
   .object({
@@ -276,6 +289,9 @@ export const jobSchema: z.ZodType<Job> = z
     previewUrl: z.string().optional(),
     outputs: z.array(z.string()),
     reviewReport: reviewReportSchema.optional(),
+    chapterPlan: chapterPlanSchema.optional(),
+    customChapterPlan: chapterPlanSchema.optional(),
+    reviewRun: chapterReviewRunSchema.optional(),
     repairRun: repairRunSchema.optional(),
     nameReport: nameReportSchema.optional(),
     nameBatch: nameBatchSchema.optional(),
@@ -286,6 +302,7 @@ export const profileSchema = profileInputSchema
   .extend({ id: idSchema, hasKey: z.boolean() })
   .strict();
 export type RuntimeStatus = {
+  downloadCache?: ArtifactCacheSummary;
   installed: boolean;
   cpuReady: boolean;
   gpuReady: boolean;
@@ -302,7 +319,7 @@ export type RuntimeStatus = {
 };
 export type ProgressEvent = {
   jobId?: string;
-  stage: StageName | "install" | "review" | "repair" | "names";
+  stage: StageName | "install" | "review" | "repair" | "names" | "chapters";
   progress: number;
   message: string;
   job?: Job;
@@ -317,6 +334,23 @@ export type ExportInput = ExportVideoOptions & {
   quality?: "balanced" | "high" | "small";
 };
 export type AppApi = {
+  diagnostics: {
+    list(input?: DiagnosticsListInput): Promise<Result<ProviderDiagnostic[]>>;
+    detail(id: string): Promise<Result<ProviderDiagnostic>>;
+    readAnswer(id: string): Promise<Result<{ text: string; truncated: boolean }>>;
+    clear(ids?: string[]): Promise<Result<void>>;
+  };
+  chapterCriteria: {
+    list(): Promise<Result<CriterionLibrary>>;
+    save(input: SaveCriterionInput): Promise<Result<CriterionLibrary>>;
+    copy(input: CriterionIdentity): Promise<Result<CriterionLibrary>>;
+    remove(input: CriterionIdentity): Promise<Result<CriterionLibrary>>;
+    select(input: { id?: string }): Promise<Result<CriterionLibrary>>;
+  };
+  chapterExports: {
+    export(input: ChapterExportInput): Promise<Result<ChapterExportRun | null>>;
+    list(jobId: string): Promise<Result<ChapterExportRun[]>>;
+  };
   exportSettings: {
     status(): Promise<Result<ExportSettings>>;
     saveSettings(input: ExportSettingsInput): Promise<Result<ExportSettings>>;
@@ -324,6 +358,7 @@ export type AppApi = {
   };
   download: {
     status(): Promise<Result<DownloadStatus>>;
+    clearDownloadCache(): Promise<Result<DownloadStatus>>;
     saveSettings(input: DownloadSettingsInput): Promise<Result<DownloadStatus>>;
     chooseDirectory(): Promise<Result<DownloadStatus | null>>;
     install(): Promise<Result<DownloadStatus>>;
@@ -345,6 +380,7 @@ export type AppApi = {
   };
   runtime: {
     status(): Promise<Result<RuntimeStatus>>;
+    clearDownloadCache(): Promise<Result<RuntimeStatus>>;
     install(input: {
       modelId: "base" | "small" | "large-v3-turbo";
       preferGpu: boolean;
@@ -355,6 +391,8 @@ export type AppApi = {
     list(): Promise<Result<Job[]>>;
     get(id: string): Promise<Result<Job>>;
     importVideo(options?: ImportOptions): Promise<Result<Job | null>>;
+    planChapters(input: PlanChaptersInput): Promise<Result<Job>>;
+    updateChapters(input: UpdateChaptersInput): Promise<Result<Job>>;
     planReprocess(input: PlanReprocessInput): Promise<Result<ReprocessPlan>>;
     recognizePartial(input: RecognizePartialInput): Promise<Result<Job>>;
     translatePartial(input: ReprocessInput): Promise<Result<Job>>;

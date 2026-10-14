@@ -16,6 +16,23 @@ async function invoke<T>(channel: string, input?: unknown): Promise<Result<T>> {
       };
 }
 const api: AppApi = {
+  diagnostics: {
+    list: (input) => invoke("diagnostics:list", input),
+    detail: (id) => invoke("diagnostics:detail", id),
+    readAnswer: (id) => invoke("diagnostics:readAnswer", id),
+    clear: (ids) => invoke("diagnostics:clear", ids),
+  },
+  chapterCriteria: {
+    list: () => invoke("chapterCriteria:list"),
+    save: (input) => invoke("chapterCriteria:save", input),
+    copy: (input) => invoke("chapterCriteria:copy", input),
+    remove: (input) => invoke("chapterCriteria:remove", input),
+    select: (input) => invoke("chapterCriteria:select", input),
+  },
+  chapterExports: {
+    export: (input) => invoke("chapterExports:export", input),
+    list: (jobId) => invoke("chapterExports:list", jobId),
+  },
   exportSettings: {
     status: () => invoke("exportSettings:status"),
     saveSettings: (input) => invoke("exportSettings:saveSettings", input),
@@ -28,6 +45,7 @@ const api: AppApi = {
     install: () => invoke("download:install"),
     importUrl: (input) => invoke("download:importUrl", input),
     cancel: () => invoke("download:cancel"),
+    clearDownloadCache: () => invoke("download:clearDownloadCache"),
   },
   onDownloadStatus: (handler) => {
     const listener = (
@@ -48,6 +66,7 @@ const api: AppApi = {
   },
   runtime: {
     status: () => invoke("runtime:status"),
+    clearDownloadCache: () => invoke("runtime:clearDownloadCache"),
     install: (input) => invoke("runtime:install", input),
     cancel: () => invoke("runtime:cancel"),
   },
@@ -55,6 +74,8 @@ const api: AppApi = {
     list: () => invoke("jobs:list"),
     get: (id) => invoke("jobs:get", id),
     importVideo: (options) => invoke("jobs:importVideo", options),
+    planChapters: (input) => invoke("jobs:planChapters", input),
+    updateChapters: (input) => invoke("jobs:updateChapters", input),
     planReprocess: (input) => invoke("jobs:planReprocess", input),
     recognizePartial: (input) => invoke("jobs:recognizePartial", input),
     translatePartial: (input) => invoke("jobs:translatePartial", input),

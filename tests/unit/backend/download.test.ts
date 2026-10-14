@@ -559,4 +559,12 @@ describe("online download boundaries", () => {
       before,
     );
   });
+  it("reserves room for retained tool cache and staging copies before starting downloads", async () => {
+    const f = await fixture(); const status = await f.service.status();
+    const available = BigInt(status.sizeBytes * 2 + 250_000_000 - 1);
+    vi.spyOn(files, "statfs").mockResolvedValue({ type: 0n, bsize: 1n, blocks: available * 2n, bfree: available, bavail: available, files: 1000n, ffree: 1000n });
+    await expect(f.service.install()).rejects.toMatchObject({ code: "INSTALL_SPACE" });
+    expect(mocks.download).not.toHaveBeenCalled();
+    expect((await f.service.status()).ready).toBe(false);
+  });
 });

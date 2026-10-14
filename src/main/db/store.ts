@@ -1,5 +1,6 @@
 import { refreshReview, staleReview } from "../services/jobs/lib/reprocessing";
 import { refreshNameReport } from '../services/jobs/lib/person-names';
+import { refreshChapters } from '../services/jobs/lib/chapters';
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq, desc } from "drizzle-orm";
@@ -44,6 +45,12 @@ export class Store {
     this.db = drizzle(this.sqlite, { schema });
     for (const job of this.listJobs()) {
       let changed = false;
+      if (job.reviewRun?.state === 'running') {
+        job.reviewRun.state = 'interrupted';
+        job.reviewRun.completedAt = Date.now();
+        for (const chapter of job.reviewRun.chapters) if (chapter.state === 'running') chapter.state = 'pending';
+        changed = true;
+      }
       if (job.repairRun?.state === "running") {
         job.repairRun = {
           ...job.repairRun,
@@ -88,6 +95,7 @@ export class Store {
         const job = jobSchema.parse(JSON.parse(row.payload));
         refreshReview(job);
         refreshNameReport(job);
+        refreshChapters(job);
         return job;
       });
   }
@@ -101,11 +109,13 @@ export class Store {
     const job = jobSchema.parse(JSON.parse(row.payload));
     refreshReview(job);
     refreshNameReport(job);
+    refreshChapters(job);
     return job;
   }
   saveJob(job: Job): Job {
     refreshReview(job);
     refreshNameReport(job);
+    refreshChapters(job);
     jobSchema.parse(job);
     job.updatedAt = Math.max(Date.now(), job.updatedAt + 1);
     this.db.transaction((tx) => {
@@ -239,6 +249,11 @@ export class Store {
         })
         .run();
       if (isMaterialChange) this.invalidateProfileDependents(id);
+      // A credential replacement cannot silently resume a partially checked run
+      // under a different account. Completed content remains usable.
+      if (existing && input.apiKey !== undefined) for (const job of this.listJobs()) {
+        if (job.reviewRun?.profileId === id && job.reviewRun.state !== 'complete') { job.reviewRun.state = 'stale'; this.saveJob(job); }
+      }
     })();
     if (nextSessionKey !== undefined) this.sessionKeys.set(id, nextSessionKey);
     else this.sessionKeys.delete(id);
@@ -255,6 +270,10 @@ export class Store {
       const reviewChanged =
         job.options.reviewProfileId === id ||
         job.reviewReport?.profileId === id;
+      let chapterChanged = false;
+      for (const plan of [job.chapterPlan, job.customChapterPlan]) if (plan?.profileId === id) { plan.state = 'stale'; chapterChanged = true; }
+      if (job.reviewRun?.profileId === id) { job.reviewRun.state = 'stale'; chapterChanged = true; }
+      if (chapterChanged) this.saveJob(job);
       if (job.nameReport?.profileId === id) { job.nameReport.state = 'stale'; this.saveJob(job); }
       if (reviewChanged && job.reviewReport) {
         staleReview(job);

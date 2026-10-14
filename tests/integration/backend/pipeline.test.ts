@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import { Store } from "../../../src/main/db/store";
 import { MediaService } from "../../../src/main/services/media/lib/media-service";
 import { JobService } from "../../../src/main/services/jobs/lib/job-service";
+import { newCoveragePlan } from "../../../src/main/services/jobs/lib/chapters";
 import { runProcess } from "../../../src/main/lib/process";
 import * as processTools from "../../../src/main/lib/process";
 import { AppError } from "../../../src/main/lib/errors";
@@ -654,7 +655,7 @@ describe("real FFmpeg + SQLite + local HTTP pipeline", () => {
       "cloud-2-0",
     ]);
   }, 15000);
-  it("retains completed batches and retries only unfinished translations", async () => {
+  it("retains completed chapters and retries only unfinished translations", async () => {
     const f = await fixture();
     let job = await f.jobs.recognize(f.job.id);
     job.segments = Array.from({ length: 31 }, (_, i) => ({
@@ -665,6 +666,11 @@ describe("real FFmpeg + SQLite + local HTTP pipeline", () => {
       translatedText: "",
       translationStale: false,
     }));
+    job.options.chapterConcurrency = 1;
+    job.chapterPlan = {...newCoveragePlan(job), chapters: [
+      {id: 'first', startMs: 0, endMs: 1800, title: 'First topic', summary: ''},
+      {id: 'second', startMs: 1800, endMs: job.media.durationMs, title: 'Second topic', summary: ''},
+    ]};
     f.store.saveJob(job);
     f.control.selectedBatches = [];
     f.control.incompleteAfter = 2;

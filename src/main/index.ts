@@ -11,6 +11,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { Store } from "./db/store";
+import { ProviderDiagnosticsRepository } from './db/provider-diagnostics';
+import { ChapterCriteriaRepository } from './db/chapter-criteria';
+import { ChapterExportService } from './services/chapters/chapter-export-service';
 import { MediaService } from "./services/media/lib/media-service";
 import {
   RuntimeService,
@@ -24,6 +27,7 @@ import { ExportSettingsService } from "./services/export-settings/lib/export-set
 import { downloadArtifactsSchema } from "./services/download/manifest";
 import type { ProgressEvent } from "../shared/contracts";
 import { serveMediaRequest } from "./lib/media-protocol";
+import { cancelAllTextRequests, waitForTextRequestsIdle } from './services/providers/lib/text-request';
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "app-media",
@@ -113,8 +117,12 @@ if (app.requestSingleInstanceLock()) {
         emit,
         ...(testManifest ? { artifacts: testManifest } : {}),
       });
-      jobs = new JobService(currentStore, media, runtime, root, emit, mediaUrl);
+      const diagnostics = new ProviderDiagnosticsRepository(currentStore.sqlite, root);
+      await diagnostics.prune();
+      const chapterCriteria = new ChapterCriteriaRepository(currentStore.sqlite);
+      jobs = new JobService(currentStore, media, runtime, root, emit, mediaUrl, diagnostics);
       const currentJobs = jobs;
+      const chapterExports = new ChapterExportService(currentStore.sqlite, currentJobs, media, root, emit);
       const downloadArtifacts =
         isE2e && process.env.APP_E2E_DOWNLOAD_MANIFEST
           ? downloadArtifactsSchema.parse(
@@ -144,6 +152,9 @@ if (app.requestSingleInstanceLock()) {
         jobs,
         runtime,
         download,
+        diagnostics,
+        chapterCriteria,
+        chapterExports,
         exportSettings: new ExportSettingsService(
           root,
           isE2e
@@ -165,8 +176,18 @@ if (app.requestSingleInstanceLock()) {
     });
 } else app.quit();
 app.on("window-all-closed", () => app.quit());
-app.on("before-quit", () => {
+let shutdownReady = false;
+let shutdown: Promise<void> | undefined;
+app.on("before-quit", (event) => {
+  if (shutdownReady) return;
+  event.preventDefault();
+  if (shutdown) return;
   jobs?.cancelAll();
+  cancelAllTextRequests();
   dispose?.();
+  dispose = undefined;
+  shutdown = Promise.all([jobs?.waitForIdle(), waitForTextRequestsIdle()])
+    .then(() => undefined)
+    .finally(() => { shutdownReady = true; app.quit(); });
 });
 app.on("will-quit", () => store?.close());

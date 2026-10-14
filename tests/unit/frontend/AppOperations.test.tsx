@@ -92,4 +92,18 @@ describe('visible operation navigation', () => {
     await act(async () => handler({ stage: 'names', jobId: job.id, message: 'Late old progress', progress: .8 }));
     expect(screen.queryByText(/Late old progress/)).toBeNull();
   });
+  it('clears transient chapter waiting progress when the actual operation has finished', async () => {
+    const job = savedJob(); job.options.chapterProfileId = profile.id;
+    const { api } = stubApi(job); vi.mocked(api.profiles.list).mockResolvedValue({ success: true, data: [profile] });
+    let finish: (() => void) | undefined;
+    vi.mocked(api.jobs.planChapters).mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ success: true, data: job }); }));
+    await act(async () => { render(<App />); });
+    fireEvent.click(screen.getByRole('button', { name: '章节' }));
+    fireEvent.click(screen.getByRole('button', { name: 'AI 切分章节' }));
+    const handler = vi.mocked(api.onProgress).mock.calls[0]?.[0]; if (!handler) throw new Error('Progress handler absent');
+    await act(async () => handler({ stage: 'chapters', jobId: job.id, message: '等待 AI 响应 · 0 秒 · 198 字节', progress: 0 }));
+    expect(screen.getByText('等待 AI 响应 · 0 秒 · 198 字节')).toBeTruthy();
+    await act(async () => finish?.());
+    await waitFor(() => expect(screen.queryByText('等待 AI 响应 · 0 秒 · 198 字节')).toBeNull());
+  });
 });

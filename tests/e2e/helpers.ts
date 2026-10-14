@@ -31,9 +31,11 @@ export type MockServer = {
     connection: number;
     review: number;
     names: number;
+    chapters: number;
   };
   reviewPrompts: string[];
   namePrompts: string[];
+  chapterPrompts: string[];
   behavior: {
     translation: "ok" | "auth-error" | "slow";
     style: "ok" | "invalid";
@@ -41,6 +43,8 @@ export type MockServer = {
     recognition: "full" | "partial";
     review: "findings" | "empty" | "slow" | "graded" | "evidence-corrected" | "evidence-invalid";
     names: "ok" | "slow" | "empty" | "variants";
+    textStream: "json" | "sse" | "partial";
+    reviewErrorAt?: number;
   };
   close: () => Promise<void>;
 };
@@ -48,6 +52,7 @@ export type MockServer = {
 export async function startMockServer(): Promise<MockServer> {
   const reviewPrompts: string[] = [];
   const namePrompts: string[] = [];
+  const chapterPrompts: string[] = [];
   const counters = {
     recognition: 0,
     translation: 0,
@@ -55,6 +60,7 @@ export async function startMockServer(): Promise<MockServer> {
     connection: 0,
     review: 0,
     names: 0,
+    chapters: 0,
   };
   const behavior: MockServer["behavior"] = {
     translation: "ok",
@@ -63,6 +69,7 @@ export async function startMockServer(): Promise<MockServer> {
     recognition: "full",
     review: "findings",
     names: "ok",
+    textStream: "json",
   };
   const server = createServer((request, response) => {
     async function handle(): Promise<void> {
@@ -141,6 +148,17 @@ export async function startMockServer(): Promise<MockServer> {
                 fontSizeRatio: 0.05,
                 textColor: "#FFF5C2",
               };
+      } else if (prompt.startsWith("Divide the video into content chapters")) {
+        counters.chapters++;
+        chapterPrompts.push(prompt);
+        const payload = z.object({kind: z.enum(['normal', 'custom']), anchors: z.array(z.number()).min(2)}).passthrough().parse(JSON.parse(prompt.split('\n').at(-1) ?? '{}') as unknown);
+        const last = payload.anchors.length - 1;
+        const duration = payload.anchors[last] ?? 0;
+        const middle = payload.anchors.map((value, index) => ({value, index})).filter(({index}) => index > 0 && index < last).sort((a, b) => Math.abs(a.value - duration / 2) - Math.abs(b.value - duration / 2))[0]?.index;
+        content = {chapters: middle === undefined ? [{startAnchor: 0, endAnchor: last, title: '相同章节', summary: '完整内容概要'}] : [
+          {startAnchor: 0, endAnchor: middle, title: '相同章节', summary: '前半部分内容概要'},
+          ...(payload.kind === 'normal' ? [{startAnchor: middle, endAnchor: last, title: '相同章节', summary: '后半部分内容概要'}] : []),
+        ]};
       } else if (prompt.startsWith("Analyze recurring PERSON names")) {
         counters.names++;
         namePrompts.push(prompt);
@@ -150,6 +168,7 @@ export async function startMockServer(): Promise<MockServer> {
       } else if (prompt.startsWith("Review subtitle text and timing.")) {
         counters.review++;
         reviewPrompts.push(prompt);
+        if (behavior.reviewErrorAt === counters.review) { response.writeHead(401); response.end('{}'); return; }
         if (behavior.review === "slow") return;
         const line = prompt.split("\n").find(value => value.startsWith('{"cues"'));
         const batch = z.object({
@@ -195,9 +214,29 @@ export async function startMockServer(): Promise<MockServer> {
         };
       }
       const text = JSON.stringify(content);
+      if (behavior.textStream !== 'json' && url.endsWith('/chat/completions')) {
+        response.setHeader('Content-Type', 'text/event-stream');
+        response.write(`: keep-alive ${' '.repeat(2048)}\n\n`);
+        response.write(`data: ${JSON.stringify({id: 'stream-fixture', choices: [{index: 0, delta: {role: 'assistant', reasoning_content: 'PRIVATE_REASONING_NOT_SAVED'}}]})}\n\n`);
+        const pieces = Array.from(text);
+        const length = behavior.textStream === 'partial' ? Math.min(12, pieces.length) : pieces.length;
+        for (let offset = 0; offset < length; offset += 64) {
+          if (response.destroyed) return;
+          const wire = Buffer.from(`data: ${JSON.stringify({id: 'stream-fixture', choices: [{index: 0, delta: {content: pieces.slice(offset, Math.min(offset + 64, length)).join('')}}]})}\n\n`);
+          const cut = Math.max(1, Math.floor(wire.length / 2));
+          response.write(wire.subarray(0, cut));
+          await new Promise<void>((resolveChunk) => setTimeout(resolveChunk, 1));
+          if (response.destroyed) return;
+          response.write(wire.subarray(cut));
+        }
+        if (behavior.textStream === 'partial') return;
+        response.write(`data: ${JSON.stringify({id: 'stream-fixture', choices: [{index: 0, delta: {}, finish_reason: 'stop'}], usage: {prompt_tokens: 100, completion_tokens: 20, total_tokens: 120}})}\n\n`);
+        response.end('data: [DONE]\n\n');
+        return;
+      }
       const result = url.endsWith("/messages")
         ? { stop_reason: "end_turn", content: [{ type: "text", text }] }
-        : url.includes(":generateContent")
+        : url.includes(":generateContent") || url.includes(":streamGenerateContent")
           ? {
               candidates: [
                 { finishReason: "STOP", content: { parts: [{ text }] } },
@@ -233,6 +272,7 @@ export async function startMockServer(): Promise<MockServer> {
     counters,
     reviewPrompts,
     namePrompts,
+    chapterPrompts,
     behavior,
     url: `http://127.0.0.1:${address.port}/v1`,
     close: async () => {

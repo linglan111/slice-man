@@ -14,6 +14,8 @@ import {
   undoNamesInputSchema,
   acknowledgeFindingInputSchema,
   repairLoopInputSchema,
+  planChaptersInputSchema,
+  updateChaptersInputSchema,
   optionsSchema,
   segmentSchema,
   newSegmentSchema,
@@ -41,6 +43,11 @@ import {
 } from "../../shared/export-contracts";
 import type { ExportSettingsService } from "../services/export-settings/lib/export-settings-service";
 import type { DownloadService } from "../services/download/lib/download-service";
+import type { ProviderDiagnosticsRepository } from '../db/provider-diagnostics';
+import type { ChapterCriteriaRepository } from '../db/chapter-criteria';
+import type { ChapterExportService } from '../services/chapters/chapter-export-service';
+import { diagnosticsListInputSchema } from '../../shared/provider-diagnostics-contracts';
+import { saveCriterionInputSchema, criterionIdentitySchema, selectCriterionInputSchema, chapterExportInputSchema } from '../../shared/chapter-export-contracts';
 import {
   downloadSettingsSchema,
   onlineUrlSchema,
@@ -51,6 +58,9 @@ type Services = {
   runtime: RuntimeService;
   download: DownloadService;
   exportSettings: ExportSettingsService;
+  diagnostics: ProviderDiagnosticsRepository;
+  chapterCriteria: ChapterCriteriaRepository;
+  chapterExports: ChapterExportService;
   window: BrowserWindow;
 };
 function queue(name: string): string[] {
@@ -147,6 +157,7 @@ export function registerIpc(services: Services): () => void {
     ({ url, options }) => services.download.importUrl(url, options),
   );
   handle("download:cancel", empty, () => services.download.cancel());
+  handle("download:clearDownloadCache", empty, () => services.download.clearDownloadCache());
   handle("profiles:list", empty, () => services.store.listProfiles());
   handle("profiles:save", profileInputSchema, (input) => {
     services.jobs.assertProfileWritable(input.id);
@@ -204,6 +215,10 @@ export function registerIpc(services: Services): () => void {
     },
   );
   handle("runtime:status", empty, () => services.runtime.status());
+  handle("runtime:clearDownloadCache", empty, () => {
+    if (installController) throw new AppError("INSTALL_BUSY", "安装正在进行，请先取消或等待完成");
+    return services.runtime.clearDownloadCache();
+  });
   handle(
     "runtime:install",
     z
@@ -223,8 +238,37 @@ export function registerIpc(services: Services): () => void {
     },
   );
   handle("runtime:cancel", empty, () => installController?.abort());
+  handle("diagnostics:list", diagnosticsListInputSchema.optional(), (input) => services.diagnostics.list(input));
+  handle("diagnostics:detail", z.string().uuid(), (id) => services.diagnostics.detail(id));
+  handle("diagnostics:readAnswer", z.string().uuid(), async (id) => {
+    const text = await services.diagnostics.readAnswer(id);
+    return { text: text.slice(0, 20000), truncated: text.length > 20000 };
+  });
+  handle("diagnostics:clear", z.array(z.string().uuid()).max(1000).optional(), (ids) => {
+    services.jobs.assertIdle();
+    return services.diagnostics.clear(ids);
+  });
+  handle("chapterCriteria:list", empty, () => services.chapterCriteria.list());
+  handle("chapterCriteria:save", saveCriterionInputSchema, (input) => services.chapterCriteria.save(input));
+  handle("chapterCriteria:copy", criterionIdentitySchema, (input) => services.chapterCriteria.copy(input));
+  handle("chapterCriteria:remove", criterionIdentitySchema, (input) => services.chapterCriteria.remove(input));
+  handle("chapterCriteria:select", selectCriterionInputSchema, (input) => services.chapterCriteria.select(input));
+  handle("chapterExports:list", idSchema, (jobId) => services.chapterExports.list(jobId));
+  handle("chapterExports:export", chapterExportInputSchema, async (input) => {
+    if (input.runId) return services.chapterExports.export(input);
+    const settings = await services.exportSettings.status();
+    const directory = isE2e ? exportDirectories.shift() : (await dialog.showOpenDialog(services.window, {
+      title: "选择章节导出目录", defaultPath: settings.directory, properties: ["openDirectory", "createDirectory"],
+    })).filePaths[0];
+    if (!directory) return null;
+    await services.exportSettings.prepareDirectory(directory);
+    return services.chapterExports.export(input, directory);
+  });
   handle("jobs:list", empty, () => services.store.listJobs());
   handle("jobs:get", idSchema, (id) => services.store.getJob(id));
+  handle("jobs:planChapters", planChaptersInputSchema, (input) => services.jobs.planChapters(input,
+    input.kind === 'custom' && input.criterionId ? services.chapterCriteria.snapshot(input.criterionId) : undefined));
+  handle("jobs:updateChapters", updateChaptersInputSchema, (input) => services.jobs.updateChapters(input));
   handle(
     "jobs:importVideo",
     importOptionsSchema.optional(),

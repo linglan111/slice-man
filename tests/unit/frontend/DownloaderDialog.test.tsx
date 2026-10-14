@@ -41,6 +41,17 @@ function status(directory = ""): DownloadStatus {
   };
 }
 describe("download settings draft ownership", () => {
+  it("shows retained tool bytes after restart, does no automatic download, and clears cache explicitly", async () => {
+    const initial = { ...status(), downloadCache: { totalBytes: 8192, assets: [{ id: "yt-dlp" as const, name: "yt-dlp", downloadedBytes: 8192, totalBytes: 100000, state: "partial" as const, resumable: true }] } };
+    const install = vi.fn(); const clear = vi.fn().mockResolvedValue({ success: true, data: { ...status(), downloadCache: { assets: [], totalBytes: 0 } } });
+    vi.stubGlobal("api", { download: { status: vi.fn().mockResolvedValue({ success: true, data: initial }), install, clearDownloadCache: clear }, onDownloadStatus: vi.fn(() => vi.fn()) });
+    render(<DownloaderDialog onClose={vi.fn()} />);
+    await screen.findByRole("button", { name: "继续安装下载工具" });
+    expect(screen.getByText(/yt-dlp · 8.0 KB/)).toBeTruthy(); expect(install).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "清除下载缓存" }));
+    await screen.findByRole("button", { name: "重新安装固定版本" });
+    expect(clear).toHaveBeenCalledOnce(); expect(install).not.toHaveBeenCalled(); expect(screen.getByText(/下载工具已就绪/)).toBeTruthy();
+  });
   it("keeps fields disabled until initial persisted settings arrive, even if an early status event arrives", async () => {
     let complete: ((value: Result<DownloadStatus>) => void) | undefined;
     let subscriber: ((value: DownloadStatus) => void) | undefined;

@@ -53,23 +53,25 @@ test("online settings installation integrity/cancel/rollback and native complete
     await page
       .getByRole("button", { name: "一键安装下载工具", exact: true })
       .click();
-    await expect(page.getByRole("alert")).toContainText("校验失败");
+    await expect(page.getByRole("alert")).toContainText(/校验失败|响应长度与预期范围不一致/);
     expect(await readdir(join(userData, "download-tools"))).toEqual([]);
     fixture.behavior.tool = "slow";
+    const clearCache = page.getByRole("button", { name: "清除下载缓存", exact: true });
+    if (await clearCache.isVisible()) await clearCache.click();
     await page
       .getByRole("button", { name: "一键安装下载工具", exact: true })
       .click();
     await expect(
-      page.getByRole("button", { name: "取消安装或下载", exact: true }),
+      page.getByRole("button", { name: "取消安装（保留下载）", exact: true }),
     ).toBeVisible();
     await expect(page.getByLabel("关闭对话框", { exact: true })).toBeDisabled();
     await page
-      .getByRole("button", { name: "取消安装或下载", exact: true })
+      .getByRole("button", { name: "取消安装（保留下载）", exact: true })
       .click();
     await expect(page.getByRole("alert")).toContainText("取消");
     fixture.behavior.tool = "ok";
     await page
-      .getByRole("button", { name: "一键安装下载工具", exact: true })
+      .getByRole("button", { name: /^(一键安装下载工具|继续安装下载工具)$/ })
       .click();
     await expect(
       page.getByText("下载工具已安装并验证，可以导入视频链接。", {
@@ -80,11 +82,17 @@ test("online settings installation integrity/cancel/rollback and native complete
       join(userData, "download-tools", "active.json"),
       "utf8",
     );
+    await expect(page.getByRole("button", { name: "继续安装下载工具", exact: true })).toBeEnabled();
+    // Force a real fresh transfer for the corruption case; clearing retained
+    // downloads must not change the previously activated native installation.
+    await clearCache.click();
+    await expect(page.getByRole("button", { name: "重新安装固定版本", exact: true })).toBeEnabled();
+    expect(await readFile(join(userData, "download-tools", "active.json"), "utf8")).toBe(active);
     fixture.behavior.tool = "corrupt";
     await page
       .getByRole("button", { name: "重新安装固定版本", exact: true })
       .click();
-    await expect(page.getByRole("alert")).toContainText("校验失败");
+    await expect(page.getByRole("alert")).toContainText(/校验失败|响应长度与预期范围不一致/);
     expect(
       await readFile(join(userData, "download-tools", "active.json"), "utf8"),
     ).toBe(active);

@@ -52,7 +52,7 @@ test('each operation has a compact content-sized bottom card and visible actions
       await expect(page.locator('.work-grid__proofreading > .workspace-header')).toHaveCount(0);
       await expect(page.locator('.secondary-controls')).toHaveCount(0);
       const toolbar = page.getByRole('toolbar', { name: '视频操作' });
-      expect(await toolbar.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent?.trim()))).toEqual(['生成', '重新识别片段', '重新翻译片段', '添加画面字幕', '人名检查', '样式', '导出作品']);
+      expect(await toolbar.getByRole('button').evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent?.trim()))).toEqual(['生成', '重新识别片段', '重新翻译片段', '添加画面字幕', '人名检查', '样式', '章节', '导出作品']);
       expect(await toolbar.getByRole('button').evaluateAll((buttons) => buttons.every((button) => button.querySelector('svg[aria-hidden="true"]')))).toBe(true);
       for (const operation of [
         { label: '生成', panel: '.operation-panel', grid: '.operation-panel__grid', primary: '翻译全部字幕', cancel: '取消' },

@@ -9,6 +9,7 @@ import { AppError, checkAbort } from "../../lib/errors";
 import { runProcess } from "../../lib/process";
 import { CPU_ARTIFACT, GPU_ARTIFACT, MODELS, ENGINE_VERSION } from "./manifest";
 import type { Artifact, ModelId } from "./manifest";
+import { ArtifactCache, type ManagedArtifact, type ArtifactPhase } from "./artifact-cache";
 import {
   downloadArtifact,
   extractArchive,
@@ -48,9 +49,11 @@ export class RuntimeService {
   private readonly config: Config;
   private state: State | undefined;
   private isInstalling = false;
+  private readonly cache: ArtifactCache;
 
   constructor(config: Config) {
     this.config = config;
+    this.cache = new ArtifactCache(config.root, "runtime");
     this.loadState();
   }
 
@@ -81,6 +84,24 @@ export class RuntimeService {
 
   private emit(progress: number, message: string): void {
     this.config.emit({ stage: "install", progress, message });
+  }
+
+  private assets(): ManagedArtifact[] {
+    return [
+      ...Object.entries(this.config.artifacts?.models ?? MODELS).map(([id, artifact]) => ({
+        id: `model-${id}` as ManagedArtifact["id"], name: artifact.name, artifact,
+      })),
+      { id: "whisper-cpu", name: "Whisper CPU 运行包", artifact: this.config.artifacts?.cpu ?? CPU_ARTIFACT },
+      { id: "whisper-gpu", name: "Whisper GPU 运行包", artifact: this.config.artifacts?.gpu ?? GPU_ARTIFACT },
+    ];
+  }
+
+  async clearDownloadCache(): Promise<RuntimeStatus> {
+    if (this.isInstalling) throw new AppError("INSTALL_BUSY", "本地安装正在进行，请等待结束后清除缓存。");
+    this.isInstalling = true;
+    try { await this.cache.clear(); }
+    finally { this.isInstalling = false; }
+    return this.status();
   }
 
   async status(): Promise<RuntimeStatus> {
@@ -120,6 +141,7 @@ export class RuntimeService {
       }
     }
     return {
+      downloadCache: await this.cache.summary(this.assets()),
       installed: cpuReady && installedModels.length > 0,
       cpuReady,
       gpuReady,
@@ -208,12 +230,27 @@ export class RuntimeService {
       input.modelId
     ];
     const download = this.config.download ?? downloadArtifact;
+    const assets = this.assets();
+    const acquire = async (artifact: Artifact, destination: string, base: number, weight: number, name: string, id: ManagedArtifact["id"]): Promise<void> => {
+      let phase: ArtifactPhase = "downloading";
+      const messages: Record<ArtifactPhase, string> = {
+        downloading: `正在下载${name}…`, resuming: `继续下载${name}，已保存进度…`,
+        restarting: `服务器不支持续传或文件已改变，重新下载${name}…`,
+        verifying: `正在校验${name}…`, cached: `复用已校验${name}，准备安装…`,
+      };
+      await download(artifact, destination, signal,
+        (ratio) => this.emit(base + ratio * weight, messages[phase]),
+        { cache: this.cache, asset: { id, name, artifact }, onPhase: (next) => { phase = next; this.emit(base, messages[next]); } });
+    };
     try {
       checkAbort(signal);
       await mkdir(staging, { recursive: true });
       const storage = await statfs(staging);
       const required =
-        modelArtifact.sizeBytes +
+        modelArtifact.sizeBytes * 2 +
+        (this.config.artifacts?.cpu ?? CPU_ARTIFACT).sizeBytes * 2 +
+        (input.preferGpu ? (this.config.artifacts?.gpu ?? GPU_ARTIFACT).sizeBytes * 2 : 0) -
+        (await this.cache.summary(assets)).assets.filter((asset) => asset.id === `model-${input.modelId}` || asset.id === "whisper-cpu" || (input.preferGpu && asset.id === "whisper-gpu")).reduce((sum, asset) => sum + asset.downloadedBytes, 0) +
         (input.preferGpu ? 2_500_000_000 : 100_000_000);
       if (storage.bavail * storage.bsize < required)
         throw new AppError(
@@ -222,17 +259,14 @@ export class RuntimeService {
         );
       this.emit(0.01, "下载模型（大模型可能需要较长时间）…");
       const model = join(staging, `ggml-${input.modelId}.bin`);
-      await download(modelArtifact, model, signal, (ratio) =>
-        this.emit(0.01 + ratio * 0.44, "正在下载并校验模型…"),
-      );
+      await acquire(modelArtifact, model, 0.01, 0.44, "模型", `model-${input.modelId}`);
       await verifyArtifact(model, modelArtifact);
       this.emit(0.45, "下载 CPU 运行包…");
       const cpuArchive = join(staging, "cpu.zip");
-      await download(
+      await acquire(
         this.config.artifacts?.cpu ?? CPU_ARTIFACT,
         cpuArchive,
-        signal,
-        (ratio) => this.emit(0.45 + ratio * 0.08, "正在下载 CPU 运行包…"),
+        0.45, 0.08, "CPU 运行包", "whisper-cpu",
       );
       await verifyArtifact(
         cpuArchive,
@@ -260,12 +294,10 @@ export class RuntimeService {
             throw new AppError("GPU_UNAVAILABLE", "未检测到兼容 NVIDIA 显卡。");
           const archive = join(staging, "gpu.zip");
           this.emit(0.6, "下载 GPU 运行包（包含 CUDA 运行库）…");
-          await download(
+          await acquire(
             this.config.artifacts?.gpu ?? GPU_ARTIFACT,
             archive,
-            signal,
-            (ratio) =>
-              this.emit(0.6 + ratio * 0.3, "正在下载并校验 GPU 运行包…"),
+            0.6, 0.3, "GPU 运行包", "whisper-gpu",
           );
           await verifyArtifact(
             archive,

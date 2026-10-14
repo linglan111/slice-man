@@ -12,6 +12,14 @@ afterEach(cleanup);
 const PROFILE: Profile = { id: 'p', name: '我的服务', protocol: 'openai', mode: 'chat', baseUrl: 'https://example.com/v1', model: 'test-model', hasKey: true, sessionOnly: false, timeoutMs: 120000, maxUploadBytes: 24000000, structuredOutput: false };
 
 describe('ProfileEditor configuration and credential behavior', () => {
+  it('exposes streaming compatibility and saves a separate bounded overall generation deadline', async () => {
+    const onSave=vi.fn().mockResolvedValue(undefined); render(<ProfileEditor profile={PROFILE} onSave={onSave} onClose={vi.fn()} />);
+    expect((screen.getByLabelText('文字生成总时限（分钟）') as HTMLInputElement).value).toBe('30');
+    fireEvent.change(screen.getByLabelText('文字生成总时限（分钟）'),{target:{value:'45'}});
+    fireEvent.change(screen.getByLabelText('文字响应方式'),{target:{value:'disabled'}});
+    fireEvent.click(screen.getByRole('button',{name:'保存配置'}));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({streaming:'disabled',textTimeoutMs:2700000,timeoutMs:120000})));
+  });
   it('blocks an incomplete model without calling the backend', () => {
     const onSave = vi.fn();
     render(<ProfileEditor onSave={onSave} onClose={vi.fn()} />);

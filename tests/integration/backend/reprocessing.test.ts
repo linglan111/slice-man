@@ -435,8 +435,10 @@ describe("atomic partial processing and optional translation", () => {
   it("late translation-batch failure publishes none of the previous successful batches", async () => {
     const f = await fixture();
     const job = f.store.getJob(f.job.id);
-    job.segments = Array.from({ length: 35 }, (_, index) =>
-      cue(`batch-${index}`, index * 100, index * 100 + 80),
+    // Dense chapter pieces are now 150 cues; still exercise a successful piece
+    // followed by failure without publishing any selected translation.
+    job.segments = Array.from({ length: 151 }, (_, index) =>
+      cue(`batch-${index}`, index * 40, index * 40 + 30),
     );
     f.store.saveJob(job);
     f.translate

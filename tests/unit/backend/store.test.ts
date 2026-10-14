@@ -5,6 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../../../src/main/db/store";
+import { MIGRATIONS } from "../../../src/main/db/migrations";
 import {
   DEFAULT_STYLE,
   optionsSchema,
@@ -352,7 +353,7 @@ describe("SQLite migration/persistence and credentials", () => {
     stores.push(reopen);
     expect(reopen.getJob("j").segments[0]?.translatedText).toBe("你好");
     expect(reopen.getJob("j").stages.recognize.state).toBe("interrupted");
-    expect(reopen.sqlite.pragma("user_version", { simple: true })).toBe(1);
+    expect(reopen.sqlite.pragma("user_version", { simple: true })).toBe(MIGRATIONS.length);
   });
   it("ordinary reads do not expose keys and session-only keys are not persisted", async () => {
     const s = await store();

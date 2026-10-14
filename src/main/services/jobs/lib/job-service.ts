@@ -1,18 +1,59 @@
 import { primarySubtitleText } from "../../../../shared/subtitle-content";
 import {
+  chapterSourceFingerprint,
+  chapterReviewFingerprint,
+  refreshChapters,
+  validateChapterPlan,
+  newCoveragePlan,
+  createChapterRequest,
+  groundChapterResponse,
+  chapterTargets,
+} from "./chapters";
+import { boundedChapterPieces, orderedChapterWorkers } from "./chapter-work";
+import {
+  planChaptersInputSchema,
+  updateChaptersInputSchema,
+  MAX_CHAPTER_MS,
+  CHAPTER_REVIEW_THRESHOLD_MS,
+  type PlanChaptersInput,
+  type UpdateChaptersInput,
+  type ChapterCriterionSnapshot,
+  type ChapterPlan,
+  type ChapterReviewRun,
+  type Chapter,
+} from "../../../../shared/chapter-contracts";
+import type { ProviderDiagnosticsRepository } from "../../../db/provider-diagnostics";
+import type { TextRequestContext } from "../../providers/lib/text-request";
+import type { TextOperation, ProviderDiagnostic } from "../../../../shared/provider-diagnostics-contracts";
+import {
   resolveReprocess,
   refreshReview,
   cueFingerprint,
   providerFingerprint,
   neighboringContext,
-  reviewBatches,
   staleReview,
 } from "./reprocessing";
-import { createReviewRequest, validateReviewResponse, reviewCorrectionPrompt } from "./review-request";
-import { assertReviewPromptBudget, MAX_REVIEW_TARGETS } from './review-request';
-import { groundNames, nameTimelineFingerprint, draftNameApply, draftNameUndo } from './person-names';
-import { createPersonNameRequest } from './person-name-request';
-import { analyzeNamesInputSchema, applyNamesInputSchema, undoNamesInputSchema, type AnalyzeNamesInput, type ApplyNamesInput, type UndoNamesInput } from '../../../../shared/person-name-contracts';
+import {
+  createReviewRequest,
+  validateReviewResponse,
+  reviewCorrectionPrompt,
+} from "./review-request";
+import { assertReviewPromptBudget, MAX_REVIEW_TARGETS } from "./review-request";
+import {
+  groundNames,
+  nameTimelineFingerprint,
+  draftNameApply,
+  draftNameUndo,
+} from "./person-names";
+import { createPersonNameRequest } from "./person-name-request";
+import {
+  analyzeNamesInputSchema,
+  applyNamesInputSchema,
+  undoNamesInputSchema,
+  type AnalyzeNamesInput,
+  type ApplyNamesInput,
+  type UndoNamesInput,
+} from "../../../../shared/person-name-contracts";
 import {
   reprocessInputSchema,
   recognizePartialInputSchema,
@@ -34,7 +75,7 @@ import {
   REVIEW_RUBRIC,
   REVIEW_RUBRIC_VERSION,
 } from "../../../../shared/contracts";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   exportVideoOptionsSchema,
   type ExportVideoOptions,
@@ -84,6 +125,7 @@ import {
   parseJson,
   transcribe,
   translateBatch,
+  translationPrompt,
 } from "../../providers/lib/text-provider";
 function initialStages(): Job["stages"] {
   return Object.fromEntries(
@@ -94,7 +136,9 @@ function initialStages(): Job["stages"] {
   ) as Job["stages"];
 }
 export class JobService {
-  private active: { id: string; controller: AbortController } | undefined;
+  private active:
+    | { id: string; controller: AbortController; profileIds?: string[] }
+    | undefined;
   constructor(
     private readonly store: Store,
     private readonly media: MediaService,
@@ -102,7 +146,264 @@ export class JobService {
     private readonly root: string,
     private readonly emit: (event: ProgressEvent) => void,
     private readonly url: (path: string) => string,
+    private readonly diagnostics?: ProviderDiagnosticsRepository,
   ) {}
+  private textContext(
+    operation: TextOperation,
+    jobId: string,
+    ids: string[],
+    progress?: (value: number, message: string) => void,
+    runId?: string,
+    chapterId?: string,
+    targetCount?: number,
+  ): TextRequestContext | undefined {
+    if (!this.diagnostics) return undefined;
+    return {
+      diagnostics: this.diagnostics,
+      operation,
+      jobId,
+      runId,
+      chapterId,
+      targetCount,
+      onRequestComplete: (id) => ids.push(id),
+      onProgress: (record) =>
+        progress?.(
+          0,
+          `${({ waiting: "等待 AI 响应", receiving: "接收 AI 输出", transport_complete: "正在校验 AI 输出", validated: "AI 输出已校验", published: "AI 结果已保存", failed: "AI 请求失败", cancelled: "AI 请求已取消", interrupted: "AI 请求已中断" } satisfies Record<ProviderDiagnostic["state"], string>)[record.state]} · ${Math.floor(record.elapsedMs / 1000)} 秒 · ${record.textBytes} 字节`,
+        ),
+    };
+  }
+  private validatedRequest(ids: string[]): string[] {
+    const id = ids.at(-1);
+    if (id) this.diagnostics?.markValidated(id);
+    return id ? [id] : [];
+  }
+  private saveWithRequests(job: Job, ids: string[] = []): Job {
+    if (!this.diagnostics || !ids.length) return this.store.saveJob(job);
+    // Jobs and diagnostics share the same SQLite connection. A failed log write
+    // rolls back publication too, so a saved chapter is never reported as lost.
+    return this.store.sqlite.transaction(() => {
+      this.store.saveJob(job);
+      for (const id of ids) this.diagnostics?.markPublished(id);
+      return job;
+    })();
+  }
+  private validationFailed(ids: string[], error: unknown): void {
+    const id = ids.at(-1);
+    if (id && this.diagnostics?.detail(id).state === "transport_complete")
+      this.diagnostics.markValidationFailed(
+        id,
+        error instanceof AppError ? error.code : "INVALID_JSON",
+      );
+  }
+  assertIdle(): void {
+    if (this.active)
+      throw new AppError("JOB_BUSY", "已有任务运行，请等待或取消");
+  }
+  async waitForIdle(): Promise<void> {
+    while (this.active)
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+  async runChapterExport<T>(
+    jobId: string,
+    revision: number,
+    executor: (
+      snapshot: Job,
+      signal: AbortSignal,
+      assertFresh: () => Promise<void>,
+    ) => Promise<T>,
+  ): Promise<T> {
+    const snapshot = this.editableTimeline(jobId, revision);
+    const lease = { id: jobId, controller: new AbortController() };
+    this.active = lease;
+    const assertFresh = async (): Promise<void> => {
+      await this.identity(snapshot);
+      checkAbort(lease.controller.signal);
+      const current = this.store.getJob(jobId);
+      if (
+        current.revision !== revision ||
+        chapterSourceFingerprint(current) !==
+          chapterSourceFingerprint(snapshot) ||
+        JSON.stringify(current.options) !== JSON.stringify(snapshot.options) ||
+        JSON.stringify([current.chapterPlan, current.customChapterPlan]) !==
+          JSON.stringify([snapshot.chapterPlan, snapshot.customChapterPlan])
+      )
+        throw new AppError(
+          "STALE_REVISION",
+          "导出期间源字幕、章节或设置已改变",
+        );
+    };
+    try {
+      await assertFresh();
+      return await executor(snapshot, lease.controller.signal, assertFresh);
+    } finally {
+      if (this.active === lease) this.active = undefined;
+    }
+  }
+  async planChapters(
+    raw: PlanChaptersInput,
+    trustedCriterion?: ChapterCriterionSnapshot,
+  ): Promise<Job> {
+    const input = planChaptersInputSchema.parse(raw);
+    const snapshot = this.editableTimeline(input.jobId, input.revision);
+    if (
+      (input.kind === "custom" &&
+        (!trustedCriterion || trustedCriterion.id !== input.criterionId)) ||
+      (input.kind === "normal" && (trustedCriterion || input.criterionId))
+    )
+      throw new AppError("CHAPTER_CRITERION", "请选择有效的章节切分标准");
+    const profileId = input.profileId ?? snapshot.options.chapterProfileId;
+    if (!profileId) throw new AppError("PROFILE_MISSING", "请选择章节分析服务");
+    const lease = {
+      id: input.jobId,
+      controller: new AbortController(),
+      profileIds: [profileId],
+    };
+    this.active = lease;
+    try {
+      const plan = await this.draftChapterPlan(
+        snapshot,
+        profileId,
+        input.kind,
+        lease.controller.signal,
+        trustedCriterion,
+      );
+      checkAbort(lease.controller.signal);
+      const current = this.store.getJob(input.jobId);
+      if (
+        current.revision !== snapshot.revision ||
+        chapterSourceFingerprint(current) !== chapterSourceFingerprint(snapshot)
+      )
+        throw new AppError("STALE_REVISION", "分析期间字幕已改变，请重新分析");
+      if (input.kind === "normal") {
+        current.chapterPlan = plan;
+        if (current.reviewRun) current.reviewRun.state = "stale";
+      } else current.customChapterPlan = plan;
+      this.update(current, this.planRequestIds.get(plan) ?? []);
+      this.planRequestIds.delete(plan);
+      return current;
+    } finally {
+      if (this.active === lease) this.active = undefined;
+    }
+  }
+  updateChapters(raw: UpdateChaptersInput): Job {
+    const input = updateChaptersInputSchema.parse(raw);
+    const job = this.editableTimeline(input.jobId, input.revision);
+    const key =
+      job.chapterPlan?.id === input.planId
+        ? "chapterPlan"
+        : "customChapterPlan";
+    const plan = job[key];
+    if (
+      !plan ||
+      plan.id !== input.planId ||
+      plan.revision !== input.planRevision ||
+      plan.state !== "current"
+    )
+      throw new AppError("STALE_CHAPTERS", "章节已改变或过期，请刷新");
+    job[key] = validateChapterPlan(
+      { ...plan, revision: plan.revision + 1, chapters: input.chapters },
+      job.media.durationMs,
+    );
+    if (key === "chapterPlan" && job.reviewRun) job.reviewRun.state = "stale";
+    return this.update(job);
+  }
+  private readonly planRequestIds = new WeakMap<ChapterPlan, string[]>();
+  private async draftChapterPlan(
+    snapshot: Job,
+    profileId: string,
+    kind: ChapterPlan["kind"],
+    signal: AbortSignal,
+    criterion?: ChapterCriterionSnapshot,
+  ): Promise<ChapterPlan> {
+    if (!snapshot.segments.length)
+      throw new AppError("NO_SEGMENTS", "请先生成字幕再分析章节");
+    const profile = this.store.getProfile(profileId);
+    const fingerprint = providerFingerprint(profile);
+    const key = this.store.key(profileId);
+    const request = createChapterRequest(snapshot, kind, criterion);
+    const ids: string[] = [];
+    const progress = (value: number, message: string): void =>
+      this.emit({
+        jobId: snapshot.id,
+        stage: "chapters",
+        progress: value,
+        message,
+        job: this.store.getJob(snapshot.id),
+      });
+    progress(0, "正在依据全片字幕分析章节");
+    let plan: ChapterPlan;
+    try {
+      const raw = parseJson(
+        await generateText(
+          profile,
+          key,
+          request.prompt,
+          signal,
+          this.textContext(
+            "chapters",
+            snapshot.id,
+            ids,
+            progress,
+            undefined,
+            undefined,
+            snapshot.segments.length,
+          ),
+        ),
+      );
+      checkAbort(signal);
+      plan = groundChapterResponse(
+        raw,
+        snapshot,
+        kind,
+        request.anchors,
+        profileId,
+        fingerprint,
+        criterion,
+      );
+    } catch (error) {
+      this.validationFailed(ids, error);
+      throw error;
+    }
+    if (
+      providerFingerprint(this.store.getProfile(profileId)) !== fingerprint ||
+      this.store.key(profileId) !== key
+    )
+      throw new AppError("STALE_REVISION", "章节分析服务已改变");
+    this.planRequestIds.set(plan, this.validatedRequest(ids));
+    return plan;
+  }
+  private async normalPlan(
+    snapshot: Job,
+    fallbackProfile: string,
+    signal: AbortSignal,
+  ): Promise<Job> {
+    refreshChapters(snapshot);
+    if (snapshot.chapterPlan?.state === "current") return snapshot;
+    const revision = snapshot.revision;
+    const plan =
+      snapshot.media.durationMs <= MAX_CHAPTER_MS
+        ? newCoveragePlan(snapshot)
+        : await this.draftChapterPlan(
+            snapshot,
+            snapshot.options.chapterProfileId ?? fallbackProfile,
+            "normal",
+            signal,
+          );
+    checkAbort(signal);
+    const current = this.store.getJob(snapshot.id);
+    if (
+      current.revision !== revision ||
+      chapterSourceFingerprint(current) !==
+        chapterSourceFingerprint(snapshot) ||
+      JSON.stringify(current.options) !== JSON.stringify(snapshot.options)
+    )
+      throw new AppError("STALE_REVISION", "规划期间字幕或设置已改变");
+    current.chapterPlan = plan;
+    this.update(current, this.planRequestIds.get(plan) ?? []);
+    this.planRequestIds.delete(plan);
+    return current;
+  }
   async importVideo(
     path: string,
     signal?: AbortSignal,
@@ -147,9 +448,9 @@ export class JobService {
   private workspace(id: string): string {
     return join(this.root, "jobs", id);
   }
-  private update(job: Job): Job {
+  private update(job: Job, requestIds: string[] = []): Job {
     refreshReview(job);
-    this.store.saveJob(job);
+    this.saveWithRequests(job, requestIds);
     this.emit({
       jobId: job.id,
       stage: "preview",
@@ -175,9 +476,24 @@ export class JobService {
     const job = this.store.getJob(id);
     const previous = job.options;
     if (JSON.stringify(previous) === JSON.stringify(options)) return job;
-    const { reviewProfileId: previousReview, ...previousContent } = previous;
-    const { reviewProfileId: nextReview, ...nextContent } = options;
+    const {
+      reviewProfileId: previousReview,
+      chapterProfileId: previousChapter,
+      chapterConcurrency: _previousConcurrency,
+      ...previousContent
+    } = previous;
+    const {
+      reviewProfileId: nextReview,
+      chapterProfileId: nextChapter,
+      chapterConcurrency: _nextConcurrency,
+      ...nextContent
+    } = options;
     if (previousReview !== nextReview) staleReview(job);
+    if (previousChapter !== nextChapter) {
+      for (const plan of [job.chapterPlan, job.customChapterPlan])
+        if (plan) plan.state = "stale";
+      if (job.reviewRun) job.reviewRun.state = "stale";
+    }
     if (JSON.stringify(previousContent) === JSON.stringify(nextContent)) {
       job.options = options;
       return this.update(job);
@@ -337,9 +653,15 @@ export class JobService {
   async analyzeNames(raw: AnalyzeNamesInput): Promise<Job> {
     const input = analyzeNamesInputSchema.parse(raw);
     const snapshot = this.editableTimeline(input.jobId, input.revision);
-    if (!snapshot.segments.length) throw new AppError('NO_SEGMENTS', '没有可检查的字幕');
-    if (snapshot.segments.length > MAX_REVIEW_TARGETS) throw new AppError('TEXT_LIMIT', '人名整批检查最多 2000 条字幕，不会自动拆分请求');
-    if (!snapshot.options.reviewProfileId) throw new AppError('PROFILE_MISSING', '请选择 AI 字幕检查服务');
+    if (!snapshot.segments.length)
+      throw new AppError("NO_SEGMENTS", "没有可检查的字幕");
+    if (snapshot.segments.length > MAX_REVIEW_TARGETS)
+      throw new AppError(
+        "TEXT_LIMIT",
+        "人名整批检查最多 2000 条字幕，不会自动拆分请求",
+      );
+    if (!snapshot.options.reviewProfileId)
+      throw new AppError("PROFILE_MISSING", "请选择 AI 字幕检查服务");
     const profile = this.store.getProfile(snapshot.options.reviewProfileId);
     const fingerprint = providerFingerprint(profile);
     const key = this.store.key(profile.id);
@@ -347,45 +669,136 @@ export class JobService {
     assertReviewPromptBudget(prompt, 0);
     const controller = new AbortController();
     this.active = { id: input.jobId, controller };
-    const progress = (value: number, message: string, job = this.store.getJob(input.jobId)): void => this.emit({ jobId: input.jobId, stage: 'names', progress: value, message, job });
+    const progress = (
+      value: number,
+      message: string,
+      job = this.store.getJob(input.jobId),
+    ): void =>
+      this.emit({
+        jobId: input.jobId,
+        stage: "names",
+        progress: value,
+        message,
+        job,
+      });
     try {
-      progress(0, `等待 AI 整批分析 ${snapshot.segments.length} 条字幕中的人名`);
-      const rawResult = parseJson(await generateText(profile, key, prompt, controller.signal));
+      progress(
+        0,
+        `等待 AI 整批分析 ${snapshot.segments.length} 条字幕中的人名`,
+      );
+      const requestIds: string[] = [];
+      let candidates: ReturnType<typeof groundNames>;
+      try {
+        const rawResult = parseJson(
+          await generateText(
+            profile,
+            key,
+            prompt,
+            controller.signal,
+            this.textContext(
+              "names",
+              snapshot.id,
+              requestIds,
+              progress,
+              undefined,
+              undefined,
+              snapshot.segments.length,
+            ),
+          ),
+        );
+        checkAbort(controller.signal);
+        progress(0, "正在核对人名的实际出现位置与次数");
+        candidates = groundNames(snapshot, rawResult);
+      } catch (error) {
+        this.validationFailed(requestIds, error);
+        throw error;
+      }
+      const validatedIds = this.validatedRequest(requestIds);
       checkAbort(controller.signal);
-      progress(0, '正在核对人名的实际出现位置与次数');
-      const candidates = groundNames(snapshot, rawResult);
       const current = this.store.getJob(input.jobId);
-      if (current.revision !== input.revision || nameTimelineFingerprint(current) !== nameTimelineFingerprint(snapshot) || current.options.reviewProfileId !== profile.id || providerFingerprint(this.store.getProfile(profile.id)) !== fingerprint || this.store.key(profile.id) !== key) throw new AppError('STALE_REVISION', '分析期间字幕或检查服务已改变，请重新分析');
+      if (
+        current.revision !== input.revision ||
+        nameTimelineFingerprint(current) !==
+          nameTimelineFingerprint(snapshot) ||
+        current.options.reviewProfileId !== profile.id ||
+        providerFingerprint(this.store.getProfile(profile.id)) !==
+          fingerprint ||
+        this.store.key(profile.id) !== key
+      )
+        throw new AppError(
+          "STALE_REVISION",
+          "分析期间字幕或检查服务已改变，请重新分析",
+        );
       checkAbort(controller.signal);
-      current.nameReport = { version: 1, id: randomUUID(), profileId: profile.id, providerFingerprint: fingerprint, revision: input.revision, createdAt: Date.now(), translationEnabled: snapshot.options.translationEnabled, timelineFingerprint: nameTimelineFingerprint(snapshot), state: 'current', candidates };
-      this.store.saveJob(current);
-      progress(1, `人名检查完成：${candidates.length} 个重复出现的人名`, current);
+      current.nameReport = {
+        version: 1,
+        id: randomUUID(),
+        profileId: profile.id,
+        providerFingerprint: fingerprint,
+        revision: input.revision,
+        createdAt: Date.now(),
+        translationEnabled: snapshot.options.translationEnabled,
+        timelineFingerprint: nameTimelineFingerprint(snapshot),
+        state: "current",
+        candidates,
+      };
+      this.saveWithRequests(current, validatedIds);
+      progress(
+        1,
+        `人名检查完成：${candidates.length} 个重复出现的人名`,
+        current,
+      );
       return current;
-    } catch (error) { progress(1, controller.signal.aborted ? '人名检查已取消，保留上次结果' : '人名检查未完成，保留上次结果'); throw error; }
-    finally { this.active = undefined; }
+    } catch (error) {
+      progress(
+        1,
+        controller.signal.aborted
+          ? "人名检查已取消，保留上次结果"
+          : "人名检查未完成，保留上次结果",
+      );
+      throw error;
+    } finally {
+      this.active = undefined;
+    }
   }
   applyNames(raw: ApplyNamesInput): Job {
     const input = applyNamesInputSchema.parse(raw);
     const job = this.editableTimeline(input.jobId, input.revision);
     const report = job.nameReport;
-    if (!report || report.id !== input.reportId || report.state !== 'current' || report.timelineFingerprint !== nameTimelineFingerprint(job) || report.profileId !== job.options.reviewProfileId || providerFingerprint(this.store.getProfile(report.profileId)) !== report.providerFingerprint) throw new AppError('STALE_NAMES', '人名检查结果已过期，请重新分析');
+    if (
+      !report ||
+      report.id !== input.reportId ||
+      report.state !== "current" ||
+      report.timelineFingerprint !== nameTimelineFingerprint(job) ||
+      report.profileId !== job.options.reviewProfileId ||
+      providerFingerprint(this.store.getProfile(report.profileId)) !==
+        report.providerFingerprint
+    )
+      throw new AppError("STALE_NAMES", "人名检查结果已过期，请重新分析");
     const draft = draftNameApply(job, report, input.mappings);
     if (!draft.changed) return job;
     job.segments = validateTimeline(draft.segments, job.media.durationMs);
     styleSchema.parse(draft.style);
-    job.style = draft.style; job.nameBatch = draft.batch; job.revision++;
+    job.style = draft.style;
+    job.nameBatch = draft.batch;
+    job.revision++;
     this.invalidate(job);
     return this.update(job);
   }
   undoNames(raw: UndoNamesInput): Job {
     const input = undoNamesInputSchema.parse(raw);
     const job = this.editableTimeline(input.jobId, input.revision);
-    if (!job.nameBatch || job.nameBatch.id !== input.batchId) throw new AppError('NOT_FOUND', '这次人名修改已被更新的批次替代');
+    if (!job.nameBatch || job.nameBatch.id !== input.batchId)
+      throw new AppError("NOT_FOUND", "这次人名修改已被更新的批次替代");
     const draft = draftNameUndo(job, job.nameBatch);
     job.segments = validateTimeline(draft.segments, job.media.durationMs);
     styleSchema.parse(draft.style);
-    job.style = draft.style; job.nameBatch = draft.batch;
-    if (draft.changed) { job.revision++; this.invalidate(job); }
+    job.style = draft.style;
+    job.nameBatch = draft.batch;
+    if (draft.changed) {
+      job.revision++;
+      this.invalidate(job);
+    }
     return this.update(job);
   }
   assertProfileWritable(id?: string): void {
@@ -393,12 +806,14 @@ export class JobService {
     const options = this.store.getJob(this.active.id).options;
     if (
       id &&
-      [
-        options.recognitionProfileId,
-        options.translationProfileId,
-        options.reviewProfileId,
-        options.styleProfileId,
-      ].includes(id)
+      (this.active.profileIds?.includes(id) ||
+        [
+          options.recognitionProfileId,
+          options.translationProfileId,
+          options.reviewProfileId,
+          options.styleProfileId,
+          options.chapterProfileId,
+        ].includes(id))
     )
       throw new AppError(
         "JOB_BUSY",
@@ -698,78 +1113,234 @@ export class JobService {
     this.requireTranslation(this.store.getJob(id));
     await this.stage(id, "translate", async (signal, progress) => {
       let snapshot = this.store.getJob(id);
-      if (!snapshot.options.translationProfileId)
-        throw new AppError("PROFILE_MISSING", "请选择翻译配置");
+      this.preflightTranslation(snapshot);
       if (snapshot.stages.recognize.state !== "succeeded")
         throw new AppError("RECOGNITION_REQUIRED", "请先完成当前设置的识别");
-      const profile = this.store.getProfile(
-        snapshot.options.translationProfileId,
-      );
+      const profileId = snapshot.options.translationProfileId;
+      if (!profileId) throw new AppError("PROFILE_MISSING", "请选择翻译配置");
+      const profile = this.store.getProfile(profileId);
+      const fingerprint = providerFingerprint(profile);
       const key = this.store.key(profile.id);
       const selectedSet = selectedIds ? new Set(selectedIds) : undefined;
       if (
         selectedSet &&
-        [...selectedSet].some(
-          (id) => !snapshot.segments.some((s) => s.id === id),
-        )
+        (selectedSet.size !== selectedIds?.length ||
+          [...selectedSet].some(
+            (cueId) => !snapshot.segments.some((cue) => cue.id === cueId),
+          ))
       )
-        throw new AppError("NOT_FOUND", "所选字幕不存在");
-      const selected = snapshot.segments.filter((s) =>
-        selectedSet
-          ? selectedSet.has(s.id)
-          : !s.translatedText || s.translationStale,
-      );
+        throw new AppError("NOT_FOUND", "所选字幕不存在或重复");
       if (!snapshot.segments.length)
         throw new AppError("NO_SEGMENTS", "没有可翻译的字幕");
-      for (let offset = 0; offset < selected.length; offset += 30) {
-        const batch = selected.slice(offset, offset + 30);
-        const revision = snapshot.revision;
-        const result = await translateBatch(
-          profile,
-          key,
-          batch,
-          snapshot.segments.filter((s, index) =>
-            batch.some(
-              (b) =>
-                Math.abs(
-                  snapshot.segments.findIndex(
-                    (candidate) => candidate.id === b.id,
-                  ) - index,
-                ) <= 2,
-            ),
-          ),
-          snapshot.options.sourceLanguage,
-          snapshot.options.targetLanguage,
+      const selected = snapshot.segments.filter((cue) =>
+        selectedSet
+          ? selectedSet.has(cue.id)
+          : !cue.translatedText || cue.translationStale,
+      );
+      if (!selected.length) return;
+      snapshot = await this.normalPlan(snapshot, profileId, signal);
+      const plan = snapshot.chapterPlan;
+      if (!plan) throw new AppError("CHAPTER_INVALID", "缺少完整章节");
+      const source = chapterSourceFingerprint(snapshot);
+      const options = JSON.stringify(snapshot.options);
+      let revision = snapshot.revision;
+      const groups = chapterTargets(plan, selected);
+      const runId = randomUUID();
+      const prepare = async (
+        group: { chapter: Chapter; targets: Segment[] },
+        index: number,
+        workerSignal: AbortSignal,
+      ): Promise<{ segments: Segment[]; ids: string[] }> => {
+        const ids: string[] = [];
+        const segments = await this.chapterTranslation(
+          snapshot,
+          group.targets,
+          snapshot.segments,
+          group.chapter,
+          workerSignal,
+          (value, message) =>
+            progress(value, `章节 ${index + 1}/${groups.length} · ${message}`),
+          ids,
+          runId,
+        );
+        return { segments, ids };
+      };
+      if (selectedSet) {
+        // Selected retranslation still publishes all selected chapters atomically.
+        const results: { segments: Segment[]; ids: string[] }[] = [];
+        await orderedChapterWorkers(
+          groups,
+          snapshot.options.chapterConcurrency ?? 2,
           signal,
+          prepare,
+          (result) => results.push(result),
         );
         checkAbort(signal);
-        const current = this.store.getJob(id);
-        if (current.revision !== revision)
-          throw new AppError(
-            "STALE_REVISION",
-            "翻译期间字幕已修改，未覆盖手工修改",
-          );
-        const translations = new Map(result.map((t) => [t.id, t.text]));
-        current.segments = current.segments.map((s) =>
-          translations.has(s.id)
-            ? {
-                ...s,
-                translatedText: translations.get(s.id) ?? s.translatedText,
-                translationStale: false,
-              }
-            : s,
+        const current = this.translationCurrent(
+          snapshot,
+          revision,
+          source,
+          options,
+          profile.id,
+          fingerprint,
+          key,
+          plan,
         );
-        current.revision++;
-        this.invalidate(current);
-        this.update(current);
-        snapshot = current;
-        progress(
-          Math.min(1, (offset + batch.length) / selected.length),
-          "翻译",
+        this.applyTranslations(
+          current,
+          results.flatMap((result) => result.segments),
+          results.flatMap((result) => result.ids),
+        );
+      } else {
+        let completed = 0;
+        await orderedChapterWorkers(
+          groups,
+          snapshot.options.chapterConcurrency ?? 2,
+          signal,
+          prepare,
+          (result) => {
+            checkAbort(signal);
+            const current = this.translationCurrent(
+              snapshot,
+              revision,
+              source,
+              options,
+              profile.id,
+              fingerprint,
+              key,
+              plan,
+            );
+            this.applyTranslations(current, result.segments, result.ids);
+            revision = current.revision;
+            completed++;
+            progress(
+              completed / groups.length,
+              `已保存完整章节 ${completed}/${groups.length}`,
+            );
+          },
+          'ready',
         );
       }
     });
     return this.store.getJob(id);
+  }
+  private translationCurrent(
+    snapshot: Job,
+    revision: number,
+    source: string,
+    options: string,
+    profileId: string,
+    fingerprint: string,
+    key: string,
+    plan?: ChapterPlan,
+  ): Job {
+    const current = this.store.getJob(snapshot.id);
+    if (
+      current.revision !== revision ||
+      chapterSourceFingerprint(current) !== source ||
+      JSON.stringify(current.options) !== options ||
+      providerFingerprint(this.store.getProfile(profileId)) !== fingerprint ||
+      this.store.key(profileId) !== key ||
+      (plan &&
+        (current.chapterPlan?.id !== plan.id ||
+          current.chapterPlan.revision !== plan.revision ||
+          current.chapterPlan.state !== "current"))
+    )
+      throw new AppError(
+        "STALE_REVISION",
+        "翻译期间字幕、章节或服务已改变，未覆盖当前内容",
+      );
+    return current;
+  }
+  private applyTranslations(
+    job: Job,
+    translated: Segment[],
+    requestIds: string[],
+  ): void {
+    const replacements = new Map(translated.map((cue) => [cue.id, cue]));
+    job.segments = validateTimeline(
+      job.segments.map((cue) => replacements.get(cue.id) ?? cue),
+      job.media.durationMs,
+    );
+    job.revision++;
+    this.invalidate(job);
+    this.update(job, requestIds);
+  }
+  private async chapterTranslation(
+    snapshot: Job,
+    selected: Segment[],
+    all: Segment[],
+    chapter: Chapter | undefined,
+    signal: AbortSignal,
+    progress: (value: number, message: string) => void,
+    published: string[],
+    runId = randomUUID(),
+  ): Promise<Segment[]> {
+    const profileId = snapshot.options.translationProfileId;
+    if (!profileId) throw new AppError("PROFILE_MISSING", "请选择翻译配置");
+    const profile = this.store.getProfile(profileId);
+    const fingerprint = providerFingerprint(profile);
+    const key = this.store.key(profile.id);
+    const translated = new Map<string, string>();
+    const pieces = boundedChapterPieces(selected);
+    for (const [index, targets] of pieces.entries()) {
+      checkAbort(signal);
+      const selectedIds = new Set(targets.map((cue) => cue.id));
+      const context = neighboringContext(all, targets).filter(
+        (cue) => !selectedIds.has(cue.id),
+      );
+      const prompt = translationPrompt(
+        targets,
+        context,
+        snapshot.options.sourceLanguage,
+        snapshot.options.targetLanguage,
+        chapter,
+      );
+      if (Buffer.byteLength(prompt, "utf8") + 8192 > 512 * 1024)
+        throw new AppError(
+          "TEXT_LIMIT",
+          "章节翻译工作单元超过 512 KiB，请缩短字幕",
+        );
+      const ids: string[] = [];
+      progress(
+        0,
+        `工作单元 ${index + 1}/${pieces.length} · ${targets.length} 条字幕`,
+      );
+      const result = await translateBatch(
+        profile,
+        key,
+        targets,
+        context,
+        snapshot.options.sourceLanguage,
+        snapshot.options.targetLanguage,
+        signal,
+        this.textContext(
+          "translate",
+          snapshot.id,
+          ids,
+          progress,
+          runId,
+          chapter?.id,
+          targets.length,
+        ),
+        chapter,
+      );
+      checkAbort(signal);
+      if (
+        providerFingerprint(this.store.getProfile(profileId)) !== fingerprint ||
+        this.store.key(profileId) !== key
+      )
+        throw new AppError("STALE_REVISION", "翻译服务已改变");
+      published.push(...this.validatedRequest(ids));
+      for (const item of result) translated.set(item.id, item.text);
+    }
+    if (translated.size !== selected.length)
+      throw new AppError("TRANSLATION_INCOMPLETE", "章节翻译未覆盖所有目标");
+    return selected.map((cue) => ({
+      ...cue,
+      translatedText: translated.get(cue.id) ?? cue.translatedText,
+      translationStale: false,
+    }));
   }
   private requireTranslation(job: Job): void {
     if (!job.options.translationEnabled)
@@ -793,37 +1364,44 @@ export class JobService {
     this.requireTranslation(snapshot);
     if (!snapshot.options.translationProfileId)
       throw new AppError("PROFILE_MISSING", "请选择翻译配置");
-    const profile = this.store.getProfile(
-      snapshot.options.translationProfileId,
-    );
-    const key = this.store.key(profile.id);
-    const translated = new Map<string, string>();
-    const batches = reviewBatches(selected, false);
-    for (const [index, batch] of batches.entries()) {
-      checkAbort(signal);
-      const result = await translateBatch(
-        profile,
-        key,
-        batch,
-        neighboringContext(all, batch),
-        snapshot.options.sourceLanguage,
-        snapshot.options.targetLanguage,
-        signal,
+    const ids: string[] = [];
+    // Re-recognition drafts may have new source IDs, so derive coverage locally without
+    // publishing a plan for the not-yet-committed source timeline.
+    const draft = { ...snapshot, segments: all };
+    const plan =
+      draft.chapterPlan?.state === "current" &&
+      draft.chapterPlan.sourceFingerprint === chapterSourceFingerprint(draft)
+        ? draft.chapterPlan
+        : newCoveragePlan(draft);
+    const result: Segment[] = [];
+    const runId = randomUUID();
+    for (const group of chapterTargets(plan, selected))
+      result.push(
+        ...(await this.chapterTranslation(
+          snapshot,
+          group.targets,
+          all,
+          group.chapter,
+          signal,
+          progress,
+          ids,
+          runId,
+        )),
       );
-      checkAbort(signal);
-      for (const item of result) translated.set(item.id, item.text);
-      progress((index + 1) / batches.length, "正在翻译指定字幕");
-    }
-    return selected.map((s) => ({
-      ...s,
-      translatedText: translated.get(s.id) ?? s.translatedText,
-      translationStale: false,
-    }));
+    // The caller owns the atomic content publication; these requests remain validated
+    // until that owner has committed the complete operation.
+    this.draftRequestIds.set(result, ids);
+    return result;
   }
+  private readonly draftRequestIds = new WeakMap<Segment[], string[]>();
+
   async translatePartial(raw: ReprocessInput): Promise<Job> {
     const input = reprocessInputSchema.parse(raw);
     const plan = this.planReprocess({ ...input, operation: "translate" });
     const before = this.store.getJob(input.jobId);
+    const services = this.serviceIdentity([
+      before.options.translationProfileId,
+    ]);
     const completion = (): {
       state: "succeeded" | "idle";
       message: string;
@@ -849,6 +1427,11 @@ export class JobService {
         checkAbort(signal);
         const current = this.store.getJob(input.jobId);
         resolveReprocess(current, { ...input, operation: "translate" });
+        if (
+          this.serviceIdentity([current.options.translationProfileId]) !==
+          services
+        )
+          throw new AppError("STALE_REVISION", "翻译服务已改变");
         const replacements = new Map(drafted.map((s) => [s.id, s]));
         current.segments = current.segments.map(
           (s) => replacements.get(s.id) ?? s,
@@ -856,7 +1439,10 @@ export class JobService {
         current.revision++;
         this.invalidate(current);
         current.stages.translate = { ...completion(), progress: 1 };
-        return this.store.saveJob(current);
+        return this.saveWithRequests(
+          current,
+          this.draftRequestIds.get(drafted),
+        );
       },
       completion,
     );
@@ -987,6 +1573,13 @@ export class JobService {
     const before = this.store.getJob(input.jobId);
     if (input.translate) this.requireTranslation(before);
     if (!before.media.hasAudio) throw new AppError("NO_AUDIO", "视频没有音轨");
+    const providerIds = [
+      before.options.recognition === "cloud"
+        ? before.options.recognitionProfileId
+        : undefined,
+      input.translate ? before.options.translationProfileId : undefined,
+    ];
+    const services = this.serviceIdentity(providerIds);
     let cueCount = 0;
     const completion = (): {
       state: "succeeded" | "idle";
@@ -1019,6 +1612,8 @@ export class JobService {
           target: input.target,
           operation: "recognize",
         });
+        if (this.serviceIdentity(providerIds) !== services)
+          throw new AppError("STALE_REVISION", "识别或翻译服务已改变");
         this.applyRecognitionDraft(
           current,
           before,
@@ -1042,7 +1637,10 @@ export class JobService {
         }
         this.invalidate(current);
         current.stages.recognize = { ...completion(), progress: 1 };
-        return this.store.saveJob(current);
+        return this.saveWithRequests(
+          current,
+          this.draftRequestIds.get(drafted),
+        );
       },
       completion,
     );
@@ -1082,9 +1680,204 @@ export class JobService {
   }
   private async reviewDraft(
     input: ReviewSubtitlesInput,
+    initial: Job,
+    signal: AbortSignal,
+    progress: (value: number, message: string) => void,
+  ): Promise<Job> {
+    if (initial.media.durationMs <= CHAPTER_REVIEW_THRESHOLD_MS)
+      return this.reviewSingle(input, initial, signal, progress);
+    const requested = input.segmentIds
+      ? new Set(input.segmentIds)
+      : new Set(initial.segments.map((cue) => cue.id));
+    if (
+      requested.size !==
+        (input.segmentIds?.length ?? initial.segments.length) ||
+      [...requested].some(
+        (id) => !initial.segments.some((cue) => cue.id === id),
+      )
+    )
+      throw new AppError("REVIEW_IDS", "所选检查字幕不存在或重复");
+    if (!requested.size) throw new AppError("NO_SEGMENTS", "没有可检查的字幕");
+    const profileId = initial.options.reviewProfileId;
+    if (!profileId)
+      throw new AppError("PROFILE_MISSING", "请选择 AI 字幕检查配置");
+    const profile = this.store.getProfile(profileId);
+    const fingerprint = providerFingerprint(profile);
+    const key = this.store.key(profileId);
+    const snapshot = await this.normalPlan(initial, profileId, signal);
+    const plan = snapshot.chapterPlan;
+    if (!plan) throw new AppError("CHAPTER_INVALID", "缺少检查章节");
+    const targets = snapshot.segments.filter((cue) => requested.has(cue.id));
+    const source = chapterSourceFingerprint(snapshot);
+    const timeline = chapterReviewFingerprint(snapshot);
+    const previous = snapshot.reviewRun;
+    const compatible =
+      previous &&
+      ["failed", "cancelled", "interrupted"].includes(previous.state) &&
+      previous.planId === plan.id &&
+      previous.planRevision === plan.revision &&
+      previous.sourceFingerprint === source &&
+      previous.timelineFingerprint === timeline &&
+      previous.profileId === profileId &&
+      previous.providerFingerprint === fingerprint &&
+      previous.rubricVersion === REVIEW_RUBRIC_VERSION &&
+      previous.translationEnabled === snapshot.options.translationEnabled &&
+      previous.targetIds.length === requested.size &&
+      previous.targetIds.every((id) => requested.has(id));
+    const groups = chapterTargets(plan, targets);
+    let run: ChapterReviewRun = compatible
+      ? { ...previous, state: "running", completedAt: undefined }
+      : {
+          version: 1,
+          id: randomUUID(),
+          planId: plan.id,
+          planRevision: plan.revision,
+          sourceFingerprint: source,
+          timelineFingerprint: timeline,
+          profileId,
+          providerFingerprint: fingerprint,
+          rubricVersion: REVIEW_RUBRIC_VERSION,
+          translationEnabled: snapshot.options.translationEnabled,
+          targetIds: targets.map((cue) => cue.id),
+          chapters: groups.map(({ chapter, targets }) => ({
+            chapterId: chapter.id,
+            targetIds: targets.map((cue) => cue.id),
+            state: "pending",
+          })),
+          state: "running",
+          startedAt: Date.now(),
+        };
+    const verify = (): Job => {
+      checkAbort(signal);
+      const current = this.store.getJob(input.jobId);
+      if (
+        current.revision !== input.revision ||
+        chapterSourceFingerprint(current) !== source ||
+        chapterReviewFingerprint(current) !== timeline ||
+        current.options.reviewProfileId !== profileId ||
+        providerFingerprint(this.store.getProfile(profileId)) !== fingerprint ||
+        this.store.key(profileId) !== key ||
+        current.chapterPlan?.id !== plan.id ||
+        current.chapterPlan.revision !== plan.revision ||
+        current.chapterPlan.state !== "current"
+      )
+        throw new AppError(
+          "STALE_REVISION",
+          "检查期间字幕、章节或服务已改变，已保留完成结果",
+        );
+      return current;
+    };
+    const saveRun = (): Job => {
+      const current = verify();
+      current.reviewRun = structuredClone(run);
+      this.store.saveJob(current);
+      return current;
+    };
+    saveRun();
+    try {
+      for (const [index, group] of groups.entries()) {
+        const state = run.chapters[index];
+        if (!state) throw new AppError("CHAPTER_INVALID", "检查章节状态缺失");
+        if (state.state === "completed") continue;
+        state.state = "running";
+        delete state.code;
+        let draft = saveRun();
+        const requestIds: string[] = [];
+        const bounded: Segment[][] = [];
+        const admit = (piece: Segment[]): void => {
+          try {
+            createReviewRequest(
+              snapshot.segments,
+              piece,
+              snapshot.options.translationEnabled,
+            );
+            bounded.push(piece);
+          } catch (error) {
+            if (
+              !(error instanceof AppError) ||
+              error.code !== "TEXT_LIMIT" ||
+              piece.length < 2
+            )
+              throw error;
+            const middle = Math.ceil(piece.length / 2);
+            admit(piece.slice(0, middle));
+            admit(piece.slice(middle));
+          }
+        };
+        boundedChapterPieces(group.targets).forEach(admit);
+        for (const [pieceIndex, piece] of bounded.entries()) {
+          progress(
+            index / groups.length,
+            `检查章节 ${index + 1}/${groups.length} · 工作单元 ${pieceIndex + 1}/${bounded.length}`,
+          );
+          draft = await this.reviewSingle(
+            { ...input, segmentIds: piece.map((cue) => cue.id) },
+            snapshot,
+            signal,
+            (_value, message) =>
+              progress(
+                index / groups.length,
+                `章节 ${index + 1}/${groups.length} · ${message}`,
+              ),
+            {
+              base: draft,
+              requestIds,
+              runId: run.id,
+              chapterId: group.chapter.id,
+            },
+          );
+        }
+        verify();
+        state.state = "completed";
+        draft.reviewRun = structuredClone(run);
+        checkAbort(signal);
+        this.saveWithRequests(draft, requestIds);
+        progress(
+          (index + 1) / groups.length,
+          `已保存检查章节 ${run.chapters.filter((chapter) => chapter.state === "completed").length}/${groups.length}`,
+        );
+      }
+      run = { ...run, state: "complete", completedAt: Date.now() };
+      return saveRun();
+    } catch (error) {
+      const current = this.store.getJob(input.jobId);
+      const stale =
+        chapterSourceFingerprint(current) !== source ||
+        chapterReviewFingerprint(current) !== timeline ||
+        current.revision !== input.revision ||
+        current.options.reviewProfileId !== profileId ||
+        providerFingerprint(this.store.getProfile(profileId)) !== fingerprint ||
+        this.store.key(profileId) !== key ||
+        current.chapterPlan?.id !== plan.id ||
+        current.chapterPlan.revision !== plan.revision;
+      run.state = stale ? "stale" : signal.aborted ? "cancelled" : "failed";
+      run.completedAt = Date.now();
+      for (const chapter of run.chapters)
+        if (chapter.state === "running") {
+          chapter.state = "failed";
+          chapter.code =
+            error instanceof AppError ? error.code : "OPERATION_FAILED";
+        }
+      current.reviewRun = run;
+      this.store.saveJob(current);
+      progress(
+        1,
+        `检查未完成；保留 ${run.chapters.filter((chapter) => chapter.state === "completed").length}/${run.chapters.length} 个完整章节，可重试剩余部分`,
+      );
+      throw error;
+    }
+  }
+  private async reviewSingle(
+    input: ReviewSubtitlesInput,
     snapshot: Job,
     signal: AbortSignal,
     progress: (value: number, message: string) => void,
+    draft?: {
+      base: Job;
+      requestIds: string[];
+      runId: string;
+      chapterId: string;
+    },
   ): Promise<Job> {
     const selectedIds = input.segmentIds
       ? new Set(input.segmentIds)
@@ -1115,26 +1908,64 @@ export class JobService {
       selected,
       snapshot.options.translationEnabled,
     );
-    const generate = async (prompt: string): Promise<ReturnType<typeof validateReviewResponse>> => {
+    const requestIds: string[] = [];
+    const runId = draft?.runId ?? randomUUID();
+    const generate = async (
+      prompt: string,
+    ): Promise<ReturnType<typeof validateReviewResponse>> => {
       checkAbort(signal);
-      const raw = parseJson(await generateText(profile, key, prompt, signal));
-      checkAbort(signal);
-      progress(0, `正在校验整批 JSON：${selected.length} 条字幕`);
-      return validateReviewResponse(raw, request, snapshot.options.translationEnabled);
+      try {
+        const context = this.textContext(
+          "review",
+          snapshot.id,
+          requestIds,
+          progress,
+          runId,
+          draft?.chapterId,
+          selected.length,
+        );
+        const raw = parseJson(
+          await generateText(
+            profile,
+            key,
+            prompt,
+            signal,
+            context ? { ...context, attempt: requestIds.length } : undefined,
+          ),
+        );
+        checkAbort(signal);
+        progress(0, `正在校验整批 JSON：${selected.length} 条字幕`);
+        return validateReviewResponse(
+          raw,
+          request,
+          snapshot.options.translationEnabled,
+        );
+      } catch (error) {
+        this.validationFailed(requestIds, error);
+        throw error;
+      }
     };
     progress(0, `等待 AI 返回完整 JSON：${selected.length} 条字幕`);
     let validatedGroups: Awaited<ReturnType<typeof generate>>;
-    try { validatedGroups = await generate(request.prompt); }
-    catch (error) {
+    try {
+      validatedGroups = await generate(request.prompt);
+    } catch (error) {
       checkAbort(signal);
       const correction = reviewCorrectionPrompt(request, error);
       if (!correction) throw error;
       progress(0, `纠正返回格式或证据 1/1：整批 ${selected.length} 条字幕`);
-      try { validatedGroups = await generate(correction); }
-      catch (correctedError) {
+      try {
+        validatedGroups = await generate(correction);
+      } catch (correctedError) {
         checkAbort(signal);
-        if (correctedError instanceof AppError && reviewCorrectionPrompt(request, correctedError))
-          throw new AppError(correctedError.code, `${correctedError.message}；一次纠正仍未通过，请减少选中字幕或更换检查模型`);
+        if (
+          correctedError instanceof AppError &&
+          reviewCorrectionPrompt(request, correctedError)
+        )
+          throw new AppError(
+            correctedError.code,
+            `${correctedError.message}；一次纠正仍未通过，请减少选中字幕或更换检查模型`,
+          );
         throw correctedError;
       }
     }
@@ -1183,13 +2014,16 @@ export class JobService {
         });
       }
     }
+    const validatedIds = this.validatedRequest(requestIds);
     progress(0.99, `已校验 ${selected.length} / ${selected.length} 条字幕`);
     checkAbort(signal);
-    const current = this.store.getJob(input.jobId);
+    const latest = this.store.getJob(input.jobId);
+    const current = draft ? structuredClone(draft.base) : latest;
     if (
-      current.revision !== input.revision ||
-      current.options.reviewProfileId !== profile.id ||
-      current.options.translationEnabled !==
+      latest.revision !== input.revision ||
+      chapterReviewFingerprint(latest) !== chapterReviewFingerprint(snapshot) ||
+      latest.options.reviewProfileId !== profile.id ||
+      latest.options.translationEnabled !==
         snapshot.options.translationEnabled ||
       providerFingerprint(this.store.getProfile(profile.id)) !== fingerprint ||
       this.store.key(profile.id) !== key
@@ -1274,7 +2108,12 @@ export class JobService {
       ],
     };
     checkAbort(signal);
-    return this.store.saveJob(current);
+    if (draft) {
+      draft.requestIds.push(...validatedIds);
+      return current;
+    }
+    this.saveWithRequests(current, validatedIds);
+    return current;
   }
   acknowledgeFinding(raw: AcknowledgeFindingInput): Job {
     const input = acknowledgeFindingInputSchema.parse(raw);
@@ -1322,7 +2161,13 @@ export class JobService {
   private serviceIdentity(ids: (string | undefined)[]): string {
     return JSON.stringify(
       ids.map((id) =>
-        id ? [id, providerFingerprint(this.store.getProfile(id))] : null,
+        id
+          ? [
+              id,
+              providerFingerprint(this.store.getProfile(id)),
+              createHash("sha256").update(this.store.key(id)).digest("hex"),
+            ]
+          : null,
       ),
     );
   }
@@ -1485,6 +2330,7 @@ export class JobService {
         if (plan.recognition) await this.preflightRecognition(snapshot);
         verify(snapshot, identity, providerIds);
         const draft = structuredClone(snapshot);
+        const translationRequestIds: string[] = [];
         if (plan.recognition) {
           phase(
             "recognize",
@@ -1496,6 +2342,9 @@ export class JobService {
             false,
             controller.signal,
             progress,
+          );
+          translationRequestIds.push(
+            ...(this.draftRequestIds.get(recognized.drafted) ?? []),
           );
           this.applyRecognitionDraft(
             draft,
@@ -1521,6 +2370,9 @@ export class JobService {
             draft.segments,
             controller.signal,
             progress,
+          );
+          translationRequestIds.push(
+            ...(this.draftRequestIds.get(translations) ?? []),
           );
           const replacements = new Map(translations.map((s) => [s.id, s]));
           draft.segments = draft.segments.map(
@@ -1567,7 +2419,7 @@ export class JobService {
           };
         // The last abort/identity check is synchronous with the single content transaction.
         checkAbort(controller.signal);
-        this.store.saveJob(draft);
+        this.saveWithRequests(draft, translationRequestIds);
         run = committedRun;
         progress(1, `已保存第 ${run.committedRounds} 轮完整结果`);
         snapshot = await assess(
@@ -1611,7 +2463,7 @@ export class JobService {
     }
   }
   async designStyle(id: string, prompt: string): Promise<Job> {
-    await this.stage(id, "style", async (signal) => {
+    await this.stage(id, "style", async (signal, progress) => {
       const snapshot = this.store.getJob(id);
       if (!snapshot.options.styleProfileId)
         throw new AppError("PROFILE_MISSING", "请选择样式设计配置");
@@ -1619,6 +2471,8 @@ export class JobService {
       const key = this.store.key(profile.id);
       const task = `Design subtitle style. Return only JSON matching this example and these constraints. version=1; templateId clean/cinematic/teaching/bold/soft; fontId managed-cjk/managed-cjk-bold; fontSizeRatio .015-.08; outlineWidthRatio 0-.005; shadow opacity 0-1, offsets -.01-.01; anchor top-center/center/bottom-center; margin .02-.25; maxWidth .5-.95; sourceScale .6-1; animation none/fade, integer 0-1000ms; colors #RRGGBB. Unknown fields forbidden. emphasisBySegment must refer only to literal keywords in provided text. Example ${JSON.stringify(DEFAULT_STYLE)}\n${JSON.stringify({ request: prompt, subtitles: snapshot.segments.map((s) => ({ id: s.id, text: primarySubtitleText(s, snapshot.options.translationEnabled) })) })}`;
       let style: SubtitleStyle | undefined;
+      const requestIds: string[] = [];
+      const runId = randomUUID();
       for (let attempt = 0; attempt < 2; attempt++) {
         checkAbort(signal);
         const generated = await generateText(
@@ -1629,11 +2483,21 @@ export class JobService {
               ? "\nReturn valid configuration respecting all numeric limits."
               : ""),
           signal,
+          this.textContext(
+            "style",
+            id,
+            requestIds,
+            progress,
+            runId,
+            undefined,
+            snapshot.segments.length,
+          ),
         );
         let raw: unknown;
         try {
           raw = parseJson(generated);
         } catch (error) {
+          this.validationFailed(requestIds, error);
           if (!attempt) continue;
           throw error;
         }
@@ -1644,22 +2508,34 @@ export class JobService {
             style = result.data;
             break;
           } catch (error) {
+            this.validationFailed(requestIds, error);
             if (attempt) throw error;
           }
-        } else if (attempt)
-          throw new AppError(
+        } else {
+          const error = new AppError(
             "STYLE_INVALID",
             "AI 样式配置无效，已保留当前样式",
           );
+          this.validationFailed(requestIds, error);
+          if (attempt) throw error;
+        }
       }
       if (!style) throw new AppError("STYLE_INVALID", "AI 样式配置无效");
+      const validatedIds = this.validatedRequest(requestIds);
+      checkAbort(signal);
       const current = this.store.getJob(id);
-      if (current.revision !== snapshot.revision)
+      if (
+        current.revision !== snapshot.revision ||
+        current.options.styleProfileId !== profile.id ||
+        providerFingerprint(this.store.getProfile(profile.id)) !==
+          providerFingerprint(profile) ||
+        this.store.key(profile.id) !== key
+      )
         throw new AppError("STALE_REVISION", "样式生成期间字幕已修改，请重试");
       current.style = style;
       current.revision++;
       this.invalidate(current);
-      this.update(current);
+      this.update(current, validatedIds);
     });
     return this.store.getJob(id);
   }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { artifactCacheSummarySchema } from "./artifact-cache-contracts";
 
 export const onlineUrlSchema = z
   .string()
@@ -65,6 +66,7 @@ export type DownloadSettings = z.infer<typeof downloadSettingsSchema>;
 export type DownloadSettingsInput = z.input<typeof downloadSettingsSchema>;
 export const downloadStatusSchema = z
   .object({
+    downloadCache: artifactCacheSummarySchema.optional(),
     ready: z.boolean(),
     version: z.string(),
     denoVersion: z.string(),

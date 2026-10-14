@@ -1,4 +1,7 @@
 export const IPC_CHANNELS = {
+  diagnostics: ["list", "detail", "readAnswer", "clear"],
+  chapterCriteria: ["list", "save", "copy", "remove", "select"],
+  chapterExports: ["export", "list"],
   exportSettings: ["status", "saveSettings", "chooseDirectory"],
   download: [
     "status",
@@ -7,13 +10,16 @@ export const IPC_CHANNELS = {
     "install",
     "importUrl",
     "cancel",
+    "clearDownloadCache",
   ],
   profiles: ["list", "save", "remove", "test"],
-  runtime: ["status", "install", "cancel"],
+  runtime: ["status", "install", "cancel", "clearDownloadCache"],
   jobs: [
     "list",
     "get",
     "importVideo",
+    "planChapters",
+    "updateChapters",
     "updateOptions",
     "recognize",
     "recognizeAgain",

@@ -15,6 +15,7 @@ import type { Job, ImportOptions } from "../../../../shared/contracts";
 import { AppError, checkAbort } from "../../../lib/errors";
 import { runProcess } from "../../../lib/process";
 import { downloadArtifact, extractArchive } from "../../runtime/artifacts";
+import { ArtifactCache, type ManagedArtifact, type ArtifactPhase } from "../../runtime/artifact-cache";
 import { DOWNLOAD_ARTIFACTS, type DownloadArtifacts } from "../manifest";
 import {
   downloadSettingsSchema,
@@ -102,8 +103,10 @@ export class DownloadService {
   });
   private snapshot: DownloadStatus;
   private readonly artifacts: DownloadArtifacts;
+  private readonly cache: ArtifactCache;
   constructor(private readonly deps: Dependencies) {
     this.artifacts = deps.artifacts ?? DOWNLOAD_ARTIFACTS;
+    this.cache = new ArtifactCache(deps.root, "download");
     this.snapshot = {
       ready: false,
       version: this.artifacts.version,
@@ -173,7 +176,22 @@ export class DownloadService {
         this.update({ ready: false });
       }
     }
+    this.snapshot.downloadCache = await this.cache.summary(this.assets());
     return { ...this.snapshot, settings: { ...this.settings } };
+  }
+  private assets(): [ManagedArtifact, ManagedArtifact] {
+    return [
+      { id: "yt-dlp", name: "yt-dlp", artifact: this.artifacts.ytdlp },
+      { id: "deno", name: "Deno JavaScript 运行时", artifact: this.artifacts.deno },
+    ];
+  }
+  async clearDownloadCache(): Promise<DownloadStatus> {
+    this.assertIdle();
+    this.isSavingSettings = true;
+    try { await this.cache.clear(); }
+    finally { this.isSavingSettings = false; }
+    const status = await this.status();
+    return this.update({ downloadCache: status.downloadCache, message: "工具下载缓存已清除，可用安装保留。" });
   }
   assertIdle(): void {
     if (this.controller || this.isSavingSettings)
@@ -289,22 +307,34 @@ export class DownloadService {
     try {
       await mkdir(staging, { recursive: true });
       const disk = await statfs(staging);
-      if (disk.bavail * disk.bsize < this.snapshot.sizeBytes + 250_000_000)
+      const assets = this.assets();
+      const cacheSummary = await this.cache.summary(assets);
+      const required = this.snapshot.sizeBytes * 2 - cacheSummary.totalBytes + 250_000_000;
+      if (disk.bavail * disk.bsize < required)
         throw new AppError(
           "INSTALL_SPACE",
-          "磁盘空间不足，下载工具需要约 350 MB 可用空间。",
+          `磁盘空间不足，缓存、安装副本和解压需要约 ${Math.ceil(required / 1_000_000)} MB 可用空间。`,
         );
-      await downloadArtifact(
-        this.artifacts.ytdlp,
+      const acquire = async (asset: ManagedArtifact, destination: string, base: number, weight: number): Promise<void> => {
+        let phase: ArtifactPhase = "downloading";
+        const messages: Record<ArtifactPhase, string> = {
+          downloading: `正在下载 ${asset.name}…`, resuming: `继续下载 ${asset.name}，已保存进度…`,
+          restarting: `服务器不支持续传或文件已改变，重新下载 ${asset.name}…`,
+          verifying: `正在校验 ${asset.name}…`, cached: `复用已校验 ${asset.name}，准备安装…`,
+        };
+        await downloadArtifact(asset.artifact, destination, signal,
+          (progress) => this.update({ progress: base + progress * weight, message: messages[phase] }),
+          { cache: this.cache, asset, onPhase: (next) => { phase = next; this.update({ message: messages[next] }); } });
+      };
+      await acquire(
+        assets[0],
         join(staging, "yt-dlp.exe"),
-        signal,
-        (progress) => this.update({ progress: progress * 0.3 }),
+        0, 0.3,
       );
-      await downloadArtifact(
-        this.artifacts.deno,
+      await acquire(
+        assets[1],
         join(staging, "deno.zip"),
-        signal,
-        (progress) => this.update({ progress: 0.3 + progress * 0.5 }),
+        0.3, 0.5,
       );
       await extractArchive(join(staging, "deno.zip"), staging, signal);
       this.update({
@@ -342,7 +372,7 @@ export class DownloadService {
       ownsPointer = false;
       activated = true;
       this.activeDirectory = staging;
-      return this.update({
+      this.update({
         ready: true,
         state: "succeeded",
         progress: 1,
@@ -356,9 +386,14 @@ export class DownloadService {
         if (ownsPointer) await rm(pointer, { force: true });
         if (!activated) await this.cleanup(staging);
       } finally {
-        this.controller = undefined;
+        try { this.update({ downloadCache: await this.cache.summary(this.assets()) }); }
+        finally { this.controller = undefined; }
       }
     }
+    // Return the final snapshot, including durable cache refreshed in finally.
+    // Returning the earlier success object lets an IPC result overwrite the newer
+    // cache status event in the renderer.
+    return this.snapshot;
   }
   async importUrl(rawUrl: string, rawOptions?: ImportOptions): Promise<Job> {
     const options = importOptionsSchema.parse(rawOptions ?? {});

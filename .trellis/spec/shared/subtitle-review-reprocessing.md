@@ -1,5 +1,7 @@
 # Optional Translation, Partial Processing and AI Review
 
+The chapter-mode thresholds, incremental retention/resume and streamed diagnostics contracts in [ai-chapters-and-artifacts.md](./ai-chapters-and-artifacts.md) supersede the original single-request/full-translation batching rules below where applicable. Short-video review and scoped processing keep their original atomic contracts.
+
 ## 1. Scope / Trigger
 Read when changing import mode, source-only display/export, partial recognition/translation, contextual AI review, bounded automatic repair or finding applicability. Schemas live in `src/shared/reprocessing-contracts.ts`, re-exported by `contracts.ts`; content selection lives in `src/shared/subtitle-content.ts`. Fixed review definitions live in `src/shared/review-rubric.ts`. Main JobService owns publication and cancellation.
 
