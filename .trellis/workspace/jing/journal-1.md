@@ -125,3 +125,29 @@ Implemented fixed-range bounded subtitle repair, first-run/replay guide, one-req
 ### Next Steps
 
 - Implementation is complete. No publication performed; unrelated pre-existing work remains outside this commit batch.
+
+
+## Session 4: Streamed AI chapters and resumable tool verification build
+<!-- trellis-session: v=2 fp=faf27ddfaa41d406 -->
+
+**Date**: 2026-10-14
+**Task**: Streamed AI chapters and resumable tool verification build
+**Branch**: `codex/ai-chapters-resumable-tools`
+
+### Summary
+
+Implemented streamed AI answer files and SQLite diagnostics, default chapter translation and long-review resume, custom chapter exports/criteria, and resumable managed artifacts. Independent cross-layer and visual reviews completed. Global lint/type/build pass; 77 files and 749 unit/integration tests pass; final native 41 pass with 3 gated skips. Built and verified local 0.1.5-preview.6 installer; no push or installation into personal app directory.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e15442b21e4c61902b89078a8f5103d8fac9ef7b` | feat(ai): stream chapter workflows and resume managed downloads |
+
+### Testing
+
+- [OK] 749 unit/integration passed; 41 native passed, 3 gated skips; packaged startup/IPC/resources verified
+
+### Status
+
+[OK] **Completed**
