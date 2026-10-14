@@ -34,3 +34,7 @@ Local provider fixtures prove streaming/protocol/validation/recovery and request
 ## Final native and package gates
 
 Final rebuilt full Electron run: **41 passed, 3 intentionally gated external/paid cases skipped, 0 failed** (44 cases, 4.5 minutes). Log: `.native-smoke/chapters-final-e2e.log`. This includes both repaired installation flows and the expanded chapter seek/edit/MP4/criteria scenario. Installer `VALIDATION.md`, `package-verification.json` and `SHA256SUMS.txt` identify the exact source commit and packaged build; packaging results are appended after completion.
+
+Source work commit: `e15442b21e4c61902b89078a8f5103d8fac9ef7b`.
+
+Local NSIS build `dist/verification-0.1.5-preview.6-20261014` completed successfully. `npm run test:package -- --app-dir .../win-unpacked` passed actual packaged startup, native SQLite/preload IPC, production flag isolation, fonts/media/notices/native module checks. Additional packaged verification passed version/name, seven production mutation handlers rejecting absent jobs, diagnostics/criteria/export storage handlers, first-run guide and help replay. Isolated packaged user data was used; the installer was not installed into the personal application directory. The output directory contains installer, SHA-256, package JSON reports, final test logs and three-size chapter/diagnostic screenshots.
