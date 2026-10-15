@@ -29,3 +29,7 @@ The live test passed in about1.1 minutes. Cumulative calls=6 (3 early failed +3 
 ## Limits and delivery
 
 This establishes actual DeepSeek streaming plus small chapter/review/name workflow compatibility, not full-video model accuracy, guaranteed latency or token savings. The personal1,027-cue project was inspected readonly and was not reprocessed or edited. Existing other live tests remain opt-in and were not run beyond this allowance. Root will append local verification-installer and packaged startup results once complete; no push, GitHub release or installation into the user's app directory.
+
+## Completed package gate
+
+Source commit:`e46118d30f256ca83a3fc9910e0ef5bdd8b78905`. Local NSIS installer built successfully at `dist/verification-0.1.5-preview.7-20261015` with build-only version override; formal package.json remains0.1.4. Both packaged smoke and additional production verification passed: actual packaged startup, native SQLite, narrow preload/production IPC, fonts/media/notices/native binding, production test-flag isolation, first-run guide and help replay. Isolated package data was used; no installation into the personal application directory. Installer output includes SHA256SUMS, VALIDATION, packaged JSON reports, final unit/native/live logs and both sanitized live ledgers.
