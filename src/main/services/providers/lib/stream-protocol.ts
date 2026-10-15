@@ -33,7 +33,7 @@ function stop(value: unknown, good: string, truncated: string): string {
   if (value !== good) throw new AppError("REFUSAL", "AI 未完成正常文本输出，请检查模型能力。");
   return good;
 }
-export type ProtocolDelta = { text?: string; heartbeat?: boolean; usage?: ProviderUsage; error?: AppError };
+export type ProtocolDelta = { text?: string; thinking?: string; heartbeat?: boolean; usage?: ProviderUsage; error?: AppError };
 
 /** Protocol semantics are independent of network/SSE chunk boundaries. */
 export class StreamProtocol {
@@ -80,7 +80,7 @@ export class StreamProtocol {
     const delta = object(first.delta ?? {});
     if (delta.tool_calls || delta.function_call || delta.refusal) throw new AppError("REFUSAL", "AI 未返回可用文本内容");
     if (this.chatFinished && (delta.content || delta.reasoning_content)) fail();
-    if (delta.reasoning_content !== undefined && delta.reasoning_content !== null) text(delta.reasoning_content);
+    const thinking = delta.reasoning_content === undefined || delta.reasoning_content === null ? "" : text(delta.reasoning_content);
     const answer = delta.content === undefined || delta.content === null ? "" : text(delta.content);
     if (first.finish_reason !== undefined && first.finish_reason !== null) {
       if (this.chatFinished) fail();
@@ -90,7 +90,7 @@ export class StreamProtocol {
       catch (error) { if (error instanceof AppError) return { text: answer, error }; throw error; }
       this.chatFinished = true;
     }
-    return { text: answer, heartbeat: !answer, usage };
+    return { text: answer, thinking, heartbeat: !answer, usage };
   }
   private responses(r: ObjectValue): ProtocolDelta {
     const type = text(r.type);
@@ -111,6 +111,9 @@ export class StreamProtocol {
       if (r.content_index !== undefined) responseIndex(r.content_index);
       if (r.summary_index !== undefined) responseIndex(r.summary_index);
       if (r.output_index !== undefined) this.responseItem(responseIndex(r.output_index), r.item_id, "reasoning");
+    }
+    if (type === "response.reasoning_text.delta" || type === "response.reasoning_summary_text.delta") {
+      return { thinking: text(r.delta), heartbeat: true };
     }
     if (type === "response.content_part.added" || type === "response.content_part.done") {
       const index = responseIndex(r.output_index); const content = responseIndex(r.content_index);
@@ -218,15 +221,15 @@ export class StreamProtocol {
       if (kind === "tool_use") throw new AppError("REFUSAL", "AI 返回了工具调用");
       if (!["text", "thinking", "redacted_thinking"].includes(kind)) fail();
       this.blocks.set(index, kind);
-      return { text: kind === "text" ? text(block.text) : "", heartbeat: kind !== "text" };
+      return { text: kind === "text" ? text(block.text) : "", thinking: kind === "thinking" && block.thinking !== undefined ? text(block.thinking) : undefined, heartbeat: kind !== "text" };
     }
     if (type === "content_block_delta") {
       const index = number(r.index); if (index === undefined || !this.blocks.has(index)) fail();
       const delta = object(r.delta);
       if (delta.type === "text_delta") { if (this.blocks.get(index) !== "text") fail(); return { text: text(delta.text) }; }
       if (!["thinking_delta", "signature_delta"].includes(String(delta.type)) || this.blocks.get(index) !== "thinking") fail();
-      text(delta.type === "thinking_delta" ? delta.thinking : delta.signature);
-      return { heartbeat: true };
+      const value = text(delta.type === "thinking_delta" ? delta.thinking : delta.signature);
+      return { heartbeat: true, thinking: delta.type === "thinking_delta" ? value : undefined };
     }
     if (type === "content_block_stop") { const index = number(r.index); if (index === undefined || !this.blocks.delete(index)) fail(); }
     if (type === "message_delta") {
@@ -250,16 +253,18 @@ export class StreamProtocol {
     const first = object(candidates[0]); if (first.index !== undefined && first.index !== 0) fail();
     if (this.geminiFinished) fail();
     const parts = first.content ? array(object(first.content).parts) : [];
+    let thinking = "";
     const answer = parts.map((part) => {
       const p = object(part); if (p.functionCall) throw new AppError("REFUSAL", "AI 返回了工具调用");
-      return p.thought ? "" : p.text === undefined ? "" : text(p.text);
+      if (p.thought) { if (p.text !== undefined) thinking += text(p.text); return ""; }
+      return p.text === undefined ? "" : text(p.text);
     }).join("");
     if (first.finishReason !== undefined) {
       try { this.finishReason = stop(first.finishReason, "STOP", "MAX_TOKENS"); }
       catch (error) { if (error instanceof AppError) return { text: answer, error }; throw error; }
       this.geminiFinished = true;
     }
-    return { text: answer, heartbeat: !answer, usage: this.usage };
+    return { text: answer, thinking, heartbeat: !answer, usage: this.usage };
   }
   eof(): void {
     if (this.profile.protocol === "gemini" && this.geminiFinished) this.done = true;

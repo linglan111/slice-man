@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ProviderDiagnostic, DiagnosticsListInput } from './provider-diagnostics-contracts';
+import type { ProviderDiagnostic, DiagnosticsListInput, DiagnosticsLiveInput, ProviderLiveSnapshot } from './provider-diagnostics-contracts';
 import type { CriterionLibrary, SaveCriterionInput, CriterionIdentity, ChapterExportInput, ChapterExportRun } from './chapter-export-contracts';
 import type { ArtifactCacheSummary } from "./artifact-cache-contracts";
 import { chapterPlanSchema, chapterReviewRunSchema } from './chapter-contracts';
@@ -335,6 +335,7 @@ export type ExportInput = ExportVideoOptions & {
 };
 export type AppApi = {
   diagnostics: {
+    live(input?: DiagnosticsLiveInput): Promise<Result<ProviderLiveSnapshot[]>>;
     list(input?: DiagnosticsListInput): Promise<Result<ProviderDiagnostic[]>>;
     detail(id: string): Promise<Result<ProviderDiagnostic>>;
     readAnswer(id: string): Promise<Result<{ text: string; truncated: boolean }>>;

@@ -20,6 +20,7 @@ api.diagnostics.list({jobId?, before?, beforeId?, limit?}); // max 100
 api.diagnostics.detail(id);
 api.diagnostics.readAnswer(id); // {text, truncated}, max 20,000 chars
 api.diagnostics.clear(ids?);
+api.diagnostics.live({jobId?, requestId?}); // transient snapshots, never restored
 api.runtime.clearDownloadCache();
 api.download.clearDownloadCache();
 ```
@@ -29,7 +30,7 @@ All methods return validated `Result<T>` through the allowlisted main/preload AP
 ## Text generation and diagnostics
 
 - All five text operations (translation, review, names, chapter planning, style) use `requestText`, with owned normalized-answer files and additive SQLite diagnostics. Speech transcription remains separate.
-- Chat, Responses, Anthropic and Gemini streams have protocol-level completion checks. Reasoning is liveness only; never persist reasoning, API secrets or complete prompts. A same-response JSON fallback must not dispatch a second POST.
+- Chat, Responses, Anthropic and Gemini streams have protocol-level completion checks. Reasoning is separate from the normalized answer: it may be displayed in transient session memory, but never persisted with answers, SQLite, logs, secrets or complete prompts. A same-response JSON fallback must not dispatch a second POST.
 - Responses `output_index` addresses an output item, unlike Chat's alternative-choice index. A reasoning item at 0 followed by assistant text at 1 is valid. `content_part.added/done` belongs to reasoning items (`reasoning_text`) as well as messages (`output_text`); classify part kind before binding item identity. Only output text contributes to answer files. Validate bounded indexes, item IDs, canonical text-part order and per-index final content without assuming all parts are messages. Reference: [DeepSeek Responses](https://api-docs.deepseek.com/api/create-response/).
 - Header and idle deadlines use profile `timeoutMs`; independent `textTimeoutMs` defaults to 30 minutes. Timeout/partial/network ambiguity must not replay a generation automatically. A partial file is diagnostic evidence, never valid application JSON.
 - Store validation/publication state in the same SQLite transaction as the corresponding Job mutation. Keep completed transport records until the caller validates. Await cancelled Job and text-request finalizers before closing SQLite.
@@ -39,6 +40,7 @@ All methods return validated `Result<T>` through the allowlisted main/preload AP
 ## Chapter contracts and atomicity
 
 - Normal plans partition the complete media range with no gaps/overlap; each chapter is at most 1,200,000 ms. Custom plans may select disjoint subsets. Validate trusted criteria snapshots and all boundaries locally.
+- Chapter prompts represent anchors explicitly as `{index, timeMs}` with declared index limits. Generated `startAnchor`/`endAnchor` must reference `index`, never milliseconds. Main retains its numeric time lookup and rejects timestamp-shaped or unknown indices rather than guessing the intended boundary. A real provider can return structurally valid JSON with this semantic error; fixture JSON alone is insufficient verification.
 - Chapter freshness includes source text, timing, source settings and media identity. Translation changes alone do not invalidate source-content plans. Source changes invalidate dependent plans/review runs; never silently resume an incompatible run.
 - Default full translation uses content chapters and bounded dense work units. Short media (at most 20 minutes) requires no planning model call. Limit workers to 1–3 (default 2). Publish each completed full-translation chapter even if an earlier parallel chapter fails. Scoped translation, combined ASR/translation and a repair round retain all-target atomicity.
 - Review chapter mode applies only when media duration is strictly greater than 1,800,000 ms. Shorter media retains one complete selected-set generation. Keep original global cue ordinals and canonical adjacent evidence across chapter boundaries. Each target is owned once.
@@ -98,3 +100,36 @@ Wrong: wait for ordered chapter 1 before committing already validated chapter 2,
 Wrong: throttle SQLite checkpoint only from incoming chunks, leaving a lone delta invisible until timeout. Correct: pace active request checkpoints independently of later network traffic and await the sink before terminal close.
 
 Wrong: reuse Chat `index === 0` validation for Responses or bind every `content_part` to a message. Correct: follow the declared output-item/content-part kinds and indexes, ignore reasoning for persistence, and compare completed message text against the exact streamed text parts.
+
+## Live stream visibility and scoped review
+
+### 1. Scope / Trigger
+Applies to live external-provider thinking/answer display and time-scoped subtitle review. Keep ephemeral content separate from durable diagnostic metadata and normalized answer files.
+
+### 2. Signatures
+`diagnostics.live({jobId?: string, requestId?: UUID})` returns validated `ProviderLiveSnapshot[]`: request/job identity, operation/model, diagnostic state, phase, start/update/elapsed times, wire/answer bytes, separate thinking/answer text and truncation flags. `jobs.reviewSubtitles({jobId, revision, range?: {startMs, endMs}, segmentIds?})` accepts exactly one optional scope.
+
+### 3. Contracts
+- Main owns an eight-request in-memory cache, capped at 32,000 UTF-16 units per thinking/answer field without splitting surrogate pairs. Ended entries expire after ten minutes on access; restart restores none. Clearing diagnostic records clears their live entries. No reasoning is written to SQL, files or history.
+- Phases are waiting/thinking/answer/complete/failed/cancelled. Only actual reasoning deltas set thinking; heartbeat comments and signatures do not. Responses reasoning text/summary deltas, Chat reasoning_content, Anthropic thinking and Gemini thought text are viewable; redacted/signature data is not.
+- Renderer polls current-job snapshots every 750ms only while processing or viewing the modal, cancels stale polls on job/unmount, and renders plain text. Closing the modal does not cancel work. Multiple requests remain independently selectable. Display received wire bytes while waiting/thinking rather than a misleading zero answer-byte counter.
+- Main recomputes review range membership with half-open overlap (`cue.start < end && cue.end > start`) against the current revision before chapter planning/provider work. Targets are complete intersecting cues; outside cues may remain evidence. Existing all/selected quick actions and chapter-resume identities remain intact.
+
+### 4. Validation & Error Matrix
+| Condition | Result |
+| --- | --- |
+| Unknown or expired live request | Empty snapshot list, no historical thinking fallback |
+| Invalid strict live filter or response | IPC validation failure |
+| Both range and selected IDs | Reject ambiguous scope before provider work |
+| Reversed, zero-length or beyond-media range | `TIMING_INVALID` |
+| Valid range intersecting no cues | `NO_SEGMENTS`, never fall back to full review |
+| Stale revision | `STALE_REVISION`, no request |
+
+### 5. Good/Base/Bad Cases
+Good: thinking appears before the first answer, opening and closing the popup preserves the one active request. Base: a non-thinking provider shows waiting then answer. Bad: call every heartbeat thinking, append reasoning into application JSON, or silently check all subtitles for an empty time range.
+
+### 6. Tests Required
+Parser tests cover all four protocol reasoning channels and exclude signatures; memory tests cover bounds, expiry, filtering and terminal states. Native Electron verifies a paused reasoning-first stream with zero answer bytes, popup close/reopen and three window sizes, no reasoning in database/answer files and empty cache after restart. Range tests verify boundary/gap/invalid scopes, only intersecting assessment targets and retained outside evidence. Authorized live tests forward unchanged SSE, use isolated session credentials and keep only sanitized outcome metadata.
+
+### 7. Wrong vs Correct
+Wrong: persist raw SSE to make a live popup readable after restart. Correct: retain bounded parsed text in session memory, persist only diagnostic counters and normalized answers. Wrong: renderer sends an empty ID array after a range has no cues and main interprets it as all. Correct: validate scope and return `NO_SEGMENTS` before any model request.

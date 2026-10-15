@@ -109,8 +109,9 @@ export const reviewSubtitlesInputSchema = z
     jobId: id,
     revision: ms,
     segmentIds: z.array(id).min(1).max(10000).optional(),
+    range: z.object({ startMs: ms, endMs: ms }).strict().optional(),
   })
-  .strict();
+  .strict().refine((input) => !input.range || !input.segmentIds, "Choose a time range or selected subtitles, not both");
 export type ReviewSubtitlesInput = z.infer<typeof reviewSubtitlesInputSchema>;
 export const acknowledgeFindingInputSchema = z
   .object({

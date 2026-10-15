@@ -45,6 +45,38 @@ function chat(content: string, finish: string | null = null): string { return ev
 function sse(res: ServerResponse): void { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.flushHeaders(); }
 
 describe("streamed text protocol integrity and diagnostics", () => {
+  it("exposes live thinking before answer bytes without persisting it or restoring it after restart", async () => {
+    const repo = await diagnostics();
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const url = await fixture((res) => {
+      sse(res);
+      res.write(event({ id: "reply", choices: [{ index: 0, delta: { reasoning_content: "LIVE_THOUGHT_ONLY" } }] }));
+      void gate.then(() => { res.end(chat("{}", "stop") + "data: [DONE]\n\n"); });
+    });
+    const progress: string[] = [];
+    const work = generateText(profile(url), "key", "prompt", undefined, {
+      diagnostics: repo, operation: "review", jobId: "job",
+      onProgress: (record) => { progress.push(repo.live({ requestId: record.id })[0]?.phase ?? "missing"); },
+    });
+    try {
+      await vi.waitFor(() => expect(repo.live({ jobId: "job" })[0]).toMatchObject({ phase: "thinking", thinkingText: "LIVE_THOUGHT_ONLY", answerBytes: 0, answerText: "" }));
+      await vi.waitFor(() => expect(progress).toContain("thinking"));
+      const snapshot = repo.live()[0]; if (!snapshot) throw new Error("missing live request");
+      expect(snapshot.wireBytes).toBeGreaterThan(0);
+      expect(repo.live({ jobId: "other" })).toEqual([]);
+      expect(JSON.stringify(repo.detail(snapshot.requestId))).not.toContain("LIVE_THOUGHT_ONLY");
+      expect(await repo.readAnswer(snapshot.requestId)).toBe("");
+    } finally { release?.(); }
+    expect(await work).toBe("{}");
+    expect(repo.live()[0]).toMatchObject({ phase: "complete", answerText: "{}", thinkingText: "LIVE_THOUGHT_ONLY" });
+    const record = repo.list()[0]; if (!record) throw new Error("missing record");
+    expect(await repo.readAnswer(record.id)).toBe("{}");
+    const database = databases.at(-1); if (!database) throw new Error("missing database");
+    expect(new ProviderDiagnosticsRepository(database, roots.at(-1) ?? "").live()).toEqual([]);
+    await repo.clear([record.id]); expect(repo.live()).toEqual([]);
+  });
+
   it("persists only normalized answer from reasoning-first Responses through HTTP, file and SQLite", async () => {
     const repo = await diagnostics(); let requests = 0;
     const answer = '{"name":"猫とAnn"}';

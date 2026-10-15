@@ -131,9 +131,9 @@ test('each operation has a compact content-sized bottom card and visible actions
       const placement = await page.evaluate(() => {
         const review = [...document.querySelectorAll('.subtitle-panel .section-heading button')];
         const follow = document.querySelector('.review-toolbar__follow');
-        return { heading: review.map((node) => node.textContent?.trim()), selectionBeforeFollow: follow?.previousElementSibling?.textContent?.trim(), standardAfterFilter: document.querySelector('.review-toolbar__filter-group .review-filter')?.nextElementSibling?.textContent?.trim() };
+        return { heading: review.map((node) => node.getAttribute('aria-label') ?? node.textContent?.trim()), selectionBeforeFollow: follow?.previousElementSibling?.textContent?.trim(), standardAfterFilter: document.querySelector('.review-toolbar__filter-group .review-filter')?.nextElementSibling?.textContent?.trim() };
       });
-      expect(placement.heading).toEqual(['字幕自动修复', 'AI 检查字幕', '添加字幕']);
+      expect(placement.heading).toEqual(['字幕自动修复', 'AI 检查字幕', '检查范围', '添加字幕']);
       expect(placement.selectionBeforeFollow).toBe('选择时间范围');
       expect(placement.standardAfterFilter).toBe('可疑度标准');
       await expect(page.getByRole('checkbox', { name: '选择当前等级', exact: true })).toHaveCount(0);

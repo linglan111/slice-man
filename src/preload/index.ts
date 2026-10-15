@@ -17,6 +17,7 @@ async function invoke<T>(channel: string, input?: unknown): Promise<Result<T>> {
 }
 const api: AppApi = {
   diagnostics: {
+    live: (input) => invoke("diagnostics:live", input),
     list: (input) => invoke("diagnostics:list", input),
     detail: (id) => invoke("diagnostics:detail", id),
     readAnswer: (id) => invoke("diagnostics:readAnswer", id),

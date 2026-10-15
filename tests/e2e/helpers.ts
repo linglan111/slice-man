@@ -151,7 +151,7 @@ export async function startMockServer(): Promise<MockServer> {
       } else if (prompt.startsWith("Divide the video into content chapters")) {
         counters.chapters++;
         chapterPrompts.push(prompt);
-        const payload = z.object({kind: z.enum(['normal', 'custom']), anchors: z.array(z.number()).min(2)}).passthrough().parse(JSON.parse(prompt.split('\n').at(-1) ?? '{}') as unknown);
+        const payload = z.object({kind: z.enum(['normal', 'custom']), anchors: z.array(z.object({index: z.number().int().nonnegative(), timeMs: z.number().nonnegative()}).transform(anchor => anchor.timeMs)).min(2)}).passthrough().parse(JSON.parse(prompt.split('\n').at(-1) ?? '{}') as unknown);
         const last = payload.anchors.length - 1;
         const duration = payload.anchors[last] ?? 0;
         const middle = payload.anchors.map((value, index) => ({value, index})).filter(({index}) => index > 0 && index < last).sort((a, b) => Math.abs(a.value - duration / 2) - Math.abs(b.value - duration / 2))[0]?.index;

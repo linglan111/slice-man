@@ -1,5 +1,5 @@
 export const IPC_CHANNELS = {
-  diagnostics: ["list", "detail", "readAnswer", "clear"],
+  diagnostics: ["live", "list", "detail", "readAnswer", "clear"],
   chapterCriteria: ["list", "save", "copy", "remove", "select"],
   chapterExports: ["export", "list"],
   exportSettings: ["status", "saveSettings", "chooseDirectory"],

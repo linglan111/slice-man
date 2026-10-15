@@ -11,6 +11,7 @@ import {
 } from "../../../src/shared/contracts";
 import {
   cueFingerprint,
+  resolveReviewInput,
   refreshReview,
   reviewWindows,
   validateAssessments,
@@ -358,5 +359,25 @@ describe("stable chronological context snapshots", () => {
       ).toBe(true);
       expect(job.revision).toBe(1);
     }
+  });
+});
+
+
+describe("review time-range resolution before provider work", () => {
+  it("selects half-open overlapping complete cues without losing global context", () => {
+    const job = gradedJob(5);
+    expect(resolveReviewInput(job, { jobId: job.id, revision: job.revision, range: { startMs: 900, endMs: 2100 } }).segmentIds)
+      .toEqual(["cue-1", "cue-2"]);
+    expect(job.segments).toHaveLength(5);
+  });
+  it.each([{ startMs: 2000, endMs: 2000 }, { startMs: 3000, endMs: 2000 }, { startMs: 0, endMs: 5001 }])("rejects invalid bounds before provider work %j", (range) => {
+    const job = gradedJob(5);
+    expect(() => resolveReviewInput(job, { jobId: job.id, revision: job.revision, range })).toThrowError(expect.objectContaining({ code: "TIMING_INVALID" }));
+  });
+  it("rejects empty ranges and simultaneous selections without falling back to all cues", () => {
+    const job = gradedJob(5);
+    expect(() => resolveReviewInput(job, { jobId: job.id, revision: job.revision, range: { startMs: 900, endMs: 1000 } })).toThrowError(expect.objectContaining({ code: "NO_SEGMENTS" }));
+    expect(() => resolveReviewInput(job, { jobId: job.id, revision: job.revision, segmentIds: ["cue-0"], range: { startMs: 0, endMs: 1000 } })).toThrow();
+    expect(() => resolveReviewInput(job, { jobId: job.id, revision: job.revision - 1, range: { startMs: 0, endMs: 1000 } })).toThrowError(expect.objectContaining({ code: "STALE_REVISION" }));
   });
 });

@@ -46,7 +46,7 @@ import type { DownloadService } from "../services/download/lib/download-service"
 import type { ProviderDiagnosticsRepository } from '../db/provider-diagnostics';
 import type { ChapterCriteriaRepository } from '../db/chapter-criteria';
 import type { ChapterExportService } from '../services/chapters/chapter-export-service';
-import { diagnosticsListInputSchema } from '../../shared/provider-diagnostics-contracts';
+import { diagnosticsListInputSchema, diagnosticsLiveInputSchema } from '../../shared/provider-diagnostics-contracts';
 import { saveCriterionInputSchema, criterionIdentitySchema, selectCriterionInputSchema, chapterExportInputSchema } from '../../shared/chapter-export-contracts';
 import {
   downloadSettingsSchema,
@@ -238,6 +238,7 @@ export function registerIpc(services: Services): () => void {
     },
   );
   handle("runtime:cancel", empty, () => installController?.abort());
+  handle("diagnostics:live", diagnosticsLiveInputSchema.optional(), (input) => services.diagnostics.live(input));
   handle("diagnostics:list", diagnosticsListInputSchema.optional(), (input) => services.diagnostics.list(input));
   handle("diagnostics:detail", z.string().uuid(), (id) => services.diagnostics.detail(id));
   handle("diagnostics:readAnswer", z.string().uuid(), async (id) => {

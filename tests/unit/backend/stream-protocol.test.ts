@@ -6,6 +6,22 @@ import { reasoningFirstResponses } from "../../fixtures/reasoning-first-response
 const base: Profile = { id: "p", name: "fixture", baseUrl: "http://127.0.0.1", protocol: "openai", mode: "chat", model: "fixture", timeoutMs: 1000, maxUploadBytes: 1000, structuredOutput: true, sessionOnly: true, hasKey: true };
 const chat = (delta: unknown, finish_reason: unknown = null, index = 0): string => JSON.stringify({ id: "one", choices: [{ index, delta, finish_reason }] });
 describe("strict streamed protocol completion", () => {
+  it("separates provider-visible thinking for all protocols and hides signatures", () => {
+    expect(new StreamProtocol(base).event(chat({ reasoning_content: "thought", content: "answer" })))
+      .toMatchObject({ thinking: "thought", text: "answer" });
+    const responses = new StreamProtocol({ ...base, mode: "responses" });
+    expect(responses.event(JSON.stringify({ type: "response.reasoning_text.delta", delta: "thought" })))
+      .toMatchObject({ thinking: "thought", heartbeat: true });
+    const anthropic = new StreamProtocol({ ...base, protocol: "anthropic" });
+    anthropic.event(JSON.stringify({ type: "message_start", message: {} }));
+    anthropic.event(JSON.stringify({ type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "" } }));
+    expect(anthropic.event(JSON.stringify({ type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "thought" } }))).toMatchObject({ thinking: "thought" });
+    expect(anthropic.event(JSON.stringify({ type: "content_block_delta", index: 0, delta: { type: "signature_delta", signature: "not-visible" } }))).not.toHaveProperty("thinking", "not-visible");
+    const gemini = new StreamProtocol({ ...base, protocol: "gemini" });
+    expect(gemini.event(JSON.stringify({ candidates: [{ content: { parts: [{ thought: true, text: "thought" }, { text: "answer" }] } }] })))
+      .toMatchObject({ thinking: "thought", text: "answer" });
+  });
+
   it("accepts final usage-only chat frames and cumulative counters without adding reasoning text", () => {
     const p = new StreamProtocol(base);
     expect(p.event(chat({ reasoning_content: "private" })).text).toBe("");

@@ -27,6 +27,7 @@ import type { TextRequestContext } from "../../providers/lib/text-request";
 import type { TextOperation, ProviderDiagnostic } from "../../../../shared/provider-diagnostics-contracts";
 import {
   resolveReprocess,
+  resolveReviewInput,
   refreshReview,
   cueFingerprint,
   providerFingerprint,
@@ -166,11 +167,13 @@ export class JobService {
       chapterId,
       targetCount,
       onRequestComplete: (id) => ids.push(id),
-      onProgress: (record) =>
-        progress?.(
-          0,
-          `${({ waiting: "等待 AI 响应", receiving: "接收 AI 输出", transport_complete: "正在校验 AI 输出", validated: "AI 输出已校验", published: "AI 结果已保存", failed: "AI 请求失败", cancelled: "AI 请求已取消", interrupted: "AI 请求已中断" } satisfies Record<ProviderDiagnostic["state"], string>)[record.state]} · ${Math.floor(record.elapsedMs / 1000)} 秒 · ${record.textBytes} 字节`,
-        ),
+      onProgress: (record) => {
+        const live = this.diagnostics?.live({ requestId: record.id })[0];
+        const status = live?.phase === "thinking" ? "模型思考中" : live?.phase === "answer" ? "正在输出结果"
+          : ({ waiting: "等待 AI 响应", receiving: "等待模型输出", transport_complete: "正在校验 AI 输出", validated: "AI 输出已校验", published: "AI 结果已保存", failed: "AI 请求失败", cancelled: "AI 请求已取消", interrupted: "AI 请求已中断" } satisfies Record<ProviderDiagnostic["state"], string>)[record.state];
+        const bytes = live?.phase === "answer" ? `结果 ${record.textBytes} 字节` : `已接收 ${record.wireBytes} 字节`;
+        progress?.(0, `${status} · ${Math.floor(record.elapsedMs / 1000)} 秒 · ${bytes}`);
+      },
     };
   }
   private validatedRequest(ids: string[]): string[] {
@@ -1646,8 +1649,9 @@ export class JobService {
     );
   }
   async reviewSubtitles(raw: ReviewSubtitlesInput): Promise<Job> {
-    const input = reviewSubtitlesInputSchema.parse(raw);
-    const snapshot = this.editableTimeline(input.jobId, input.revision);
+    const parsed = reviewSubtitlesInputSchema.parse(raw);
+    const snapshot = this.editableTimeline(parsed.jobId, parsed.revision);
+    const input = resolveReviewInput(snapshot, parsed);
     const controller = new AbortController();
     this.active = { id: input.jobId, controller };
     const progress = (value: number, message: string): void => {

@@ -22,7 +22,7 @@ export function stubApi(job: Job, options: { firstRun?: boolean } = {}): { api: 
   if (typeof ResizeObserver === 'undefined') vi.stubGlobal('ResizeObserver', class { observe(): void {} disconnect(): void {} });
   let handler: ((event: ProgressEvent) => void) | undefined;
   const api: AppApi = {
-    diagnostics: { list: vi.fn().mockResolvedValue({ success: true, data: [] }), detail: vi.fn(), readAnswer: vi.fn(), clear: vi.fn().mockResolvedValue({ success: true }) },
+    diagnostics: { live: vi.fn().mockResolvedValue({ success: true, data: [] }), list: vi.fn().mockResolvedValue({ success: true, data: [] }), detail: vi.fn(), readAnswer: vi.fn(), clear: vi.fn().mockResolvedValue({ success: true }) },
     chapterCriteria: { list: vi.fn().mockResolvedValue({ success: true, data: { items: [] } }), save: vi.fn(), copy: vi.fn(), remove: vi.fn(), select: vi.fn() },
     chapterExports: { list: vi.fn().mockResolvedValue({ success: true, data: [] }), export: vi.fn() },
     exportSettings: { status: vi.fn().mockResolvedValue({ success: true, data: { ...SAVED_EXPORT_SETTINGS } }), saveSettings: vi.fn(), chooseDirectory: vi.fn().mockResolvedValue({ success: true, data: null }) },

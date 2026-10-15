@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { providerDiagnosticSchema } from './provider-diagnostics-contracts';
+import { providerDiagnosticSchema, providerLiveSnapshotSchema } from './provider-diagnostics-contracts';
 import { criterionLibrarySchema, chapterExportRunSchema } from './chapter-export-contracts';
 import { artifactCacheSummarySchema } from "./artifact-cache-contracts";
 import { exportSettingsSchema } from "./export-contracts";
@@ -55,6 +55,7 @@ export const progressSchema: z.ZodType<ProgressEvent> = z
   })
   .strict();
 const outputSchemas: Record<string, z.ZodType> = {
+  "diagnostics:live": z.array(providerLiveSnapshotSchema).max(8),
   "diagnostics:list": z.array(providerDiagnosticSchema).max(100),
   "diagnostics:detail": providerDiagnosticSchema,
   "diagnostics:readAnswer": z.object({ text: z.string().max(20000), truncated: z.boolean() }).strict(),

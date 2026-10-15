@@ -78,7 +78,7 @@ export async function requestText(
     await sinkTask;
   };
   const progress = (): void => {
-    if (writer && Date.now() - lastProgress >= 500) { lastProgress = Date.now(); context?.onProgress?.({ ...writer.record }); }
+    if (writer && Date.now() - lastProgress >= 500) { lastProgress = Date.now(); context?.diagnostics.liveStreams.update(writer.record); context?.onProgress?.({ ...writer.record }); }
   };
   const clearIdle = (): void => { if (idleTimer) clearTimeout(idleTimer); idleTimer = undefined; };
   const armIdle = (): void => {
@@ -91,6 +91,7 @@ export async function requestText(
     textBytes += Buffer.byteLength(value);
     if (textBytes > 4_000_000) throw new AppError("RESPONSE_LIMIT", "AI 返回内容过大");
     if (writer && value) await writeSink(() => writer?.append(value) ?? Promise.resolve());
+    if (writer) context?.diagnostics.liveStreams.append(writer.record.id, "answer", value);
     output += value;
     progress();
   };
@@ -128,6 +129,11 @@ export async function requestText(
     const framer = new SseFramer(async (data, event) => {
       const delta = protocol.event(data, event);
       if (writer) { writer.record.events++; writer.record.usage = delta.usage ?? writer.record.usage; if (delta.heartbeat) writer.record.heartbeats++; }
+      if (writer && delta.thinking) {
+        context?.diagnostics.liveStreams.append(writer.record.id, "thinking", delta.thinking);
+        context?.diagnostics.liveStreams.update(writer.record);
+        progress();
+      }
       resetIdle();
       // Disk backpressure is local I/O, not a network idle condition; overall still applies.
       clearIdle(); if (delta.text) await answer(delta.text); resetIdle();
@@ -189,6 +195,8 @@ export async function requestText(
     if (writer) context?.onProgress?.({ ...writer.record });
     throw failure;
   } finally {
+    // Even a failing SQL finalizer must not leave the transient viewer looking active.
+    if (writer) context?.diagnostics.liveStreams.update(writer.record);
     clearTimeout(overallTimer); if (headerTimer) clearTimeout(headerTimer); clearIdle();
     if (checkpointTimer) clearInterval(checkpointTimer);
     signal?.removeEventListener("abort", onCancel);

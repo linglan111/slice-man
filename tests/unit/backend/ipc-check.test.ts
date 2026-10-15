@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   assertProfileWritable: vi.fn(),
   assertIdle: vi.fn(),
   diagnosticList: vi.fn(() => []),
+  diagnosticLive: vi.fn(() => []),
   diagnosticAnswer: vi.fn(async () => 'x'.repeat(20001)),
   diagnosticClear: vi.fn(async () => {}),
   planChapters: vi.fn(async () => ({ id: 'test-job' })),
@@ -110,7 +111,7 @@ describe("independent narrow IPC trust boundary", () => {
       } as unknown as JobService,
       runtime: {} as RuntimeService,
       download: { cancel: vi.fn() } as unknown as DownloadService,
-      diagnostics: { list: mocks.diagnosticList, readAnswer: mocks.diagnosticAnswer, clear: mocks.diagnosticClear } as unknown as ProviderDiagnosticsRepository,
+      diagnostics: { live: mocks.diagnosticLive, list: mocks.diagnosticList, readAnswer: mocks.diagnosticAnswer, clear: mocks.diagnosticClear } as unknown as ProviderDiagnosticsRepository,
       chapterCriteria: { snapshot: mocks.criterionSnapshot } as unknown as ChapterCriteriaRepository,
       chapterExports: { export: mocks.chapterExport } as unknown as ChapterExportService,
       exportSettings: {
@@ -131,6 +132,15 @@ describe("independent narrow IPC trust boundary", () => {
     };
     return { invoke, dispose, mainFrame, webContents };
   }
+  it("validates narrow live snapshot scopes and protects them from other frames", async () => {
+    const f = fixture();
+    expect(await f.invoke("diagnostics:live", { jobId: "test-job" })).toEqual({ success: true, data: [] });
+    expect(mocks.diagnosticLive).toHaveBeenCalledExactlyOnceWith({ jobId: "test-job" });
+    expect(await f.invoke("diagnostics:live", { requestId: "not-a-uuid" })).toMatchObject({ success: false, code: "VALIDATION_ERROR" });
+    expect(await f.invoke("diagnostics:live", { jobId: "test-job", thinkingText: "forged" })).toMatchObject({ success: false, code: "VALIDATION_ERROR" });
+    expect(await f.invoke("diagnostics:live", {}, { sender: f.webContents, senderFrame: {} })).toMatchObject({ success: false, code: "IPC_DENIED" });
+    expect(mocks.diagnosticLive).toHaveBeenCalledTimes(1);
+  });
   it("accepts only the application's main frame", async () => {
     const f = fixture();
     expect(await f.invoke("profiles:list", undefined)).toEqual({

@@ -4,8 +4,10 @@ import { mkdir, lstat, open, rename, rm, readFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { providerDiagnosticSchema, diagnosticsListInputSchema } from "../../shared/provider-diagnostics-contracts";
-import type { ProviderDiagnostic, DiagnosticsListInput } from "../../shared/provider-diagnostics-contracts";
+import type { ProviderDiagnostic, DiagnosticsListInput, DiagnosticsLiveInput, ProviderLiveSnapshot } from "../../shared/provider-diagnostics-contracts";
 import { AppError } from "../lib/errors";
+
+import { LiveProviderStreams } from "../services/providers/lib/live-streams";
 
 const ACTIVE = new Set(["waiting", "receiving"]);
 const LIMIT_BYTES = 4_000_000;
@@ -14,6 +16,8 @@ export type DiagnosticStart = Omit<ProviderDiagnostic, "id" | "state" | "artifac
 /** Only trusted main-process code supplies metadata; generated answers never enter SQL. */
 export class ProviderDiagnosticsRepository {
   readonly root: string;
+  readonly liveStreams = new LiveProviderStreams();
+  live(input?: DiagnosticsLiveInput): ProviderLiveSnapshot[] { return this.liveStreams.list(input); }
   constructor(private readonly sqlite: Database.Database, userData: string) {
     this.root = resolve(userData, "ai-responses");
     this.recoverInterrupted();
@@ -23,7 +27,7 @@ export class ProviderDiagnosticsRepository {
     try { this.sqlite.prepare(`INSERT INTO ai_requests(id,job_id,state,started_at,ended_at,payload) VALUES (?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET state=excluded.state,ended_at=excluded.ended_at,payload=excluded.payload`).run(
       value.id, value.jobId ?? null, value.state, value.startedAt, value.endedAt ?? null, JSON.stringify(value),
-    ); } catch { throw new AppError("DIAGNOSTIC_STORAGE", "AI 请求日志无法保存，请检查磁盘空间和数据库权限。"); }
+    ); this.liveStreams.update(value); } catch { throw new AppError("DIAGNOSTIC_STORAGE", "AI 请求日志无法保存，请检查磁盘空间和数据库权限。"); }
   }
   update(record: ProviderDiagnostic): void { this.persist(record); }
   list(input: DiagnosticsListInput = {}): ProviderDiagnostic[] {
@@ -71,6 +75,7 @@ export class ProviderDiagnosticsRepository {
       await mkdir(join(this.root, id));
       const handle = await open(join(this.root, record.artifact), "wx");
       try { this.persist(record); } catch (error) { await handle.close(); throw error; }
+      this.liveStreams.start(record);
       return new DiagnosticWriter(this, record, handle);
     } catch { throw new AppError("DIAGNOSTIC_STORAGE", "无法创建 AI 响应日志，请检查磁盘空间和数据目录权限。"); }
   }
@@ -118,6 +123,7 @@ export class ProviderDiagnosticsRepository {
           catch (error) { if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error; }
         }
       } catch (error) { if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error; }
+      this.liveStreams.clear(record.id);
       this.sqlite.prepare("DELETE FROM ai_requests WHERE id=? AND state NOT IN ('waiting','receiving')").run(record.id);
     }
   }

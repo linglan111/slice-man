@@ -359,7 +359,7 @@ describe("default chapter translation", () => {
       .spyOn(providers, "generateText")
       .mockImplementation(async (_p, _k, prompt) => {
         const raw = JSON.parse(prompt.split("\n").slice(1).join("\n")) as {
-          anchors: number[];
+          anchors: { index: number; timeMs: number }[];
         };
         return JSON.stringify({
           chapters: [

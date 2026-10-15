@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
   planReprocessInputSchema,
+  reviewSubtitlesInputSchema,
+  type ReviewSubtitlesInput,
   type Job,
   type Segment,
   type Profile,
@@ -16,6 +18,20 @@ import {
   type ReviewRuleId,
 } from "../../../../shared/contracts";
 import { AppError } from "../../../lib/errors";
+
+/** Resolve time scope before any model or chapter-planning request. */
+export function resolveReviewInput(job: Job, raw: ReviewSubtitlesInput): ReviewSubtitlesInput {
+  const input = reviewSubtitlesInputSchema.parse(raw);
+  if (job.id !== input.jobId) throw new AppError("NOT_FOUND", "视频任务不匹配");
+  if (job.revision !== input.revision) throw new AppError("STALE_REVISION", "字幕已更新，请重新选择范围");
+  if (!input.range) return input;
+  const { startMs, endMs } = input.range;
+  if (endMs <= startMs || endMs > job.media.durationMs)
+    throw new AppError("TIMING_INVALID", "请选择视频范围内有效的起止时间");
+  const segmentIds = job.segments.filter((cue) => cue.startMs < endMs && cue.endMs > startMs).map((cue) => cue.id);
+  if (!segmentIds.length) throw new AppError("NO_SEGMENTS", "此范围没有可检查的字幕");
+  return { jobId: input.jobId, revision: input.revision, segmentIds };
+}
 
 export function resolveReprocess(
   job: Job,

@@ -9,7 +9,7 @@ import { parseJson } from '../../src/main/services/providers/lib/text-provider';
 import { startMockServer } from './helpers';
 
 export const REASONING_MARKER = 'PRIVATE_RESPONSES_REASONING_NEVER_PERSIST';
-type Operation = 'chapters' | 'review' | 'names';
+type Operation = 'chapters' | 'review' | 'names' | 'translate' | 'style';
 type JsonObject = Record<string, unknown>;
 function object(value: unknown): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid fixture JSON object');
@@ -31,7 +31,9 @@ function operationOf(payload: JsonObject): Operation {
   if (prompt.startsWith('Divide the video into content chapters')) return 'chapters';
   if (prompt.startsWith('Analyze recurring PERSON names')) return 'names';
   if (prompt.startsWith('Review subtitle')) return 'review';
-  throw new Error('Only the three authorized synthetic text operations are allowed');
+  if (prompt.startsWith('Translate subtitle text')) return 'translate';
+  if (prompt.startsWith('Design subtitle style')) return 'style';
+  throw new Error('Only recognized synthetic text operations are allowed');
 }
 async function listen(server: Server): Promise<string> {
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -49,10 +51,10 @@ function failure(response: ServerResponse): void {
 }
 
 /** Real loopback HTTP, official reasoning-first item order and two text content parts. */
-export async function startReasoningResponses(): Promise<{url: string; counts: Record<Operation, number>; close(): Promise<void>}> {
+export async function startReasoningResponses(options: {afterThinking?: () => Promise<void>} = {}): Promise<{url: string; counts: Record<Operation, number>; reviewPrompts: string[]; close(): Promise<void>}> {
   const upstream = await startMockServer();
   upstream.behavior.review = 'empty';
-  const counts: Record<Operation, number> = {chapters: 0, review: 0, names: 0};
+  const counts: Record<Operation, number> = {chapters: 0, review: 0, names: 0, translate: 0, style: 0};
   const server = createServer((request, response) => {
     void (async () => {
       if (request.method !== 'POST' || request.url !== '/v1/responses') throw new Error('Unexpected Responses path');
@@ -85,6 +87,7 @@ export async function startReasoningResponses(): Promise<{url: string; counts: R
       await event({type: 'response.output_item.added', output_index: 0, item: reasoning});
       await event({type: 'response.content_part.added', ...reasoningIdentity, part: {type: 'reasoning_text', text: ''}});
       await event({type: 'response.reasoning_text.delta', ...reasoningIdentity, delta: REASONING_MARKER});
+      await options.afterThinking?.();
       await event({type: 'response.reasoning_text.done', ...reasoningIdentity, text: REASONING_MARKER});
       await event({type: 'response.content_part.done', ...reasoningIdentity, part: reasoningPart});
       await event({type: 'response.output_item.done', output_index: 0, item: completedReasoning});
@@ -105,7 +108,7 @@ export async function startReasoningResponses(): Promise<{url: string; counts: R
       response.end();
     })().catch(() => failure(response));
   });
-  return {url: await listen(server), counts, close: async () => {await close(server); await upstream.close();}};
+  return {url: await listen(server), counts, reviewPrompts: upstream.reviewPrompts, close: async () => {await close(server); await upstream.close();}};
 }
 
 export async function currentResponsesJob(page: Page): Promise<Job> {
@@ -144,7 +147,7 @@ export async function seedResponses(page: Page, profile: {baseUrl: string; model
   await page.reload();
   await expect(page.getByTestId('segment-1')).toBeVisible();
 }
-export async function runResponsesOperation(page: Page, operation: Operation): Promise<ProviderDiagnostic> {
+export async function runResponsesOperation(page: Page, operation: 'chapters' | 'review' | 'names'): Promise<ProviderDiagnostic> {
   const previous = (await responsesDiagnostics(page)).length;
   if (operation === 'chapters') {
     await page.getByRole('toolbar', {name: '视频操作'}).getByRole('button', {name: '章节', exact: true}).click();
@@ -191,8 +194,10 @@ export type LiveCall = {
   contentIndexes: Record<string, number>; itemTypes: Record<string, number>;
   partTypes: Record<string, number>; partMetadataKinds: Record<string, number>;
   state?: string; errorCode?: string; streamActual?: boolean; textBytes?: number;
+  diagnosticId?: string;
+  closedAfterTerminal?: boolean;
 };
-type Ledger = {version: 1; limit: 3; calls: LiveCall[]};
+type Ledger = {version: 1; limit: number; calls: LiveCall[]};
 
 /** Counts only sanitized SSE metadata; never keeps data, reasoning or final text. */
 function observer(call: LiveCall): (bytes: Uint8Array, final?: boolean) => void {
@@ -230,7 +235,9 @@ function observer(call: LiveCall): (bytes: Uint8Array, final?: boolean) => void 
   };
 }
 
-export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: string; ledgerPath: string}): Promise<{url: string; finish(records: ProviderDiagnostic[]): void; close(): Promise<void>}> {
+export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: string; ledgerPath: string; requestLimit?: number}): Promise<{url: string; finish(records: ProviderDiagnostic[]): void; close(): Promise<void>}> {
+  const limit = input.requestLimit ?? 3;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 16) throw new Error('Invalid explicit live request allowance');
   if (!isAbsolute(input.ledgerPath)) throw new Error('Live ledger must be an explicit absolute path');
   await mkdir(dirname(input.ledgerPath), {recursive: true});
   // An interrupted process deliberately leaves this lock behind. A human must
@@ -241,9 +248,9 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
   const releaseLock = (): void => {closeSync(lock); unlinkSync(lockPath);};
   let ledger: Ledger;
   try {
-    const existing: unknown = existsSync(input.ledgerPath) ? JSON.parse(readFileSync(input.ledgerPath, 'utf8')) as unknown : {version: 1, limit: 3, calls: []};
+    const existing: unknown = existsSync(input.ledgerPath) ? JSON.parse(readFileSync(input.ledgerPath, 'utf8')) as unknown : {version: 1, limit, calls: []};
     const raw = object(existing);
-    if (raw.version !== 1 || raw.limit !== 3 || !Array.isArray(raw.calls) || raw.calls.length > 3) throw new Error('Invalid live ledger; refusing to reset authorization count');
+    if (raw.version !== 1 || raw.limit !== limit || !Array.isArray(raw.calls) || raw.calls.length > limit) throw new Error('Invalid live ledger; refusing to reset authorization count');
     ledger = raw as Ledger;
   } catch (error) {releaseLock(); throw error;}
   const persist = (): void => {
@@ -258,7 +265,7 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
       if (request.method !== 'POST' || request.url !== '/v1/responses') throw new Error('Only Responses text endpoint authorized');
       const payload = await body(request);
       const operation = operationOf(payload);
-      if (ledger.calls.length >= 3) {
+      if (ledger.calls.length >= limit) {
         response.writeHead(429, {'Content-Type': 'application/json'});
         response.end('{"error":{"message":"Authorized live request budget exhausted"}}');
         return;
@@ -284,7 +291,11 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
         }
         observe(new Uint8Array(), true); persist(); response.end();
       } catch {
-        call.errorCode ??= 'HARNESS_UPSTREAM_INTERRUPTED'; persist(); failure(response);
+        // requestText stops reading after a validated semantic terminal. A normal
+        // client close at that point can abort the proxy reader before HTTP EOF.
+        if (call.eventTypes['response.completed']) call.closedAfterTerminal = true;
+        else call.errorCode ??= 'HARNESS_UPSTREAM_INTERRUPTED';
+        persist(); failure(response);
       } finally {clearTimeout(deadline);}
     })().catch(() => failure(response));
   });
@@ -294,8 +305,10 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
     url,
     finish: records => {
       for (const record of records) {
-        const call = ledger.calls.find(item => item.operation === record.operation && item.state === undefined);
-        if (call) Object.assign(call, {state: record.state, errorCode: record.errorCode ?? call.errorCode, streamActual: record.streamActual, textBytes: record.textBytes});
+        const call = ledger.calls.find(item => item.diagnosticId === record.id) ?? ledger.calls
+          .filter(item => item.operation === record.operation && item.diagnosticId === undefined)
+          .sort((a, b) => Math.abs(Date.parse(a.startedAt) - record.startedAt) - Math.abs(Date.parse(b.startedAt) - record.startedAt))[0];
+        if (call) Object.assign(call, {diagnosticId: record.id, state: record.state, errorCode: record.errorCode ?? call.errorCode, streamActual: record.streamActual, textBytes: record.textBytes});
       }
       persist();
     },

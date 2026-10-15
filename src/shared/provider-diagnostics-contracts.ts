@@ -35,3 +35,18 @@ export const diagnosticsListInputSchema = z.object({
   jobId: z.string().min(1).max(100).optional(), before: time.optional(), beforeId: z.string().uuid().optional(), limit: z.number().int().min(1).max(100).default(50),
 }).strict().refine((input) => input.beforeId === undefined || input.before !== undefined, 'A cursor ID requires its timestamp');
 export type DiagnosticsListInput = z.input<typeof diagnosticsListInputSchema>;
+
+/** Live provider content is session memory only, deliberately separate from persisted diagnostics. */
+export const diagnosticsLiveInputSchema = z.object({
+  jobId: z.string().min(1).max(100).optional(), requestId: z.string().uuid().optional(),
+}).strict();
+export type DiagnosticsLiveInput = z.infer<typeof diagnosticsLiveInputSchema>;
+export const providerLiveSnapshotSchema = z.object({
+  requestId: z.string().uuid(), jobId: z.string().max(100).optional(), operation: textOperationSchema,
+  model: z.string().max(200), state: diagnosticStateSchema,
+  phase: z.enum(["waiting", "thinking", "answer", "complete", "failed", "cancelled"]),
+  startedAt: time, updatedAt: time, elapsedMs: count, wireBytes: count, answerBytes: count,
+  thinkingText: z.string().max(32000), answerText: z.string().max(32000),
+  thinkingTruncated: z.boolean(), answerTruncated: z.boolean(),
+}).strict();
+export type ProviderLiveSnapshot = z.infer<typeof providerLiveSnapshotSchema>;

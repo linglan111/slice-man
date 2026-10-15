@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   coverageChapters,
+  createChapterRequest,
   chapterTargets,
   groundChapterResponse,
   validateChapterPlan,
@@ -52,6 +53,43 @@ const job = (durationMs: number): Job => ({
   outputs: [],
 });
 describe("chapter planning integrity", () => {
+  it("labels anchor index and time separately and grounds valid indices to exact full coverage", () => {
+    const snapshot = job(4000);
+    snapshot.segments = [cue("a", 0, 2000), cue("b", 2000, 4000)];
+    const request = createChapterRequest(snapshot, "normal");
+    const payload = JSON.parse(request.prompt.slice(request.prompt.indexOf("\n") + 1)) as {
+      anchors: { index: number; timeMs: number }[];
+      anchorIndexMin: number; anchorIndexMax: number; maxChapterDurationMs: number;
+    };
+    expect(payload.anchors).toEqual([{ index: 0, timeMs: 0 }, { index: 1, timeMs: 2000 }, { index: 2, timeMs: 4000 }]);
+    expect(payload).toMatchObject({ anchorIndexMin: 0, anchorIndexMax: 2, maxChapterDurationMs: MAX_CHAPTER_MS });
+    expect(request.anchors).toEqual([0, 2000, 4000]);
+    expect(request.prompt).toContain("timeMs is context in milliseconds and MUST NEVER be returned as startAnchor or endAnchor");
+    expect(request.prompt).toContain("the first startAnchor MUST be 0, the last endAnchor MUST be 2");
+    const plan = groundChapterResponse({ chapters: [
+      { startAnchor: 0, endAnchor: 1, title: "First", summary: "First topic" },
+      { startAnchor: 1, endAnchor: 2, title: "Second", summary: "Second topic" },
+    ] }, snapshot, "normal", request.anchors, "p", "f");
+    expect(plan.chapters.map(({ startMs, endMs }) => ({ startMs, endMs }))).toEqual([
+      { startMs: 0, endMs: 2000 }, { startMs: 2000, endMs: 4000 },
+    ]);
+    // Actual failed provider shape: timestamps were mistakenly returned as identifiers.
+    expect(() => groundChapterResponse({ chapters: [
+      { startAnchor: 0, endAnchor: 2000, title: "First", summary: "First topic" },
+      { startAnchor: 2000, endAnchor: 4000, title: "Second", summary: "Second topic" },
+    ] }, snapshot, "normal", request.anchors, "p", "f"))
+      .toThrowError(expect.objectContaining({ code: "CHAPTER_INVALID" }));
+  });
+  it("includes the explicit anchor table in prompt byte and cue count limits", () => {
+    const snapshot = job(4000);
+    snapshot.segments = [cue("a", 0, 4000)];
+    const first = snapshot.segments[0]; if (!first) throw new Error("fixture");
+    first.sourceText = "猫".repeat(180000);
+    expect(() => createChapterRequest(snapshot, "normal")).toThrowError(expect.objectContaining({ code: "TEXT_LIMIT" }));
+    snapshot.segments = Array.from({ length: 10001 }, (_, index) => cue(`c${index}`, 0, 4000));
+    expect(() => createChapterRequest(snapshot, "normal")).toThrowError(expect.objectContaining({ code: "TEXT_LIMIT" }));
+  });
+
   it("partitions silence and a single overlong cue without changing source", () => {
     const source = [cue("long", 0, 3 * MAX_CHAPTER_MS + 1)];
     const chapters = coverageChapters(source, source[0]?.endMs ?? 1);
