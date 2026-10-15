@@ -177,3 +177,32 @@ Fixed Responses item1 text and reasoning content-part lifecycle; full HTTP/nativ
 ### Status
 
 [OK] **Completed**
+
+
+## Session 6: Live AI thinking and ranged review
+<!-- trellis-session: v=2 fp=538491519ccdf7e2 -->
+
+**Date**: 2026-10-15
+**Task**: Live AI thinking and ranged review
+**Branch**: `codex/ai-chapters-resumable-tools`
+
+### Summary
+
+No task created per user request. Added bounded ephemeral thinking/answer popup and time-range AI review; actual DeepSeek validation found and fixed chapter anchor index ambiguity. Passed 806 unit/integration tests, 44 local native cases across full run and focused recheck, actual synthetic Responses workflows and cancellation, packaged preview.8 startup/live IPC. Nine paid calls: retained first failure, seven published, one intentional cancellation.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ace0609` | feat(ai): show live thinking and support ranged subtitle review |
+
+### Testing
+
+- [OK] npm test -- --maxWorkers=4: 806 passed
+- [OK] Local native: 44 passed after focused toolbar assertion recheck; five gated cases skipped
+- [OK] Authorized actual Responses five AI operations, ranged/full review, exports, cancellation and restart passed
+- [OK] preview.8 installer packaged startup, live IPC and help replay passed
+
+### Status
+
+[OK] **Completed**
