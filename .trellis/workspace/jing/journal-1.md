@@ -151,3 +151,29 @@ Implemented streamed AI answer files and SQLite diagnostics, default chapter tra
 ### Status
 
 [OK] **Completed**
+
+
+## Session 5: Repair actual reasoning-first Responses compatibility
+<!-- trellis-session: v=2 fp=7589f866c3fd2d86 -->
+
+**Date**: 2026-10-15
+**Task**: Repair actual reasoning-first Responses compatibility
+**Branch**: `codex/ai-chapters-resumable-tools`
+
+### Summary
+
+Fixed Responses item1 text and reasoning content-part lifecycle; full HTTP/native fixtures and independent review. First authorized3 live requests exposed second assumption; after correction separately authorized3 official DeepSeek synthetic chapter/review/name calls all published. Full771 unit/integration and42 native passed,4 gated skips. Built and verified preview.7 local installer. No personal project mutation, push or installation.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e46118d30f256ca83a3fc9910e0ef5bdd8b78905` | fix(ai): accept reasoning-first Responses streams |
+
+### Testing
+
+- [OK] 771 unit/integration passed;42 local native passed/4 gated skips;3 final live operations published;packaged checks pass
+
+### Status
+
+[OK] **Completed**
