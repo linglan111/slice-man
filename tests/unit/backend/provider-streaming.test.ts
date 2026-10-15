@@ -11,6 +11,7 @@ import { SseFramer } from "../../../src/main/services/providers/lib/stream-proto
 import { cancelAllTextRequests, waitForTextRequestsIdle } from "../../../src/main/services/providers/lib/text-request";
 import type { Profile } from "../../../src/shared/contracts";
 import { AppError } from "../../../src/main/lib/errors";
+import { reasoningFirstResponses } from "../../fixtures/reasoning-first-responses";
 
 const servers: Server[] = [];
 const roots: string[] = [];
@@ -44,6 +45,41 @@ function chat(content: string, finish: string | null = null): string { return ev
 function sse(res: ServerResponse): void { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.flushHeaders(); }
 
 describe("streamed text protocol integrity and diagnostics", () => {
+  it("persists only normalized answer from reasoning-first Responses through HTTP, file and SQLite", async () => {
+    const repo = await diagnostics(); let requests = 0;
+    const answer = '{"name":"猫とAnn"}';
+    const frames = reasoningFirstResponses(answer);
+    const url = await fixture((res, body, path) => {
+      requests++; expect(path).toBe("/v1/responses"); expect(body.stream).toBe(true); sse(res);
+      // Split the wire inside a UTF-8 codepoint, independent of semantic event boundaries.
+      const wire = Buffer.from(frames.map(event).join("")); const split = wire.indexOf(Buffer.from("猫")) + 1;
+      res.write(wire.subarray(0, split)); res.end(wire.subarray(split));
+    });
+    let requestId = "";
+    expect(await generateText(profile(url, "openai", "responses"), "SECRET_KEY", "SYNTHETIC_PROMPT", undefined, { diagnostics: repo, operation: "review", onRequestComplete: (id) => { requestId = id; } })).toBe(answer);
+    expect(requests).toBe(1);
+    expect(repo.detail(requestId)).toMatchObject({ state: "transport_complete", streamActual: true, httpStatus: 200, textBytes: Buffer.byteLength(answer), usage: { inputTokens: 12, outputTokens: 7, reasoningTokens: 3 } });
+    expect(await repo.readAnswer(requestId)).toBe(answer);
+    expect(await readFile(await repo.artifactPath(requestId), "utf8")).toBe(answer);
+    expect(JSON.stringify(repo.detail(requestId))).not.toMatch(/PRIVATE_REASONING|SECRET_KEY|SYNTHETIC_PROMPT/);
+    repo.markValidated(requestId); repo.markPublished(requestId);
+    expect(repo.detail(requestId).state).toBe("published");
+  });
+  it.each(["mismatched-final", "incomplete", "refusal", "tool"] as const)("retains reasoning-first answer but never publishes %s stream", async (failure) => {
+    const repo = await diagnostics(); let requests = 0; const complete = vi.fn();
+    const frames = reasoningFirstResponses('{"ok":true}');
+    const prefix = frames.slice(0, frames.findIndex((frame) => frame.type === "response.output_text.done") + 1);
+    const terminal = failure === "mismatched-final" ? { type: "response.completed", response: { status: "completed", output: [{ type: "reasoning", id: "reasoning-0" }, { type: "message", id: "message-1", content: [{ type: "output_text", text: "changed" }] }] } }
+      : failure === "refusal" ? { type: "response.refusal.done", refusal: "blocked" }
+      : failure === "tool" ? { type: "response.output_item.added", output_index: 2, item: { type: "function_call" } }
+      : { type: "response.incomplete", response: { status: "incomplete" } };
+    const url = await fixture((res) => { requests++; sse(res); res.end([...prefix, terminal].map(event).join("")); });
+    await expect(generateText(profile(url, "openai", "responses"), "key", "prompt", undefined, { diagnostics: repo, operation: "review", onRequestComplete: complete })).rejects.toMatchObject({ code: failure === "mismatched-final" ? "STREAM_PROTOCOL" : failure === "incomplete" ? "TRUNCATED" : "REFUSAL" });
+    expect(requests).toBe(1); expect(complete).not.toHaveBeenCalled();
+    const record = repo.list()[0]; if (!record) throw new Error("missing diagnostic");
+    expect(record.state).toBe("failed"); expect(record.artifact).toContain("partial");
+    expect(await repo.readAnswer(record.id)).toBe('{"ok":true}');
+  });
   it("writes normalized Chat answer, not reasoning, raw frames, prompt or key; keeps final usage and lifecycle", async () => {
     const repo = await diagnostics(); let requests = 0;
     const url = await fixture((res, body) => {

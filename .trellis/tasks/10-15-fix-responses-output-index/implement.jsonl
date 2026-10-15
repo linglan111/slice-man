@@ -1,0 +1,6 @@
+{"reason":"streaming answer/diagnostic semantics and chapter publication","file":".trellis/spec/shared/ai-chapters-and-artifacts.md"}
+{"reason":"strict typed errors and quality gate","file":".trellis/spec/shared/code-quality.md"}
+{"reason":"installed/read-only versus isolated native data","file":".trellis/spec/backend/environment.md"}
+{"reason":"backend code conventions","file":".trellis/spec/backend/quality.md"}
+{"reason":"real service versus local fixtures, native ABI and packaging","file":".trellis/spec/shared/native-runtime-testing.md"}
+{"reason":"approved bug scope, observed failure, live budget and acceptance","file":".trellis/tasks/10-15-fix-responses-output-index/prd.md"}

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "limit": 3,
+  "calls": [
+    {
+      "number": 1,
+      "operation": "chapters",
+      "startedAt": "2026-10-15T11:25:44.532Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 1,
+        "response.content_part.added": 1,
+        "response.reasoning_text.delta": 1
+      },
+      "outputIndexes": {
+        "0": 3
+      },
+      "contentIndexes": {
+        "0": 2
+      },
+      "itemTypes": {
+        "reasoning": 1
+      },
+      "httpStatus": 200,
+      "errorCode": "STREAM_PROTOCOL",
+      "state": "failed",
+      "streamActual": true,
+      "textBytes": 0
+    },
+    {
+      "number": 2,
+      "operation": "review",
+      "startedAt": "2026-10-15T11:25:45.197Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 1,
+        "response.content_part.added": 1,
+        "response.reasoning_text.delta": 1
+      },
+      "outputIndexes": {
+        "0": 3
+      },
+      "contentIndexes": {
+        "0": 2
+      },
+      "itemTypes": {
+        "reasoning": 1
+      },
+      "httpStatus": 200,
+      "errorCode": "STREAM_PROTOCOL",
+      "state": "failed",
+      "streamActual": true,
+      "textBytes": 0
+    },
+    {
+      "number": 3,
+      "operation": "names",
+      "startedAt": "2026-10-15T11:25:45.878Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 1,
+        "response.content_part.added": 1,
+        "response.reasoning_text.delta": 1
+      },
+      "outputIndexes": {
+        "0": 3
+      },
+      "contentIndexes": {
+        "0": 2
+      },
+      "itemTypes": {
+        "reasoning": 1
+      },
+      "httpStatus": 200,
+      "errorCode": "STREAM_PROTOCOL",
+      "state": "failed",
+      "streamActual": true,
+      "textBytes": 0
+    }
+  ]
+}

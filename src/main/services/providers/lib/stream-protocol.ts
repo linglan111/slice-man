@@ -11,6 +11,8 @@ function array(value: unknown): unknown[] { if (!Array.isArray(value)) fail(); r
 function fail(): never { throw new AppError("STREAM_PROTOCOL", "AI 流式响应格式无效，请检查协议或更换模型。"); }
 function text(value: unknown): string { if (typeof value !== "string") fail(); return value; }
 function number(value: unknown): number | undefined { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : undefined; }
+function responseIndex(value: unknown): number { const index = number(value); if (index === undefined || index > 32) fail(); return index; }
+type ResponseItem = { id?: string; kind?: "message" | "reasoning"; added?: boolean; done?: boolean };
 export function normalizedUsage(raw: unknown, protocol: Profile["protocol"]): ProviderUsage | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const u = raw as ObjectValue;
@@ -45,6 +47,10 @@ export class StreamProtocol {
   private blocks = new Map<number, string>();
   private responseParts = new Map<string, string>();
   private completedResponseParts = new Set<string>();
+  private addedResponseContent = new Set<string>();
+  private completedResponseContent = new Set<string>();
+  private responseItems = new Map<number, ResponseItem>();
+  private lastResponsePart?: { output: number; content: number };
   private geminiFinished = false;
   constructor(private readonly profile: Profile) {}
   event(data: string, event = ""): ProtocolDelta {
@@ -90,16 +96,59 @@ export class StreamProtocol {
     const type = text(r.type);
     if (["response.failed", "response.incomplete", "response.refusal.delta", "response.refusal.done"].includes(type)) throw new AppError(type === "response.incomplete" ? "TRUNCATED" : "REFUSAL", "AI 未完成正常输出");
     if (type.includes("function_call") || type.includes("tool_call")) throw new AppError("REFUSAL", "AI 返回了工具调用，未返回可用文本");
+    if (type === "response.output_item.added" || type === "response.output_item.done") {
+      const index = responseIndex(r.output_index); const item = object(r.item);
+      const state = this.responseItem(index, item.id, item.type);
+      if (state.done || (type === "response.output_item.added" && state.added)) fail();
+      if (type === "response.output_item.added") state.added = true;
+      else {
+        if (item.status !== undefined) stop(item.status, "completed", "incomplete");
+        if (state.kind === "message") this.checkResponseContent(index, item.content);
+        state.done = true;
+      }
+    }
+    if (type.startsWith("response.reasoning_")) {
+      if (r.content_index !== undefined) responseIndex(r.content_index);
+      if (r.summary_index !== undefined) responseIndex(r.summary_index);
+      if (r.output_index !== undefined) this.responseItem(responseIndex(r.output_index), r.item_id, "reasoning");
+    }
+    if (type === "response.content_part.added" || type === "response.content_part.done") {
+      const index = responseIndex(r.output_index); const content = responseIndex(r.content_index);
+      const part = object(r.part);
+      // DeepSeek puts reasoning_text in the same content-part lifecycle as
+      // output_text. It belongs to a reasoning item and is liveness only.
+      const isReasoning = part.type === "reasoning_text" || part.type === "summary_text";
+      if (!isReasoning && part.type !== "output_text") throw new AppError("REFUSAL", "AI 未完成正常文本输出");
+      const item = this.responseItem(index, r.item_id, isReasoning ? "reasoning" : "message"); if (item.done) fail();
+      const key = `${index}:${content}`;
+      if (this.completedResponseContent.has(key)) fail();
+      if (type === "response.content_part.added") {
+        if (this.addedResponseContent.has(key) || this.responseParts.has(key)) fail();
+        if (!isReasoning && text(part.text) !== "") fail();
+        this.addedResponseContent.add(key);
+      } else {
+        if (!isReasoning && text(part.text) !== (this.responseParts.get(key) ?? "")) fail();
+        this.completedResponseContent.add(key);
+      }
+    }
     if (type === "response.output_text.delta") {
-      if (r.output_index !== 0 || !Number.isInteger(r.content_index) || Number(r.content_index) < 0 || Number(r.content_index) > 32) fail();
-      const key = `${r.output_index}:${r.content_index}`;
-      if (this.completedResponseParts.has(key)) fail();
+      const output = responseIndex(r.output_index); const content = responseIndex(r.content_index);
+      const item = this.responseItem(output, r.item_id, "message");
+      const previous = this.lastResponsePart;
+      // Responses indexes identify output items, not alternative Chat choices.
+      // Text is streamed directly to disk, so parts must retain canonical order.
+      if (item.done || (previous && (output < previous.output || (output === previous.output && content < previous.content)))) fail();
+      this.lastResponsePart = { output, content };
+      const key = `${output}:${content}`;
+      if (this.completedResponseParts.has(key) || this.completedResponseContent.has(key)) fail();
       const answer = text(r.delta); this.responseParts.set(key, (this.responseParts.get(key) ?? "") + answer);
       return { text: answer };
     }
     if (type === "response.output_text.done") {
-      const key = `${r.output_index}:${r.content_index}`;
-      if (this.completedResponseParts.has(key) || text(r.text) !== this.responseParts.get(key)) fail();
+      const output = responseIndex(r.output_index); const content = responseIndex(r.content_index);
+      const item = this.responseItem(output, r.item_id, "message");
+      const key = `${output}:${content}`;
+      if (item.done || this.completedResponseParts.has(key) || this.completedResponseContent.has(key) || text(r.text) !== (this.responseParts.get(key) ?? "")) fail();
       this.completedResponseParts.add(key);
     }
     if (type === "response.completed") {
@@ -108,17 +157,16 @@ export class StreamProtocol {
       if (response.error || response.incomplete_details) fail();
       if (response.output !== undefined) {
         const output = array(response.output);
+        if (output.length > 33) fail();
         let finalText = "";
-        for (const item of output) {
+        for (const [index, item] of output.entries()) {
           const value = object(item);
+          this.responseItem(index, value.id, value.type);
+          if (value.status !== undefined) stop(value.status, "completed", "incomplete");
           if (value.type === "reasoning") continue;
-          if (value.type !== "message") throw new AppError("REFUSAL", "AI 返回了工具调用，未返回可用文本");
-          for (const part of array(value.content)) {
-            const content = object(part);
-            if (content.type !== "output_text") throw new AppError("REFUSAL", "AI 未完成正常文本输出");
-            finalText += text(content.text);
-          }
+          finalText += this.checkResponseContent(index, value.content);
         }
+        if ([...this.responseItems.keys()].some((index) => index >= output.length)) fail();
         if (finalText !== [...this.responseParts.values()].join("")) fail();
       }
       this.usage = normalizedUsage(response.usage, "openai");
@@ -127,6 +175,33 @@ export class StreamProtocol {
     if (!["response.output_text.done", "response.completed", "response.created", "response.in_progress", "response.output_item.added", "response.output_item.done", "response.content_part.added", "response.content_part.done", "response.reasoning_summary_part.added", "response.reasoning_summary_part.done", "response.reasoning_summary_text.delta", "response.reasoning_summary_text.done", "response.reasoning_text.delta", "response.reasoning_text.done"].includes(type)) fail();
     if (r.item && object(r.item).type !== "message" && object(r.item).type !== "reasoning") throw new AppError("REFUSAL", "AI 返回了工具调用");
     return { heartbeat: true, usage: this.usage };
+  }
+  private responseItem(index: number, id: unknown, kind: unknown): ResponseItem {
+    const state = this.responseItems.get(index) ?? {};
+    if (id !== undefined) {
+      const itemId = text(id); if (!itemId || itemId.length > 512) fail();
+      if (state.id && state.id !== itemId) fail();
+      if ([...this.responseItems.entries()].some(([other, item]) => other !== index && item.id === itemId)) fail();
+      state.id = itemId;
+    }
+    if (kind !== undefined) {
+      if (kind !== "message" && kind !== "reasoning") throw new AppError("REFUSAL", "AI 返回了工具调用，未返回可用文本");
+      if (state.kind && state.kind !== kind) fail();
+      state.kind = kind;
+    }
+    this.responseItems.set(index, state); return state;
+  }
+  private checkResponseContent(index: number, raw: unknown): string {
+    const content = array(raw); if (content.length > 33) fail();
+    const result = content.map((part, partIndex) => {
+      const value = object(part);
+      if (value.type !== "output_text") throw new AppError("REFUSAL", "AI 未完成正常文本输出");
+      const answer = text(value.text);
+      if (answer !== (this.responseParts.get(`${index}:${partIndex}`) ?? "")) fail();
+      return answer;
+    }).join("");
+    if ([...this.responseParts.keys()].some((key) => { const [output, part] = key.split(":").map(Number); return output === index && part !== undefined && part >= content.length; })) fail();
+    return result;
   }
   private anthropic(r: ObjectValue, event: string): ProtocolDelta {
     const type = text(r.type);
