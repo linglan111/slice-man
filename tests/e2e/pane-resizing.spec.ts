@@ -1,3 +1,4 @@
+import { startSubtitleReview } from './helpers';
 import { jobSetting, workspaceButton } from './helpers';
 import {
   test,
@@ -265,8 +266,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
     await expect(
       (await jobSetting(page, '双语字幕（译文 + 原文）')),
     ).toBeChecked();
-    await (await workspaceButton(page, 'AI 检查字幕'))
-      .click();
+    await startSubtitleReview(page);
     await expect(page.locator(".review-summary")).toBeVisible();
     await expect(page.locator(".processing-strip")).not.toBeVisible();
     await page.getByLabel("选择字幕 1", { exact: true }).check();

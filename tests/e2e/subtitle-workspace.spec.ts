@@ -1,3 +1,4 @@
+import { startSubtitleReview } from './helpers';
 import { selectReviewFilters } from './helpers';
 import { jobSetting, workspaceButton, closeWorkspaceSettings } from './helpers';
 import {
@@ -275,8 +276,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
     await (await jobSetting(page, 'AI 检查服务（可选）'))
       .selectOption({ label: "Recognition and review fixture" });
     const recognitionBeforeReview = mock.counters.recognition;
-    await (await workspaceButton(page, 'AI 检查字幕'))
-      .click();
+    await startSubtitleReview(page);
     await expect
       .poll(async () => (await job(page)).reviewReport?.findings.length)
       .toBe(2);
@@ -301,8 +301,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       .toBe(recognitionBeforeReview + 2);
     await selectReviewFilters(page, "unchecked");
     await expect(page.locator(".review-finding--recheck")).toHaveCount(2);
-    await (await workspaceButton(page, 'AI 检查字幕'))
-      .click();
+    await startSubtitleReview(page);
     await expect.poll(() => mock.counters.review).toBe(2);
     await selectReviewFilters(page, "medium");
     await expect(page.locator(".review-finding--pending")).toHaveCount(2);
@@ -370,8 +369,7 @@ test("source-only creation, cue/time partial repairs, AI text review, restart an
       });
       if (!result.success) throw new Error(result.error);
     });
-    await (await workspaceButton(page, 'AI 检查字幕'))
-      .click();
+    await startSubtitleReview(page);
     await expect(page.locator(".review-finding--pending")).toHaveCount(2);
     await page
       .getByTestId("segment-0")
@@ -546,13 +544,11 @@ for (const orientation of ["portrait", "landscape"] as const) {
       await (await jobSetting(page, 'AI 检查服务（可选）'))
         .selectOption({ label: "Layout review fixture" });
       mock.behavior.review = "graded";
-      await (await workspaceButton(page, 'AI 检查字幕'))
-        .click();
+      await startSubtitleReview(page);
       await expect(page.locator(".review-summary")).toBeVisible();
       await expect(page.locator(".processing-strip")).not.toBeVisible();
       mock.behavior.review = "slow";
-      await (await workspaceButton(page, 'AI 检查字幕'))
-        .click();
+      await startSubtitleReview(page);
       await expect.poll(() => mock.counters.review).toBe(2);
       await page
         .getByRole("button", { name: "取消当前处理", exact: true })

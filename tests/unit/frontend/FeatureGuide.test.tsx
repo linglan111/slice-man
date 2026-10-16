@@ -25,9 +25,13 @@ describe('feature guide', () => {
     expect(screen.getByText(/原文或时间问题重新识别/).textContent).toContain('原语言模式不会调用翻译服务');
     await user.click(screen.getByRole('button', { name: '上一步' }));
     expect(screen.getByRole('heading', { name: '检查可疑字幕' })).toBeTruthy();
+    expect(screen.getByText(/点击「AI 检查字幕」直接打开范围弹窗/).textContent).toContain('「指定时间范围」');
+    expect(screen.getByText(/出现「模型思考中」时/).textContent).toContain('「查看流式信息」');
+    expect(screen.getByText(/处理结果区的「AI 请求日志」/).textContent).toContain('失败后可重试');
     await user.click(screen.getByRole('button', { name: '下一步' }));
     await user.click(screen.getByRole('button', { name: '下一步' }));
     expect(document.activeElement).toBe(screen.getByRole('heading', { name: '调整样式并导出' }));
+    expect(screen.getByText(/关闭导航即可开始操作/).textContent).toContain('左上角的问号图标「功能导航」');
     await user.click(screen.getByRole('button', { name: '完成' }));
     expect(onClose).toHaveBeenCalledOnce();
   });

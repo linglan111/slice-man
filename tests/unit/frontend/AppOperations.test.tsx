@@ -63,6 +63,7 @@ describe('visible operation navigation', () => {
     vi.mocked(api.jobs.reviewSubtitles).mockResolvedValue({ success: true, data: saved });
     await act(async () => { render(<App />); });
     fireEvent.click(screen.getByRole('button', { name: 'AI 检查字幕' }));
+    fireEvent.click(screen.getByRole('button', { name: '开始检查' }));
     expect(api.jobs.reviewSubtitles).not.toHaveBeenCalled();
     expect((screen.getByLabelText('AI 检查服务') as HTMLSelectElement).value).toBe('');
     fireEvent.change(screen.getByLabelText('AI 检查服务'), { target: { value: profile.id } });

@@ -90,6 +90,171 @@ describe("chapter planning integrity", () => {
     expect(() => createChapterRequest(snapshot, "normal")).toThrowError(expect.objectContaining({ code: "TEXT_LIMIT" }));
   });
 
+  it("maps shared and overlapping cue boundaries to the actual deduplicated anchor table", () => {
+    const snapshot = job(10000);
+    snapshot.segments = [
+      cue("a", 0, 4000),
+      cue("b", 4000, 8000),
+      cue("c", 2000, 6000),
+      cue("d", 0, 10000),
+    ];
+    const request = createChapterRequest(snapshot, "normal");
+    const payload = JSON.parse(
+      request.prompt.slice(request.prompt.indexOf("\n") + 1),
+    ) as {
+      cues: { n: number; startAnchor: number; endAnchor: number }[];
+    };
+    expect(request.anchors).toEqual([0, 2000, 4000, 6000, 8000, 10000]);
+    expect(
+      payload.cues.map(({ n, startAnchor, endAnchor }) => ({
+        n,
+        startAnchor,
+        endAnchor,
+      })),
+    ).toEqual([
+      { n: 0, startAnchor: 0, endAnchor: 2 },
+      { n: 1, startAnchor: 2, endAnchor: 4 },
+      { n: 2, startAnchor: 1, endAnchor: 3 },
+      { n: 3, startAnchor: 0, endAnchor: 5 },
+    ]);
+    expect(request.prompt).toContain(
+      "Cue n is ONLY a subtitle ordinal, NEVER an anchor index",
+    );
+    expect(request.prompt).toContain(
+      "NEVER reconstruct anchors as 2*n or 2*n+1",
+    );
+    expect(request.prompt).toContain(
+      "an endAnchor of 2 requires the next startAnchor to be 2, NOT 3",
+    );
+    expect(request.prompt).not.toContain(
+      "Gaps and an empty chapters array are allowed",
+    );
+    const custom = createChapterRequest(snapshot, "custom");
+    expect(custom.prompt).toContain(
+      "Gaps and an empty chapters array are allowed",
+    );
+    expect(custom.prompt).not.toContain("the first startAnchor MUST be 0");
+  });
+
+  it("rejects the actual 1036-cue failure shape rather than reconstructing two anchors per cue", () => {
+    const snapshot = job(1036000);
+    snapshot.segments = Array.from({ length: 1036 }, (_, index) =>
+      cue(
+        `cue-${index}`,
+        index * 1000,
+        (index + 1) * 1000 - (index < 34 ? 100 : 0),
+      ),
+    );
+    const request = createChapterRequest(snapshot, "normal");
+    expect(request.anchors).toHaveLength(1071);
+    expect(request.prompt).toContain(
+      "indices are integers from 0 through 1070 inclusive",
+    );
+    expect(() =>
+      groundChapterResponse(
+        {
+          chapters: [
+            { startAnchor: 0, endAnchor: 2071, title: "topic", summary: "" },
+          ],
+        },
+        snapshot,
+        "normal",
+        request.anchors,
+        "p",
+        "f",
+      ),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "CHAPTER_INVALID",
+        message: expect.stringContaining("2071 超出有效范围 0–1070"),
+      }),
+    );
+    expect(() =>
+      groundChapterResponse(
+        {
+          chapters: [
+            { startAnchor: 0, endAnchor: 51, title: "First", summary: "" },
+            { startAnchor: 52, endAnchor: 1070, title: "Second", summary: "" },
+          ],
+        },
+        snapshot,
+        "normal",
+        request.anchors,
+        "p",
+        "f",
+      ),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "CHAPTER_INVALID",
+        message: expect.stringContaining(
+          "第 2 章前存在空缺：起点应为 51，实际为 52",
+        ),
+      }),
+    );
+    const valid = groundChapterResponse(
+      {
+        chapters: [
+          { startAnchor: 0, endAnchor: 51, title: "First", summary: "" },
+          { startAnchor: 51, endAnchor: 1070, title: "Second", summary: "" },
+        ],
+      },
+      snapshot,
+      "normal",
+      request.anchors,
+      "p",
+      "f",
+    );
+    expect(valid.chapters).toHaveLength(2);
+    expect(valid.chapters[0]?.endMs).toBe(valid.chapters[1]?.startMs);
+    expect(valid.chapters.at(-1)?.endMs).toBe(snapshot.media.durationMs);
+  });
+
+  it.each([
+    { bounds: [[1, 4]], message: "第 1 章前存在空缺：起点应为 0，实际为 1" },
+    {
+      bounds: [
+        [0, 2],
+        [1, 4],
+      ],
+      message: "第 2 章与前章重叠",
+    },
+    { bounds: [[0, 3]], message: "末章终点应为 4，实际为 3" },
+    {
+      bounds: [
+        [0, 2],
+        [2, 2],
+      ],
+      message: "第 2 章边界 2→2 反向或时长为零",
+    },
+    { bounds: [], message: "未返回覆盖视频的普通章节" },
+  ])(
+    "reports actionable boundary errors without repairing the result: $message",
+    ({ bounds, message }) => {
+      expect(() =>
+        groundChapterResponse(
+          {
+            chapters: bounds.map(([startAnchor, endAnchor]) => ({
+              startAnchor,
+              endAnchor,
+              title: "topic",
+              summary: "",
+            })),
+          },
+          job(4000),
+          "normal",
+          [0, 1000, 2000, 3000, 4000],
+          "p",
+          "f",
+        ),
+      ).toThrowError(
+        expect.objectContaining({
+          code: "CHAPTER_INVALID",
+          message: expect.stringContaining(message),
+        }),
+      );
+    },
+  );
+
   it("partitions silence and a single overlong cue without changing source", () => {
     const source = [cue("long", 0, 3 * MAX_CHAPTER_MS + 1)];
     const chapters = coverageChapters(source, source[0]?.endMs ?? 1);

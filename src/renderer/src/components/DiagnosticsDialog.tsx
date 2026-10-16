@@ -4,7 +4,7 @@ import { requireResult } from '../lib/api-result';
 import { Modal } from './Modal';
 const STATE_LABELS: Record<ProviderDiagnostic['state'], string> = {waiting: '等待响应', receiving: '接收中', transport_complete: '接收完成，待校验', validated: '已校验', published: '已应用', failed: '失败', cancelled: '已取消', interrupted: '中断'};
 const OPERATIONS: Record<ProviderDiagnostic['operation'], string> = {review: '字幕检查', names: '人名检查', chapters: '章节切分', translate: '字幕翻译', style: '样式生成'};
-export function DiagnosticsDialog({jobId, onClose}: {jobId?: string; onClose: () => void}): ReactNode {
+export function DiagnosticsDialog({jobId, onClose, onRetry, isOperationBusy = false}: {jobId?: string; onClose: () => void; onRetry?: (record: ProviderDiagnostic) => void; isOperationBusy?: boolean}): ReactNode {
   const [items, setItems] = useState<ProviderDiagnostic[]>([]);
   const [detail, setDetail] = useState<ProviderDiagnostic>();
   const [answer, setAnswer] = useState<{text: string; truncated: boolean}>();
@@ -29,6 +29,7 @@ export function DiagnosticsDialog({jobId, onClose}: {jobId?: string; onClose: ()
     {hasMore && <button className="button" disabled={isBusy} onClick={() => void perform(loadMore)}>加载更早的请求</button>}
     {!items.length && <p>暂无请求日志；旧版请求无法补录。</p>}
     {detail && <section className="diagnostics-detail"><h3>{OPERATIONS[detail.operation]} · {STATE_LABELS[detail.state]}</h3><p>请求 {detail.id} · 第 {detail.attempt + 1} 次 · {detail.targetCount} 条字幕</p><p>提示 {detail.promptBytes} 字节 · 接收 {detail.wireBytes} 字节 · {detail.streamActual ? '流式响应' : '普通响应'}{detail.errorPhase ? ` · 错误阶段 ${detail.errorPhase}` : ''}</p>{detail.usage && <p>实际 token：输入 {detail.usage.inputTokens ?? '未返回'} · 输出 {detail.usage.outputTokens ?? '未返回'}</p>}<pre aria-label="已接收的 AI 回答">{answer?.text || '尚未收到回答文字'}</pre>{answer?.truncated && <p className="hint">预览已截断，原始回答保留在本地请求文件。</p>}</section>}
+    {detail && onRetry && jobId && detail.jobId === jobId && (detail.state === 'failed' || detail.state === 'interrupted') && <div><p className="hint">历史日志未保存原操作范围和选项。重新设置后确认执行，不会直接重放请求。</p><button className="button" disabled={isBusy || isOperationBusy} onClick={() => onRetry(detail)}>重新设置并重试</button></div>}
     {error && <p className="error-message" role="alert">{error}</p>}
     <footer className="modal__footer"><button className="button" disabled={isBusy || !completed.length} onClick={() => void perform(async () => {await requireResult(window.api.diagnostics.clear(completed.slice(0, 1000).map((item) => item.id))); await refresh(); setDetail(undefined); setAnswer(undefined);})}>清除此页已结束记录</button><button className="button" disabled={isBusy} onClick={() => void perform(refresh)}>刷新日志</button><button className="button button--primary" onClick={onClose}>返回工作区</button></footer>
   </Modal>;

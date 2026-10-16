@@ -19,6 +19,10 @@ describe('AI stream and review scope navigation', () => {
     await act(async () => { render(<App />); });
     vi.mocked(api.diagnostics.live).mockResolvedValue({ success: true, data: [liveSnapshot({ jobId: job.id })] });
     fireEvent.click(screen.getByRole('button', { name: 'AI 检查字幕' }));
+    expect(api.jobs.reviewSubtitles).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: '检查范围' })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'AI 检查范围' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '开始检查' }));
     await screen.findByText('模型思考中 · 60 秒 · 已接收 8,123 字节');
     fireEvent.click(screen.getByRole('button', { name: '查看流式信息' }));
     expect(screen.getByRole('dialog', { name: 'AI 流式信息' })).toBeTruthy();
@@ -41,7 +45,7 @@ describe('AI stream and review scope navigation', () => {
     vi.mocked(api.jobs.updateOptions).mockResolvedValue({ success: true, data: saved });
     vi.mocked(api.jobs.reviewSubtitles).mockResolvedValue({ success: true, data: saved });
     await act(async () => { render(<App />); });
-    fireEvent.click(screen.getByRole('button', { name: '检查范围' }));
+    fireEvent.click(screen.getByRole('button', { name: 'AI 检查字幕' }));
     fireEvent.click(screen.getByRole('radio', { name: '指定时间范围' }));
     fireEvent.change(screen.getByLabelText('检查开始时间（秒）'), { target: { value: '1' } });
     fireEvent.change(screen.getByLabelText('检查结束时间（秒）'), { target: { value: '2' } });

@@ -106,6 +106,7 @@ describe('optional translation and subtitle repair workspace', () => {
     vi.mocked(api.jobs.acknowledgeFinding).mockResolvedValue({ success: true, data: { ...previous, updatedAt: 11, reviewReport: { ...report, findings: report.findings.map((finding) => ({ ...finding, status: 'ignored' as const })) } } });
     render(<App />);
     fireEvent.click(await screen.findByRole('button', { name: 'AI 检查字幕' }));
+    fireEvent.click(screen.getByRole('button', { name: '开始检查' }));
     await screen.findByText(/句意可能重复/);
     expect(api.jobs.reviewSubtitles).toHaveBeenCalledExactlyOnceWith({ jobId: previous.id, revision: 7 });
     expect(api.jobs.recognize).not.toHaveBeenCalled(); expect(api.jobs.translate).not.toHaveBeenCalled();

@@ -1,3 +1,4 @@
+import { startSubtitleReview } from './helpers';
 import { selectReviewFilters, reviewFilterChoice } from './helpers';
 import {
   test,
@@ -202,9 +203,7 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
       await jobSetting(page, "AI 检查服务（可选）")
     ).selectOption({ label: "Contextual fixture" });
     await closeWorkspaceSettings(page);
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
-      .click();
+    await startSubtitleReview(page);
     await expect
       .poll(
         async () => (await currentJob(page)).reviewReport?.assessments?.length,
@@ -371,9 +370,7 @@ test("all cues receive four fixed context grades across batch boundaries; grade 
     await expect(
       page.getByTestId("segment-3").getByLabel("未检查", { exact: true }),
     ).toBeVisible();
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
-      .click();
+    await startSubtitleReview(page);
     await expect.poll(() => mock.counters.review).toBe(2);
     await expect(
       page.getByTestId("segment-0").getByLabel("可疑度：无", { exact: true }),

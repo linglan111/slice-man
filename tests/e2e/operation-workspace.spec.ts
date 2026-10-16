@@ -110,14 +110,14 @@ test('each operation has a compact content-sized bottom card and visible actions
         expect(stagesFit, 'All stages stay on the preview title row to its right').toBe(true);
         await expect(page.locator('.preview-media .stage-strip')).toHaveCount(0);
         for (const label of ['功能导航', '重置布局']) {
-          const action = page.locator('.sidebar__footer').getByRole('button', { name: label, exact: true });
+          const action = page.getByRole('navigation', { name: '工作区快捷操作' }).getByRole('button', { name: label, exact: true });
           await expect(action).toBeVisible();
           expect(await action.evaluate((node) => {
             const rect = node.getBoundingClientRect();
             const clip = node.closest('.sidebar')?.getBoundingClientRect();
             const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
             return Boolean(clip && rect.left >= clip.left && rect.right <= clip.right && rect.top >= 0 && rect.bottom <= innerHeight && hit && node.contains(hit));
-          }), 'Footer controls stay inside the sidebar and are hit-testable').toBe(true);
+          }), 'Top workspace controls stay inside the sidebar and are hit-testable').toBe(true);
         }
         await expect(page.locator('.workspace-header').getByRole('button')).toHaveCount(0);
         expect(await page.locator('.subtitle-list').evaluate((node) => node.clientHeight)).toBeGreaterThanOrEqual(75);
@@ -133,7 +133,7 @@ test('each operation has a compact content-sized bottom card and visible actions
         const follow = document.querySelector('.review-toolbar__follow');
         return { heading: review.map((node) => node.getAttribute('aria-label') ?? node.textContent?.trim()), selectionBeforeFollow: follow?.previousElementSibling?.textContent?.trim(), standardAfterFilter: document.querySelector('.review-toolbar__filter-group .review-filter')?.nextElementSibling?.textContent?.trim() };
       });
-      expect(placement.heading).toEqual(['字幕自动修复', 'AI 检查字幕', '检查范围', '添加字幕']);
+      expect(placement.heading).toEqual(['字幕自动修复', 'AI 检查字幕', '添加字幕']);
       expect(placement.selectionBeforeFollow).toBe('选择时间范围');
       expect(placement.standardAfterFilter).toBe('可疑度标准');
       await expect(page.getByRole('checkbox', { name: '选择当前等级', exact: true })).toHaveCount(0);
@@ -178,12 +178,12 @@ test('each operation has a compact content-sized bottom card and visible actions
         await expect(page.locator('.sidebar__footer').getByRole('button', { name: label, exact: true })).toBeFocused();
       }
       await page.getByRole('button', { name: '收起侧边栏', exact: true }).click();
-      const help = page.locator('.sidebar__footer').getByRole('button', { name: '功能导航', exact: true });
+      const help = page.getByRole('navigation', { name: '工作区快捷操作' }).getByRole('button', { name: '功能导航', exact: true });
       await help.click();
       await expect(page.getByRole('dialog', { name: '功能导航', exact: true })).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(help).toBeFocused();
-      const reset = page.locator('.sidebar__footer').getByRole('button', { name: '重置布局', exact: true });
+      const reset = page.getByRole('navigation', { name: '工作区快捷操作' }).getByRole('button', { name: '重置布局', exact: true });
       await reset.click();
       expect(await reset.evaluate((node) => {
         const rect = node.getBoundingClientRect();

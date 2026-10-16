@@ -1,3 +1,4 @@
+import { startSubtitleReview } from './helpers';
 import { reviewFilterChoice } from './helpers';
 import { test, expect } from "@playwright/test";
 import {
@@ -62,9 +63,7 @@ test("anonymous 1027-cue review uses one HTTP request per complete selected set 
       // The full scan runs through App's action handler, which commits the returned Job.
       // Smaller selected sets deliberately exercise public IPC boundary requests below.
       if (length === 1027) {
-        await page
-          .getByRole("button", { name: "AI 检查字幕", exact: true })
-          .click();
+        await startSubtitleReview(page);
         await expect
           .poll(async () =>
             page.evaluate(async () => {
@@ -157,9 +156,7 @@ test("review service entry and one visible evidence correction preserve the last
       "未检查（4）",
     );
     await expect(page.getByRole('group', { name: '可疑度筛选选项', exact: true }).getByRole('checkbox', { name: /^待检查/ })).toHaveCount(0);
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
-      .click();
+    await startSubtitleReview(page);
     const picker = page.getByRole("dialog", {
       name: "选择 AI 检查服务",
       exact: true,
@@ -188,9 +185,7 @@ test("review service entry and one visible evidence correction preserve the last
     });
     expect(before?.assessments).toHaveLength(4);
     mock.behavior.review = "evidence-invalid";
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
-      .click();
+    await startSubtitleReview(page);
     await expect(page.getByRole("alert")).toContainText("REVIEW_EVIDENCE");
     expect(mock.counters.review).toBe(4);
     const retained = await page.evaluate(async () => {
@@ -201,9 +196,7 @@ test("review service entry and one visible evidence correction preserve the last
     });
     expect(retained).toEqual(before);
     mock.behavior.review = "slow";
-    await page
-      .getByRole("button", { name: "AI 检查字幕", exact: true })
-      .click();
+    await startSubtitleReview(page);
     await expect.poll(() => mock.counters.review).toBe(5);
     await page
       .getByRole("button", { name: "取消当前处理", exact: true })

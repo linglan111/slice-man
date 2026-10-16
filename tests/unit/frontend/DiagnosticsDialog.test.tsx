@@ -23,4 +23,47 @@ describe('diagnostics page navigation', () => {
     expect(screen.queryByRole('button', {name: '加载更早的请求'})).toBeNull();
     expect(api.diagnostics.readAnswer).not.toHaveBeenCalled(); expect(api.diagnostics.clear).not.toHaveBeenCalled();
   });
+  it.each(['failed', 'interrupted'] as const)('offers an explicit setup route for a matching %s request', async (state) => {
+    const { api } = stubApi(savedJob()); const item = { ...record(1), state }; const onRetry = vi.fn();
+    vi.mocked(api.diagnostics.list).mockResolvedValue({ success: true, data: [item] });
+    vi.mocked(api.diagnostics.detail).mockResolvedValue({ success: true, data: item });
+    vi.mocked(api.diagnostics.readAnswer).mockResolvedValue({ success: true, data: { text: '{}', truncated: false } });
+    render(<DiagnosticsDialog jobId="job" onClose={vi.fn()} onRetry={onRetry} />);
+    fireEvent.click(await screen.findByRole('button', { name: /字幕检查/ }));
+    fireEvent.click(await screen.findByRole('button', { name: '重新设置并重试' }));
+    expect(onRetry).toHaveBeenCalledExactlyOnceWith(item);
+    expect(api.jobs.reviewSubtitles).not.toHaveBeenCalled();
+  });
+  it.each(['published', 'validated', 'cancelled', 'waiting', 'receiving'] as const)('does not offer replay for a %s record', async (state) => {
+    const { api } = stubApi(savedJob()); const item = { ...record(1), state };
+    vi.mocked(api.diagnostics.list).mockResolvedValue({ success: true, data: [item] });
+    vi.mocked(api.diagnostics.detail).mockResolvedValue({ success: true, data: item });
+    vi.mocked(api.diagnostics.readAnswer).mockResolvedValue({ success: true, data: { text: '{}', truncated: false } });
+    render(<DiagnosticsDialog jobId="job" onClose={vi.fn()} onRetry={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: /字幕检查/ }));
+    await screen.findByRole('heading', { name: /字幕检查/ });
+    expect(screen.queryByRole('button', { name: '重新设置并重试' })).toBeNull();
+  });
+  it('blocks recovery while work is running and does not recover another project request', async () => {
+    const { api } = stubApi(savedJob()); const item = { ...record(1), state: 'failed' as const }; const onRetry = vi.fn();
+    vi.mocked(api.diagnostics.list).mockResolvedValue({ success: true, data: [item] });
+    vi.mocked(api.diagnostics.detail).mockResolvedValue({ success: true, data: item });
+    vi.mocked(api.diagnostics.readAnswer).mockResolvedValue({ success: true, data: { text: '{}', truncated: false } });
+    const { rerender } = render(<DiagnosticsDialog jobId="job" onClose={vi.fn()} onRetry={onRetry} isOperationBusy />);
+    fireEvent.click(await screen.findByRole('button', { name: /字幕检查/ }));
+    const retry = await screen.findByRole('button', { name: '重新设置并重试' });
+    expect((retry as HTMLButtonElement).disabled).toBe(true); fireEvent.click(retry); expect(onRetry).not.toHaveBeenCalled();
+    rerender(<DiagnosticsDialog jobId="different-job" onClose={vi.fn()} onRetry={onRetry} />);
+    expect(screen.queryByRole('button', { name: '重新设置并重试' })).toBeNull();
+  });
+  it('does not offer recovery for a record with no associated project', async () => {
+    const { api } = stubApi(savedJob()); const item = { ...record(1), jobId: undefined, state: 'failed' as const };
+    vi.mocked(api.diagnostics.list).mockResolvedValue({ success: true, data: [item] });
+    vi.mocked(api.diagnostics.detail).mockResolvedValue({ success: true, data: item });
+    vi.mocked(api.diagnostics.readAnswer).mockResolvedValue({ success: true, data: { text: '{}', truncated: false } });
+    render(<DiagnosticsDialog onClose={vi.fn()} onRetry={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: /字幕检查/ }));
+    await screen.findByRole('heading', { name: /字幕检查/ });
+    expect(screen.queryByRole('button', { name: '重新设置并重试' })).toBeNull();
+  });
 });

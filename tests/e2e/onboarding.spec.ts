@@ -41,7 +41,7 @@ test('fresh empty workspace has six readable steps, native keyboard containment 
       if (!result.success) throw new Error(result.error);
       return result.data.length;
     })).toBe(0);
-    for (const size of [[1440, 960], [1050, 700]]) {
+    for (const size of [[1920, 1080], [1440, 960], [1050, 700]]) {
       const [width, height] = size;
       if (width === undefined || height === undefined) throw new Error('Missing fixture dimensions');
       await app.evaluate(({ BrowserWindow }, bounds) => {
@@ -65,6 +65,29 @@ test('fresh empty workspace has six readable steps, native keyboard containment 
     }
     await page.keyboard.press('Escape');
     await expect(guide(page)).not.toBeVisible();
+    for (const [width, height] of [[1920, 1080], [1440, 960], [1050, 700]] as const) {
+      await app.evaluate(({ BrowserWindow }, bounds) => BrowserWindow.getAllWindows()[0]?.setSize(bounds.width, bounds.height), { width, height });
+      for (const collapsed of [false, true]) {
+        if (collapsed) await page.getByRole('button', { name: '收起侧边栏', exact: true }).click();
+        const utilities = page.getByRole('navigation', { name: '工作区快捷操作' });
+        await expect(utilities.getByRole('button')).toHaveCount(3);
+        for (const label of ['功能导航', '重置布局', collapsed ? '展开侧边栏' : '收起侧边栏']) {
+          const action = utilities.getByRole('button', { name: label, exact: true });
+          expect(await action.evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            const sidebar = node.closest('.sidebar')?.getBoundingClientRect();
+            const firstImport = document.querySelector('.sidebar__import')?.getBoundingClientRect();
+            const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return Boolean(sidebar && firstImport && rect.width >= 28 && rect.height >= 28 && rect.left >= sidebar.left && rect.right <= sidebar.right && rect.top >= 0 && rect.bottom <= firstImport.top && hit && node.contains(hit) && node.querySelector('svg[aria-hidden="true"]'));
+          }), `${label} is an accessible icon control in the upper-left cluster at ${width}×${height}`).toBe(true);
+          await action.focus();
+          await expect(action).toBeFocused();
+        }
+        await expect(page.locator('.sidebar__footer').getByRole('button', { name: /功能导航|重置布局/ })).toHaveCount(0);
+        if (collapsed) await page.getByRole('button', { name: '展开侧边栏', exact: true }).click();
+      }
+      await page.screenshot({ path: testInfo.outputPath(`sidebar-utilities-${width}x${height}.png`) });
+    }
     await page.getByRole('button', { name: '收起侧边栏', exact: true }).click();
     const help = page.getByRole('button', { name: '功能导航', exact: true });
     await help.click();
@@ -149,6 +172,7 @@ test('saved-project first-run and manual help preserve content and an active AI 
     await expect(page.locator('.subtitle-row')).toHaveCount(1);
     mock.behavior.review = 'slow';
     await (await workspaceButton(page, 'AI 检查字幕')).click();
+    await page.getByRole('dialog', { name: 'AI 检查范围', exact: true }).getByRole('button', { name: '开始检查', exact: true }).click();
     await expect.poll(() => mock.counters.review).toBe(1);
     const calls = { ...mock.counters };
     await page.getByRole('button', { name: '功能导航', exact: true }).click();

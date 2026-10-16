@@ -21,6 +21,7 @@ export function ChapterPanel({job, profiles, isBusy, onPlan, onUpdate, onExport,
   const [isWorking, setIsWorking] = useState(false);
   const plan: ChapterPlan | undefined = kind === 'normal' ? job.chapterPlan : job.customChapterPlan;
   const busy = isBusy || isWorking;
+  useEffect(() => { if (isBusy) setError(''); }, [isBusy]);
   useEffect(() => { let current = true; void Promise.all([requireResult(window.api.chapterCriteria.list()), requireResult(window.api.chapterExports.list(job.id))]).then(([next, exports]) => {if (current) {setLibrary(next); setRuns(exports);}}).catch((cause: unknown) => {if (current) setError(cause instanceof Error ? cause.message : '无法读取章节');}); return () => {current = false;}; }, [job.id, job.revision]);
   async function perform(action: () => Promise<void>): Promise<void> { setIsWorking(true); setError(''); try {await action();} catch(cause) {setError(cause instanceof Error ? cause.message : '章节操作失败');} finally {setIsWorking(false);} }
   function toggleKind(next: 'normal' | 'custom'): void {setKind(next); setSelectedIds([]); setEditing(undefined); setError('');}

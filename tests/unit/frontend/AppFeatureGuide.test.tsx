@@ -27,6 +27,11 @@ describe('App first-run guide lifecycle', () => {
     await user.click(within(guide).getByRole('button', { name: '稍后再看' }));
     expect(view.container.querySelector('[data-onboarding-state]')?.getAttribute('data-onboarding-state')).toBe('settled');
     await user.click(screen.getByRole('button', { name: '收起侧边栏' }));
+    const utilities = screen.getByRole('navigation', { name: '工作区快捷操作' });
+    expect(within(utilities).getAllByRole('button')).toHaveLength(3);
+    expect(within(utilities).getByRole('button', { name: '重置布局' }).querySelector('svg[aria-hidden="true"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '功能导航' }).closest('.sidebar__footer')).toBeNull();
+    expect(screen.getByRole('button', { name: '重置布局' }).closest('.sidebar__footer')).toBeNull();
     await user.click(screen.getByRole('button', { name: '功能导航' }));
     expect(screen.getByRole('status').textContent).toContain('第 1 / 6 步');
     expect(api.jobs.importVideo).not.toHaveBeenCalled();

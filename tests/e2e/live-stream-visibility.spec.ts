@@ -1,3 +1,4 @@
+import { startSubtitleReview } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -25,7 +26,7 @@ test('thinking is visible before any answer, live popup survives close/reopen, a
   try {
     await importVideo(page);
     await seedResponses(page, {baseUrl: fixture.url, model: 'native-stream-state', apiKey: 'non-secret-native-fixture'});
-    await page.getByRole('button', {name: 'AI 检查字幕', exact: true}).click();
+    await startSubtitleReview(page);
     await expect.poll(async () => (await live(page))[0]?.phase).toBe('thinking');
     const snapshot = (await live(page))[0];
     expect(snapshot).toMatchObject({answerBytes: 0, answerText: '', thinkingText: REASONING_MARKER});
@@ -85,7 +86,7 @@ test('review range validates the actual dialog and grades only intersecting cues
     await importVideo(page);
     await seedResponses(page, {baseUrl: fixture.url, model: 'native-review-range', apiKey: 'non-secret-native-fixture'});
     const initial = await currentResponsesJob(page);
-    await page.getByRole('button', {name: '检查范围', exact: true}).click();
+    await page.getByRole('button', {name: 'AI 检查字幕', exact: true}).click();
     const dialog = page.getByRole('dialog', {name: 'AI 检查范围', exact: true});
     await expect(dialog.getByRole('radio', {name: '全部字幕', exact: true})).toBeChecked();
     await dialog.getByRole('radio', {name: '已选字幕', exact: true}).check();

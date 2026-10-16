@@ -1,3 +1,4 @@
+import { startSubtitleReview } from './helpers';
 import { expect, test } from '@playwright/test';
 import { readFile, writeFile } from 'node:fs/promises';
 import { importVideo, launchApp, makeVideo, workspaceButton, exportFormat, inspectVideo } from './helpers';
@@ -75,7 +76,7 @@ test('authorized actual Responses service: thinking popup, ranged/full review, n
     // Check exactly the second cue. The first remains legitimate neighbouring evidence.
     const original = await currentResponsesJob(page);
     previous = (await responsesDiagnostics(page)).length;
-    await page.getByRole('button', {name: '检查范围', exact: true}).click();
+    await page.getByRole('button', {name: 'AI 检查字幕', exact: true}).click();
     const range = page.getByRole('dialog', {name: 'AI 检查范围', exact: true});
     await range.getByRole('radio', {name: '指定时间范围', exact: true}).check();
     await range.getByLabel('检查开始时间（秒）', {exact: true}).fill('2');
@@ -130,7 +131,7 @@ test('authorized actual Responses service: thinking popup, ranged/full review, n
     const saved = await currentResponsesJob(page);
     // Cancel a real upstream reasoning stream and retain the last published report.
     const beforeCancel = (await responsesDiagnostics(page)).length;
-    await page.getByRole('button', {name: 'AI 检查字幕', exact: true}).click();
+    await startSubtitleReview(page);
     await expect.poll(async () => page.evaluate(async () => {
       const result = await window.api.diagnostics.live({});
       return result.success && result.data.some(item => item.operation === 'review' && item.phase === 'thinking');

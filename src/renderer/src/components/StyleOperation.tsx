@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { Job } from '../../../shared/contracts';
 import { Icon } from './Icon';
 
@@ -6,6 +6,7 @@ type Props = { job: Job; isBusy: boolean; onSettings: () => void; onClose: () =>
 export function StyleOperation({ job, isBusy, onSettings, onClose, onDesign }: Props): ReactNode {
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState('');
+  useEffect(() => { if (isBusy) setError(''); }, [isBusy]);
   return <section className="style-operation" aria-label="样式操作">
     <div className="style-operation__composer">
       <div className="style-operation__heading">

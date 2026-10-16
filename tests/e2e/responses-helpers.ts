@@ -6,7 +6,7 @@ import { mkdir, readdir, readFile } from 'node:fs/promises';
 import type { Job } from '../../src/shared/contracts';
 import type { ProviderDiagnostic } from '../../src/shared/provider-diagnostics-contracts';
 import { parseJson } from '../../src/main/services/providers/lib/text-provider';
-import { startMockServer } from './helpers';
+import { startMockServer, startSubtitleReview } from './helpers';
 
 export const REASONING_MARKER = 'PRIVATE_RESPONSES_REASONING_NEVER_PERSIST';
 type Operation = 'chapters' | 'review' | 'names' | 'translate' | 'style';
@@ -21,7 +21,7 @@ async function body(request: IncomingMessage): Promise<JsonObject> {
   for await (const chunk of request) {
     const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     length += bytes.length;
-    if (length > 100000) throw new Error('Synthetic request exceeds fixture limit');
+    if (length > 1_000_000) throw new Error('Authorized request exceeds harness limit');
     chunks.push(bytes);
   }
   return object(JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown);
@@ -153,7 +153,7 @@ export async function runResponsesOperation(page: Page, operation: 'chapters' | 
     await page.getByRole('toolbar', {name: '视频操作'}).getByRole('button', {name: '章节', exact: true}).click();
     await page.getByRole('button', {name: 'AI 切分章节', exact: true}).click();
   } else if (operation === 'review') {
-    await page.getByRole('button', {name: 'AI 检查字幕', exact: true}).click();
+    await startSubtitleReview(page);
   } else {
     await page.getByRole('toolbar', {name: '视频操作'}).getByRole('button', {name: '人名检查', exact: true}).click();
     await page.getByRole('button', {name: 'AI 检查人名', exact: true}).click();
@@ -235,7 +235,7 @@ function observer(call: LiveCall): (bytes: Uint8Array, final?: boolean) => void 
   };
 }
 
-export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: string; ledgerPath: string; requestLimit?: number}): Promise<{url: string; finish(records: ProviderDiagnostic[]): void; close(): Promise<void>}> {
+export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: string; ledgerPath: string; requestLimit?: number; maxOutputTokens?: number | null}): Promise<{url: string; finish(records: ProviderDiagnostic[]): void; close(): Promise<void>}> {
   const limit = input.requestLimit ?? 3;
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 16) throw new Error('Invalid explicit live request allowance');
   if (!isAbsolute(input.ledgerPath)) throw new Error('Live ledger must be an explicit absolute path');
@@ -277,7 +277,7 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
       const deadline = setTimeout(() => controller.abort(), 310000);
       response.on('close', () => {if (!response.writableFinished) controller.abort();});
       try {
-        const upstream = await fetch(`${input.baseUrl.replace(/\/$/, '')}/responses`, {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${input.apiKey}`}, body: JSON.stringify({...payload, max_output_tokens: 8192}), signal: controller.signal});
+        const upstream = await fetch(`${input.baseUrl.replace(/\/$/, '')}/responses`, {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${input.apiKey}`}, body: JSON.stringify(input.maxOutputTokens === null ? payload : {...payload, max_output_tokens: input.maxOutputTokens ?? 8192}), signal: controller.signal});
         call.httpStatus = upstream.status; persist();
         response.writeHead(upstream.status, {'Content-Type': upstream.headers.get('content-type') ?? 'application/octet-stream'});
         if (!upstream.body) throw new Error('Live stream body absent');

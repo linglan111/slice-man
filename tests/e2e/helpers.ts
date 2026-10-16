@@ -43,6 +43,7 @@ export type MockServer = {
     recognition: "full" | "partial";
     review: "findings" | "empty" | "slow" | "graded" | "evidence-corrected" | "evidence-invalid";
     names: "ok" | "slow" | "empty" | "variants";
+    chapters: "ok" | "invalid";
     textStream: "json" | "sse" | "partial";
     reviewErrorAt?: number;
   };
@@ -69,6 +70,7 @@ export async function startMockServer(): Promise<MockServer> {
     recognition: "full",
     review: "findings",
     names: "ok",
+    chapters: "ok",
     textStream: "json",
   };
   const server = createServer((request, response) => {
@@ -158,6 +160,10 @@ export async function startMockServer(): Promise<MockServer> {
         content = {chapters: middle === undefined ? [{startAnchor: 0, endAnchor: last, title: '相同章节', summary: '完整内容概要'}] : [
           {startAnchor: 0, endAnchor: middle, title: '相同章节', summary: '前半部分内容概要'},
           ...(payload.kind === 'normal' ? [{startAnchor: middle, endAnchor: last, title: '相同章节', summary: '后半部分内容概要'}] : []),
+        ]};
+        if (behavior.chapters === 'invalid') content = {chapters: [
+          {startAnchor: 0, endAnchor: 1, title: 'Invalid first boundary', summary: ''},
+          {startAnchor: 2, endAnchor: last, title: 'Invalid gap', summary: ''},
         ]};
       } else if (prompt.startsWith("Analyze recurring PERSON names")) {
         counters.names++;
@@ -673,4 +679,11 @@ export async function seedRealCpu(userData: string): Promise<void> {
 
 export async function readText(path: string): Promise<string> {
   return readFile(path, "utf8");
+}
+
+/** The main review entry opens scope selection; only confirmation invokes AI. */
+export async function startSubtitleReview(page: Page): Promise<void> {
+  await closeWorkspaceSettings(page);
+  await page.getByRole('button', {name: 'AI 检查字幕', exact: true}).click();
+  await page.getByRole('dialog', {name: 'AI 检查范围', exact: true}).getByRole('button', {name: '开始检查', exact: true}).click();
 }

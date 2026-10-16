@@ -1,3 +1,4 @@
+import { startSubtitleReview } from './helpers';
 import { test, expect, type Page } from '@playwright/test';
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -146,7 +147,7 @@ test('long video review retains completed chapters and resumes only remaining ta
   const {app,page}=await launchApp(info.outputPath('long-user-data'),[input],[]);
   try{
     await importVideo(page);await addProfile(page,'Long fixture','openai',mock.url);await seed(page,true);
-    await page.getByRole('button',{name:'AI 检查字幕',exact:true}).click();
+    await startSubtitleReview(page);
     const run=async(): Promise<ChapterReviewRun | undefined>=>page.evaluate(async()=>{const r=await window.api.jobs.list();if(!r.success)throw new Error(r.error);return r.data[0]?.reviewRun;});
     await expect.poll(async()=>(await run())?.state).toBe('failed');
     expect((await run())?.chapters.filter(c=>c.state==='completed')).toHaveLength(1);
