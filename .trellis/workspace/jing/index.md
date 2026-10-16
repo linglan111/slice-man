@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
-- **Last Active**: 2026-10-15
+- **Total Sessions**: 7
+- **Last Active**: 2026-10-16
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~208 | Active |
+| `journal-1.md` | ~237 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 7 | 2026-10-16 | Single review entry and recoverable AI operations | `0f82a9f` | `codex/ai-chapters-resumable-tools` |
 | 6 | 2026-10-15 | Live AI thinking and ranged review | `ace0609` | `codex/ai-chapters-resumable-tools` |
 | 5 | 2026-10-15 | Repair actual reasoning-first Responses compatibility | `e46118d30f256ca83a3fc9910e0ef5bdd8b78905` | `codex/ai-chapters-resumable-tools` |
 | 4 | 2026-10-14 | Streamed AI chapters and resumable tool verification build | `e15442b21e4c61902b89078a8f5103d8fac9ef7b` | `codex/ai-chapters-resumable-tools` |

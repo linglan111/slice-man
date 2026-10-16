@@ -206,3 +206,32 @@ No task created per user request. Added bounded ephemeral thinking/answer popup 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 7: Single review entry and recoverable AI operations
+<!-- trellis-session: v=2 fp=3de62ac41753313e -->
+
+**Date**: 2026-10-16
+**Task**: Single review entry and recoverable AI operations
+**Branch**: `codex/ai-chapters-resumable-tools`
+
+### Summary
+
+No task created per continuing user preference. Merged AI review into one scope-modal entry, added guarded explicit retries and safe historical recovery, moved help/reset to upper-left icon group and updated guide. Fixed deduplicated chapter boundary prompting and precise validation. 836 unit/integration and 46 local native cases passed after helper correction; actual 1036-cue 62-minute project copy published 20 contiguous chapters. Two earlier test-proxy token-cap truncations retained; production-parameter request passed. preview.9 packaged startup/current guide/live IPC verified.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0f82a9f` | fix(ui): simplify review entry and recover failed AI operations |
+
+### Testing
+
+- [OK] 836 unit/integration tests passed; global lint/typecheck/build passed
+- [OK] 46 local native cases passed across full run plus focused helper recheck; six live gates skipped in normal suite
+- [OK] Actual configured Responses service: 1036-cue project copy published 20 contiguous chapters in 120556ms; original untouched
+- [OK] preview.9 packaged startup/resources, upper-left utilities, current guide replay and live IPC passed
+
+### Status
+
+[OK] **Completed**
