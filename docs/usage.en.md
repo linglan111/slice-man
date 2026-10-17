@@ -1,70 +1,96 @@
-# Slice Man
+# Slice Man workflow guide
 
-A Windows x64 Electron desktop application for original-language and translated video subtitles. The interface is in Chinese. Users provide their own API credentials.
+Slice Man is a Windows x64 desktop workspace for original-language and translated video subtitles. The interface is in Chinese. Download the installer from the [latest Release](https://github.com/linglan111/slice-man/releases/latest); provide your own credentials for online services.
 
-## Workflow
+## Prepare and generate
 
-1. Import a local video, or use **链接导入** to download a video URL. Choose original-language subtitles or subtitles with translation during import; the project remembers this choice.
-2. Choose local Whisper recognition or an OpenAI-compatible speech provider with segment timestamps.
-3. For local recognition, open the one-click installer and choose Base, Small or Large v3 Turbo. CPU processing is supported; optional NVIDIA execution is validated and falls back to CPU when unavailable.
-4. When translation is enabled, configure a translation profile using OpenAI Chat Completions/Responses, Anthropic Messages or Gemini format. Recognition, translation, text review and style design can use separate profiles. Original-language projects need no translation profile.
-5. Generate subtitles, then correct source text, optional translated text and per-segment times. Translation is skipped throughout original-language projects, including reruns and repairs.
-6. Choose a built-in template or request a bounded JSON style from AI. Preview the rendered subtitles.
-7. Export burned-in MP4/MKV or standalone SRT/ASS/VTT subtitles.
+1. For local recognition, install the engine and model through **本地引擎** in the lower-left sidebar. Local models are Base, Small and Large v3 Turbo. CPU works without a GPU; compatible NVIDIA execution is optional, with CPU fallback and the actual backend shown. Cloud recognition requires an OpenAI-compatible speech provider returning usable segment timestamps.
+2. Configure text-service profiles as needed. Translation, review, chapter analysis and style design can use separate profiles. Supported text formats are OpenAI Chat Completions/Responses, Anthropic Messages and Gemini. In **API 服务**, set **文字请求并发上限** per profile: default 2, integer range 1–16. All text operations using that profile share its limit; speech recognition is separate.
+3. Import a local video with **导入视频**, or use **链接导入**. Choose source language and whether to enable translation. Original-language projects need no translation service.
+4. After import, open **生成设置** in the lower-left sidebar to choose recognition mode and the project's service profiles. Click **生成** beneath the preview and confirm. Correct source text, optional translation and cue times in **字幕校对**; click a timestamp to seek. Use **样式设置** for templates, typography and placement, or the toolbar's **样式** for AI design.
+5. Choose **导出** for standalone SRT/ASS/VTT or burned-in MP4/MKV. Use **章节** to export selected chapters.
 
-Video export renders subtitle pixels into the picture. SRT/VTT carry text and timing; ASS can retain the application's supported styling. AI styles support typography, colors, outline/shadow, bilingual layout, literal keyword emphasis and limited fades.
+Original-language mode skips translation in generation, reruns, names and repairs. Preview, fullscreen captions and all exports explicitly use source text, even if older translations remain stored. Toggling translation mode preserves those stored translations.
 
-Keys stay in the main process, with locally protected persistence or a session-only option. Local recognition keeps speech processing on the computer. Cloud recognition sends audio to the configured service; translation, AI text review and style design send subtitle text.
+## Proofread and rerun
 
-Use **重新识别片段** or **重新翻译片段** beside **添加画面字幕** to process selected subtitle cues or an explicit time range. Recognition automatically expands to complete intersecting cues; inspect the effective range and affected count before running. Separate selections do not process unrelated gaps. Optional combined translation is available only in translation-enabled projects. The target timeline is replaced only after all requested processing succeeds; failure/cancellation retains prior subtitles. Translation-only keeps source text and timing.
+The preview shows live captions after recognition; translation mode uses available translations with source fallback and the selected bilingual setting. Click a windowed caption or its proofreading row to edit. Add/delete controls and playback following support manual correction without calling AI. Inline preview approximates the layout; inspect the exported video for the final managed-font ASS rendering.
 
-Choose a review text service and use **AI 检查字幕** to jointly inspect chronological dialogue, suspicious timing, source text and active translations. Every inspected cue receives a suspicion grade: **无 / 低 / 中 / 高**. A single versioned rubric defines the rules and examples; the model identifies supported rules and reasons, and the application derives the grade. Low covers minor or weak cues without a clear meaning change; medium requires concrete contextual/meaning/readability concerns; high requires strong evidence of a severe problem, such as reversed negation or a contradictory key quantity. Ordinary topic changes, quotes and spoken ellipsis alone must not be treated as severe errors.
+**重新识别片段** and **重新翻译片段** accept selected cues or a time interval. Recognition expands to complete intersecting and overlapping cues; inspect its effective ranges and affected count before confirming. Separate selections preserve unrelated gaps. Combined recognition/translation is available only when translation is enabled. All requested scoped work must succeed before replacing the target; failure/cancellation keeps prior subtitles. Translation-only preserves source text and timing.
 
-Use the compact grade/pending filter and existing playback, manual editing, ignoring and targeted repair actions. Selected-cue review keeps the same surrounding dialogue as a full scan. Changed context makes dependent grades require rechecking, including previously clear cues. Unchecked and old ungraded reports are distinguishable from “无”. Review uses text/timing only, never source audio, and does not automatically apply corrections; “无” means no obvious suspicion was identified, not proof of spoken accuracy. Reports and acknowledgments persist with the project.
+**重新识别原片** requires confirmation before replacing existing source corrections and translations. Successful replacement invalidates derived previews and does not automatically translate. Failure/cancellation keeps prior content; historical exported files remain. In cloud mode the audio is uploaded again and the service may charge.
 
-The single **未检查** filter includes never-reviewed cues and cues whose assessments need rechecking. Current assessed suspicion remains in its grade filter; there is no duplicate pending filter. When a project lacks a valid review service, clicking review opens an explicit service picker; it does not silently reuse another service. **可疑度标准** opens a separate dialog regardless of subtitle-list scroll position. For videos of at most 30 minutes, one ordinary generation reviews the complete selected set (all cues if no selection) and returns compact JSON for every target. The same canonical local evidence groups remain enforced. Malformed format, incomplete coverage or unsupported evidence permits at most one visible complete correction; unsuccessful/cancelled work retains the previous report. Application bounds are 2,000 targets and 512 KiB complete UTF-8 input, not a guarantee of model capacity. Oversize/truncated output requires a smaller explicit selection or suitable model; no hidden serial batching occurs.
+The grade/status filter supports multiple selections. **全选 / 取消全选** operates on the current filtered results. **选择时间范围** adds matching intersecting cues while preserving selections outside that interval. Selection does not start processing.
 
-The video toolbar orders its labelled icons by workflow: **生成**, partial recognition, partial translation (translated projects only), add-overlay subtitle, **人名检查**, **样式**, **章节**, then **导出**. Opening an operation shows a separate content-sized card anchored at the bottom and does not execute it. Related fields adapt their grouping to available width; unused height goes to video, and operation height cannot be dragged. Open **生成设置** or **样式设置** from the lower-left sidebar for configuration. The project title and metadata sit inside the preview card above its heading. Horizontal workflow stages are centered in the heading when space permits, with compact placement in narrow panes. The duplicate settings disclosure beneath the preview is removed; settings remain available through sidebar dialogs. Help and layout reset are in the lower-left sidebar footer, including when collapsed; results/errors/progress/output share one card below proofreading with a persisted height divider. Draggable dimensions, reset, collapse and restart persistence remain available. Add subtitle sits beside AI review; standards sits beside the multi-filter trigger; select-all and time-range selection precede follow playback.
+## Shared full-text chapters
 
-Use **人名检查** to analyze the whole chronological timeline and group observed spelling variants of the same person using dialogue and narrative context. Each variant may occur only once; the combined identity must appear in at least two distinct cues. Similar names of contextually distinct people remain separate. Counts and exact alias occurrences are verified locally. Recommended original/translated names initialize editable inputs; inspect each group's variants and subtitle examples, then explicitly apply the batch or cancel without content changes. Exact literal matching cannot prove that every CJK appearance names a person; inspect context. Original-language projects neither analyze stored translations nor call translation. Replacements are simultaneous and reject conflicting overlaps. Only the latest successful batch is available for undo across restart; cancellation/no-op/failure does not overwrite it. Undo restores a field only if it still equals the batch result, preserving later manual edits and reporting conflicts. Deleted/re-recognized cue IDs are not reconstructed, and same-field later edits are preserved wholesale. Undo is consumed after the attempt; no multi-level history or redo is offered.
+**全文章节切分** provides reusable processing chapters for translation, subtitle review, text phases of repair, style generation and custom chapter analysis. Chapters cover the timeline and are at most 20 minutes long. A short video without a compatible plan gets a single coverage chapter without a planning-model call; longer videos use content planning. Compatible plans are reused across operations. Changed source content can invalidate a plan; repair reuses its validated boundaries while refreshing cue membership.
 
-Click **字幕自动修复** before AI review in the proofreading header to open its dialog. Closing and reopening preserves the current parameters; closing does not cancel a running repair. Reopen it to inspect progress or use the explicit cancel action. Choose all subtitles or a fixed start/end time interval, an inclusive minimum suspicion grade, and a maximum of 1–20 repair rounds (defaults: medium and 3). Medium includes medium and high; the existing browsing grade filter still selects an exact grade. The application analyzes missing/stale results before routing current unignored issues: source/timing issues use recognition; translation-only issues use retranslation. If both qualify on the same cue, recognition takes priority. Original-language projects never call translation.
+Each targeted nonempty chapter normally receives one generation per phase, with complete chapter timing, source text, enabled translations and explicit targets. Selecting a few cues restricts targets, while retaining full chapter context. Boundary evidence does not authorize unrelated changes. Capacity checks fail explicitly; adjust chapter boundaries or use a suitable model. Dense chapters are not silently subdivided, and context is not silently truncated. Model capacity and application limits are separate constraints.
 
-The requested time interval remains fixed across rounds even when recognition creates new subtitle IDs. Recognition expands crossing/overlapping cues to complete boundaries and displays the effective processing scope; content outside that scope is preserved. Neighbouring dialogue can be supplied as review evidence without becoming a repair target. Each complete repair round is saved atomically and then reassessed; the terminal summary explains convergence, remaining issues at the round cap, cancellation or failure. Previous committed rounds survive a later failed/cancelled round; interrupted work does not resume on restart. Review failure after a saved round retains repaired subtitles and marks the earlier review stale. An ignored finding stays ignored only while its content/context/provider/rubric identity remains current; necessary overlapping recognition can still replace its cue. Repeated recognition may reproduce the same suspicion, so the cap bounds work rather than guaranteeing correctness.
+Recognition processes audio intervals and does not use these chapters. Person-name analysis sends one chronological whole-timeline request and never requires, creates or changes a chapter plan.
 
-On first successful opening, a six-step **功能导航** introduces service preparation, import, preview/proofreading and adjustable layout, AI checks, automatic repair and export. Close, Escape or completion remembers dismissal. The lower-left sidebar **?** reopens the guide from the beginning, including with no project or a collapsed sidebar. The guide explains actions without starting imports, provider calls or exports, and can be closed while existing work continues.
+Independent chapters can run concurrently under the API profile's shared 1–16 limit. Full translation and review retain completed chapters after later failure/cancellation, with compatible continuation. Scoped retranslation, combined recognition/translation and each repair round remain atomic across their targets. Request count, token use and elapsed time depend on content, model and service limits.
 
-To replace an already-recognized video's source text, choose **重新识别原片** and confirm the replacement. Successful re-recognition replaces existing source corrections/translations and invalidates dependent previews; failure/cancellation retains the previous content. Historical exported files remain. Translate the new source afterward; the rerun action does not automatically translate. Check recognition accuracy against the actual audio, especially in long recordings.
+The **章节类型** question icon explains this processing model. **自定义切分章节** instead selects content using a saved criterion; it does not replace processing chapters. Criteria can be added, edited, copied, deleted and selected, while generated plans retain their criterion snapshot. Edit titles, summaries and boundaries, save, then select chapters for export. Files use safe chapter titles, preserve existing destinations and clip/rebase subtitle times to zero. Completed files survive failure/cancellation; compatible missing outputs can be resumed.
 
-The video preview displays live subtitles as soon as source recognition is available. In translation mode, available translations take priority with source fallback and the selected bilingual option. Original-language mode uses source text for preview/fullscreen and all exports even if older translations remain stored. Playback, paused seeks and edits update the current cue. Inline subtitles follow current layout/colors/typography; native fullscreen uses synchronized browser subtitles. Click a windowed caption or its proofreading row to edit timing/source/translation inline. Add/delete controls are available in both locations, and current cues are highlighted/followed like lyrics. Manual edits do not call recognition or translation; inspect the final exported video for exact managed-font ASS appearance.
+## Subtitle review and automatic repair
 
-Open **链接导入设置** in the lower-left sidebar to install the managed download tools and configure the default save folder, video file format, video encoding, resolution and optional proxy. Defaults are Videos/Slice Man, MP4, original video encoding and 1080p. Available formats are MP4/MKV/original, encoding choices are original/H.264/H.265, and resolution limits range from 360p to 2160p or highest available. Lower-resolution sources stay at their actual quality. These source-download preferences are separate from the subtitle burn-in export settings. Explicit encoding may require a cancellable conversion; incompatible original-encoding/container choices report an actionable error rather than changing the codec silently. Original format with a specified encoder uses MKV, shown in the UI. Downloads and conversions must finish and validate before a project is added; existing files are preserved on failure/cancellation.
+Open **AI 检查字幕**, choose all cues, selected cues or a time range, and confirm the review service. Review uses complete chapter context for videos of every duration. Each target receives **无 / 低 / 中 / 高**, derived from the application's fixed rubric and locally validated evidence. **可疑度标准** explains the rules. Review itself uses text/timing, not source audio, and never edits subtitles. **无** means no obvious suspicion was identified; it does not prove acoustic accuracy.
 
-Open **导出设置** for independent save-folder, MP4/MKV, original/H.264/H.265 codec, resolution, quality and default subtitle-format preferences. Video defaults are MP4, original codec, 1080p and balanced quality; smaller sources are not enlarged. Burning captions always re-encodes video. Original codec export supports H.264/HEVC/AV1/VP9/VP8 sources; unsupported codecs or container combinations require an explicit supported choice. The video-toolbar **导出** panel allows operation-specific overrides. Choose **独立字幕文件** for SRT/ASS/VTT using the latest corrected timeline without video encoding or another recognition/AI request.
+**未检查** includes never-reviewed cues and assessments requiring recheck. Changes to text or dependent context can invalidate old grades, including previously clear cues. Ignoring a finding persists only while its relevant identity remains compatible. Format, coverage or evidence failures may receive at most one visible complete correction; failed output cannot be applied. Completed review chapters remain available when another chapter fails.
 
-## Chapters, streamed AI and downloads
+Click **字幕自动修复** in the proofreading header. Choose all subtitles or a fixed time range, an inclusive minimum suspicion grade, and 1–20 rounds. Defaults are medium-or-higher and 3 rounds. Closing/reopening preserves the current parameters; closing the dialog does not cancel running work. Use the explicit cancel action.
 
-### Chapter translation, review and exports
+Each round follows this sequence:
 
-Translation defaults to content chapters of at most 20 minutes, using 1–3 workers (default 2). Short videos need no planning model call. Full translation retains each completed chapter after another fails; scoped retranslation, combined recognition/translation and each repair round remain all-target atomic. Original-language projects never translate.
+1. Establish/reuse full-text chapters and check missing or stale assessments.
+2. Select current unignored findings meeting the threshold and freshly recognize their audio ranges, including necessary complete-cue/overlap expansion.
+3. Generate fresh translations when the project enables translation.
+4. Audit every target using full chapter context, suspicion reasons and old/new timing, source text and active translations. Validate complete target coverage and permitted changes.
+5. Save the whole audited round atomically, invalidate affected assessments even when the audit retains old text, and reassess.
 
-For media strictly longer than 30 minutes, AI subtitle review runs by content chapter with bounded dense work units. Original global cue ordinals and adjacent evidence remain enforced. The results card shows completed/pending cue and chapter coverage; **继续检查剩余章节** resumes compatible remaining work after failure/cancel. Videos of at most 30 minutes retain the single complete selected-set request described above. Names always use global context.
+The requested time interval stays fixed across rounds as cue IDs change; the displayed effective recognition range can extend beyond it. Ignoring a finding does not lock its cue against necessary overlapping recognition. Original-language mode performs no translation calls.
 
-The toolbar includes **章节** between style and export. Normal plans cover the video in chapters of at most 20 minutes; **自定义切分章节** selects subsets using one saved criterion. Criteria support add/edit/copy/delete/select and plans retain immutable criterion snapshots. Edit titles, summaries and boundaries, save, then select chapters to export independent MP4/MKV/SRT/ASS/VTT files. Safe title filenames preserve existing files; subtitle times are clipped/rebased and A/V offsets preserved. Completed files survive failure/cancel, with compatible missing-output resume.
+Before stopping, an assessment-only consistency phase checks remaining pending grades in the requested and affected coverage, including new/expanded cues and dependent assessments. It does not change content or consume another repair round. Successful closure requires current grades, including explicit **无**, matching saved state. If this phase discovers another eligible scoped finding with rounds available, repair continues.
 
-### Streamed answers and diagnostics
+The summary distinguishes no remaining eligible findings, round cap, cancellation, failure and interruption. A cap can leave suspicious cues; no outcome guarantees correctness. A failed/cancelled current round does not partially replace content, and earlier committed rounds remain. Failed/cancelled final checks retain pending states and cannot claim an all-clear. Restart never automatically resumes paid work.
 
-All text AI operations stream normalized answer text to local files with SQLite metadata. Open **AI 请求日志** in results to inspect stages, duration, bytes and provider-reported token usage. Incomplete JSON never applies. Reasoning text, credentials and complete prompts are excluded. Timeout/network ambiguity does not automatically replay a generation. A normal JSON body from the same response is accepted; incompatible providers can explicitly disable streaming.
+## Person-name suggestions
 
-The existing timeout controls headers/idle; independent total generation timeout defaults to 30 minutes, configurable 1–60. Partial files survive interruption/restart for inspection. Ended records retain 30 days / 1,000 entries and can be cleared manually. Historical requests cannot be reconstructed.
+Use **人名检查** to group observed variants of the same person across the complete chronological timeline. A group must occur in at least two distinct cues, even if each spelling occurs only once. Contextually distinct people remain separate. Local checks verify exact aliases, fields, positions and counts, including mixed Latin/CJK boundaries. Whole-timeline analysis has explicit capacity limits rather than hidden chapter splitting; changing only chapter boundaries does not change its context.
 
-### Managed download continuation
+Inspect variants and examples, edit recommended original/translated names, select entries and explicitly apply. Analysis alone does not edit subtitles. Literal matches cannot establish identity by themselves, especially in unspaced CJK text. Conflicting overlapping replacements are rejected. Recoverable format/evidence errors permit at most one visible whole-request correction; terminal failure retains the previous report.
 
-Whisper CPU/GPU, three models, yt-dlp and Deno preserve pinned cache bytes after cancellation, network failure or restart. Explicit resume validates ranges, validators, lengths and final hashes before activation; failures retain old installations. Cache inspection/clear is explicit and app opening never downloads automatically. Source-video URL downloads retain their original separate behavior.
+Only the latest successful batch can be undone across restart. Undo restores a field only if it still equals the batch result; later manual edits remain intact and conflicts are reported. Deleted/re-recognized cues are not reconstructed. The undo attempt is consumed; there is no multi-level undo or redo.
 
-## Development
+## Workspace and progress
 
-Use Windows x64 with Node.js 24.17.x and npm 11.x. The desktop runtime/model installer does not require the end user to install Python or compiler tools.
+Toolbar operations open separate panels without executing them. On each operation switch, the panel fits its content with an automatic cap of 45% of the middle column's available height while reserving minimum video space. Drag the horizontal divider between preview and operation panel for a temporary height; the next operation switch resets automatic fitting. Sidebar width, column proportions and proofreading/results height persist; the temporary operation height does not. Dividers support keyboard adjustment, and **重置布局** restores defaults.
+
+The initial **功能导航** explains preparation, import, proofreading, AI checking, repair and export without starting those actions. The upper-left **?** reopens it, including with a collapsed sidebar or no project.
+
+During processing, **查看流式信息** opens the active streams. Operation, phase, repair round/cap, completed chapters/targets, queued requests, all concurrent chapter states and elapsed activity stay visible. Whole-timeline names show one global analysis rather than chapter counts. Byte activity is not an ETA. After processing, results provide reopening and **AI 请求日志**.
+
+Text answers stream to local files with SQLite metadata for phase, duration, bytes, provider-reported usage and errors. Incomplete JSON never applies. The service timeout covers connection/idle; total generation timeout defaults to 30 minutes and supports 1–60 minutes. A normal JSON response from the same request is accepted. Providers incompatible with streaming can disable it and retry manually; an interruption does not automatically replay generation.
+
+Reasoning is displayed only temporarily. Persistent logs exclude credentials, complete prompts and reasoning text; answer files may contain subtitle content. Ended records retain at most 30 days / the latest 1,000 entries and can be cleared manually. Inspect diagnostic contents before sharing.
+
+## Downloads, export and data
+
+In **链接导入设置**, install managed download tools and configure save folder, format, codec, resolution and optional proxy. Defaults are Videos/Slice Man, MP4, original codec and 1080p. Downloads and any conversion must finish and validate before a project is added. Site permissions, network and codec/container compatibility can limit import.
+
+Whisper runtimes/models, yt-dlp and Deno retain pinned cached bytes after interrupted installation. Explicit continuation validates ranges and final hashes before activation, preserving a working installation on failure. App startup does not automatically download tools. Cache inspection/clearing is explicit; this is separate from source-video URL downloading.
+
+**导出设置** stores separate video/subtitle defaults. Video export supports MP4/MKV, original/H.264/H.265 choices, resolution and quality; original codec means re-encoding the supported source codec, not copying video packets. Unsupported source codecs/container combinations require another choice. Smaller sources are not upscaled. SRT/VTT contain text/timing; ASS carries supported styling. Standalone export uses the saved corrected timeline without encoding video or calling AI.
+
+Export preserves existing files and requires hard-link support for video publication, normally a local NTFS folder. An unsupported destination reports a recoverable error; select a supported folder and a new filename.
+
+Local recognition processes audio on the computer. Cloud recognition uploads audio; translation, review, names, chapters and AI style send relevant subtitle text/timing context to configured services. Provider handling and charges depend on those services. Keys are managed in main with protected local persistence or session-only storage; neither option changes what an authorized provider request sends.
+
+## Development and verification
+
+Use Windows x64, Node.js 24.17.x and npm 11.x:
 
 ```powershell
 npm ci
@@ -72,32 +98,24 @@ npm run setup:resources
 npm run dev
 ```
 
-The resource setup retrieves pinned, verified media tools and managed CJK fonts. See [development environment](development-environment.md) for versions, native setup, asset sources and measured Whisper behavior.
-
 ```powershell
-npm run icons:generate
 npm run lint
 npm run typecheck
 npm test
-npm run test:coverage
-npm run test:native
-npm run test:media
+npm run build
 npm run setup:whisper-fixtures
 npm run setup:download-fixtures
-npm run test:whisper -- --cpu
-npm run test:e2e -- --grep-invert "actual CUDA desktop"
+npm run test:e2e
+```
+
+Unit/integration tests use Electron's embedded Node to match SQLite's ABI. Avoid rebuilding SQLite for ordinary Node before desktop tests. GPU fixtures additionally require `npm run setup:whisper-fixtures -- --gpu` and compatible hardware. Real-service and external-site cases have explicit opt-in conditions; skips are not proof of compatibility or accuracy.
+
+```powershell
 npm run package
 npm run make
 npm run test:package
-npm run test:installer
 ```
 
-Native unit/integration tests run using Electron's embedded Node to match SQLite's ABI. E2E tests launch real Electron with isolated user data, local HTTP provider fixtures and real media operations. Real API quality and clean-machine installation require the [manual acceptance checks](manual-acceptance.md).
+`package` creates `dist/win-unpacked`; `make` creates the Windows x64 NSIS installer. Use a separate builder output directory if an existing unpacked app is running, and select it with `test:package -- --app-dir <directory-under-dist>`. Do not overwrite the running copy. See [development environment](development-environment.md), [manual acceptance](manual-acceptance.md) and [release workflow](releasing.md) for native prerequisites, opt-in checks and packaging details. Only the `release` branch publishes through GitHub Actions; `main` does not.
 
-Prepare integrity-checked CPU Whisper/Base/speech fixtures before running the desktop speech tests. For a compatible NVIDIA device, use `npm run setup:whisper-fixtures -- --gpu`, then `npm run test:whisper` and the full `npm run test:e2e`. The GPU desktop case reports a skip when required fixtures or hardware are unavailable. The explicitly gated real-API test prerequisites are documented in the development environment guide. Fixture caches are excluded from Git and from the installer.
-
-`npm run package` produces the unpacked application in `dist`; `npm run make` produces the Windows NSIS installer. Runtime downloads and development caches are excluded from Git. Media tools, managed fonts and their notices are included in the application package.
-
-Export currently requires a destination with hard-link support, normally a local NTFS folder, for atomic publication without overwriting existing files. Unsupported volumes produce a recoverable error; choose a supported folder and a new filename.
-
-The multi-filter dropdown unions grades/statuses. **全选** selects currently visible cues and becomes **取消全选**, which removes only those cues from selection. **选择时间范围** merges cues overlapping the validated interval and matching the current filters; previously selected cues outside it remain selected. These controls never start AI processing.
+Windows 11 x64 has been exercised; Windows 10 and clean-device upgrade/install acceptance remain separate checks. Test reports apply to their recorded source/build and distinguish HTTP fixtures, real services and native speech/media evidence.

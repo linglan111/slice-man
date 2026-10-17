@@ -2,16 +2,16 @@
 
 ## 当前发布
 
-版本：0.1.4，Windows x64。GitHub Release 使用标签 `v0.1.4`，提供最新源码和经过打包验证的 NSIS 安装包及 SHA-256 清单。
+最新正式版本以 [Latest Release](https://github.com/linglan111/slice-man/releases/latest) 为准，面向 Windows x64，提供对应版本源码、经过打包验证的 NSIS 安装包及 SHA-256 清单。以下命令以 `0.1.5` 为例，发布时须与实际版本一致。
 
 ## 准备
 
 1. 同步 `package.json`、`package-lock.json` 版本；确保 README、MIT 许可证及第三方通知与实际分发内容一致。
 2. 执行 `npm ci`、`npm run setup:resources`。
 3. 完成 lint、TypeScript、单元/集成测试和适用的原生/Electron 回归。记录外部条件跳过项，不能把跳过视为通过。
-4. 执行 `npm run make -- --config.directories.output=dist/github-v0.1.4`，使用独立输出目录，避免覆盖用户正在运行的应用。
-5. 执行 `npm run test:package -- --app-dir dist/github-v0.1.4/win-unpacked`，验证生产进程、原生 SQLite、资源和隔离数据目录。
-6. 核验安装包版本、签名状态、第三方资源和许可证。将构建得到的 `Slice Man Setup 0.1.4.exe` 复制为发布名 `Slice-Man-Setup-0.1.4.exe`（保留原文件且不覆盖已有发布），再用 `Get-FileHash -Algorithm SHA256` 生成 `SHA256SUMS.txt`。
+4. 执行 `npm run make -- --config.directories.output=dist/github-v0.1.5`，使用独立输出目录，避免覆盖用户正在运行的应用。
+5. 执行 `npm run test:package -- --app-dir dist/github-v0.1.5/win-unpacked`，验证生产进程、原生 SQLite、资源和隔离数据目录。
+6. 核验安装包版本、签名状态、第三方资源和许可证。将构建得到的 `Slice Man Setup 0.1.5.exe` 复制为发布名 `Slice-Man-Setup-0.1.5.exe`（保留原文件且不覆盖已有发布），再用 `Get-FileHash -Algorithm SHA256` 生成 `SHA256SUMS.txt`。
 
 如 Electron 下载失败但已有官方 ZIP，可以在与已安装 Electron 的 `checksums.json` 校验一致后，使用 `--config.electronDist=<verified-archive-path>`。不得关闭 TLS 校验或覆盖原有便携版。
 
@@ -34,7 +34,7 @@
 git push origin HEAD:release
 ```
 
-首次源码上传到 `main` 不会发布。随后首次推送 `release` 自动构建并发布 v0.1.4。执行记录见 [Actions](https://github.com/linglan111/slice-man/actions)，安装包见 [Releases](https://github.com/linglan111/slice-man/releases)。
+推送 `main` 不会发布；将新版本的已审核代码合并至 `release` 后触发验证与发布。执行记录见 [Actions](https://github.com/linglan111/slice-man/actions)，安装包见 [最新 Release](https://github.com/linglan111/slice-man/releases/latest)。
 
 ## 重试与维护
 
