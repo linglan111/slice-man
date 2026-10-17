@@ -1,0 +1,20 @@
+{
+  "jobId": "97dbd56e-bc84-4dc8-87c1-9a8202273cbb",
+  "repairState": "succeeded",
+  "reason": "max_rounds",
+  "committedRounds": 1,
+  "remainingCount": 2,
+  "grades": [
+    {
+      "status": "current",
+      "riskLevel": "medium"
+    },
+    {
+      "status": "current",
+      "riskLevel": "medium"
+    }
+  ],
+  "requestCount": 17,
+  "newAiRequests": 0,
+  "readyBeforeCapture": true
+}

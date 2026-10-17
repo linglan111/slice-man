@@ -5,21 +5,22 @@ import { useWorkspaceLayout } from '../../../src/renderer/src/hooks/useWorkspace
 
 let viewportWidth = 1440;
 let columnHeight = 600;
+let contentHeight = 200;
 let current: ReturnType<typeof useWorkspaceLayout> | undefined;
 const observed: { nodes: Set<Element>; disconnected: boolean }[] = [];
 function layout(): ReturnType<typeof useWorkspaceLayout> {
   if (!current) throw new Error('Layout fixture missing');
   return current;
 }
-function Harness({ noJob = false, inline = false }: { noJob?: boolean; inline?: boolean }): React.JSX.Element {
-  current = useWorkspaceLayout(false, noJob ? '' : 'fixture-job', inline, true);
-  return <div ref={current.rootRef} className="test-root">{!noJob && <div ref={current.gridRef} className="test-grid"><div ref={current.leftRef} className="test-left"><section ref={current.previewRef} className="test-preview" style={{ padding: 0 }}><div className="fixed-child" style={{ margin: 0 }} /><div className="preview-media" /></section>{inline && <div className="workspace-operation-card" />}</div><div ref={current.rightRef} className="test-right"><section className="subtitle-panel" style={{ padding: 0 }}><div className="fixed-child" style={{ margin: 0 }} /><div className="subtitle-list" /></section><section ref={current.resultsRef} className="workspace-results" /></div></div>}</div>;
+function Harness({ noJob = false, inline = false, operation = 'generate' }: { noJob?: boolean; inline?: boolean; operation?: string }): React.JSX.Element {
+  current = useWorkspaceLayout(false, noJob ? '' : 'fixture-job', inline ? operation : null, true);
+  return <div ref={current.rootRef} className="test-root">{!noJob && <div ref={current.gridRef} className="test-grid"><div ref={current.leftRef} className="test-left"><section ref={current.previewRef} className="test-preview" style={{ padding: 0 }}><div className="fixed-child" style={{ margin: 0 }} /><div className="preview-media" /></section>{inline && <div ref={current.operationRef} className="workspace-operation-card" style={{ padding: 10, border: '1px solid' }}><div ref={current.operationContentRef} className="test-operation-content" /></div>}</div><div ref={current.rightRef} className="test-right"><section className="subtitle-panel" style={{ padding: 0 }}><div className="fixed-child" style={{ margin: 0 }} /><div className="subtitle-list" /></section><section ref={current.resultsRef} className="workspace-results" /></div></div>}</div>;
 }
 beforeEach(() => {
-  viewportWidth = 1440; columnHeight = 600; current = undefined; observed.length = 0; localStorage.clear();
+  viewportWidth = 1440; columnHeight = 600; contentHeight = 200; current = undefined; observed.length = 0; localStorage.clear();
   vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (this: HTMLElement) { return this.classList.contains('test-root') ? viewportWidth : 1000; });
   vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockImplementation(() => columnHeight);
-  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) { return new DOMRect(0, 0, 300, this.classList.contains('fixed-child') ? 100 : this.classList.contains('dynamic-error') ? 50 : 30); });
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) { return new DOMRect(0, 0, 300, this.classList.contains('test-operation-content') ? contentHeight : this.classList.contains('fixed-child') ? 100 : this.classList.contains('dynamic-error') ? 50 : 30); });
   vi.stubGlobal('ResizeObserver', class {
     state = { nodes: new Set<Element>(), disconnected: false };
     constructor() { observed.push(this.state); }
@@ -30,12 +31,40 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('workspace allocation measurements', () => {
-  it('caps operation content only at the available viewport instead of allocating blank form height', () => {
+  it('fits each operation to content with a 45 percent automatic cap and preserves the video floor', () => {
     const view = render(<Harness inline />);
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('222px');
     expect((layout().style as Record<string, string>)['--operation-max-height']).toBe('378px');
+    contentHeight = 600; view.rerender(<Harness inline operation="style" />);
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('270px');
+    viewportWidth = 1050; columnHeight = 300; view.rerender(<Harness inline operation="export" />);
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('80px');
+    expect(layout().operation.value).toBe(212);
     view.rerender(<Harness />);
-    expect((layout().style as Record<string, string>)['--operation-max-height']).toBe('378px');
     expect('editor' in layout()).toBe(false);
+  });
+  it('keeps manual height through content changes, cancels drags and freshly fits every different operation', async () => {
+    const view = render(<Harness inline />);
+    act(() => layout().operation.update(250, true));
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('340px');
+    contentHeight = 500;
+    const content = document.querySelector('.test-operation-content');
+    if (!content) throw new Error('Operation fixture missing');
+    await act(async () => { content.appendChild(document.createElement('p')); });
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('340px');
+    act(() => layout().operation.update(300, false));
+    act(() => layout().operation.cancel());
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('340px');
+    for (const operation of ['style', 'export', 'names', 'chapters', 'partial-recognize', 'partial-translate', 'editor-new-draft', 'editor-cue-1', 'generate']) {
+      view.rerender(<Harness inline operation={operation} />);
+      expect((layout().style as Record<string, string>)['--operation-height']).toBe('270px');
+      act(() => layout().operation.update(250, true));
+    }
+    expect(localStorage.getItem('slice-man.layout')).toBeNull();
+    view.rerender(<Harness />); view.rerender(<Harness inline />);
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('270px');
+    act(() => layout().operation.update(250, true)); act(() => layout().reset());
+    expect((layout().style as Record<string, string>)['--operation-height']).toBe('270px');
   });
   it('observes dynamic preview errors and proofreading tools without overwriting saved dimensions', async () => {
     render(<Harness inline />);

@@ -1,0 +1,224 @@
+{
+  "status": "Verified across preserved attempts; initial failures remain documented",
+  "model": "deepseek-flash",
+  "attempts": [
+    {
+      "cause": "Public native JFK yielded one cue; no fabricated native cue boundaries",
+      "result": "Stopped at fixture precondition after 2 successful calls"
+    },
+    {
+      "cumulativeCalls": 13,
+      "result": "Chapter translation/review/style passed; full repair failed without commit",
+      "cause": "Proxy imposed 8192 token override consumed by reasoning; TRUNCATED"
+    },
+    {
+      "cumulativeCalls": 19,
+      "result": "Repair-only continuation passed after identity preflight and independent review",
+      "cause": "Removed proxy token override; original app payload and original loopback/profile identity preserved"
+    }
+  ],
+  "names": {
+    "candidates": 1,
+    "chapterPlanAbsent": true,
+    "state": "current",
+    "literalMixedScriptSourceAliasMatched": true,
+    "literalLatinAliasAdjacentToHanMatched": true,
+    "provenance": "First authorized actual service attempt; readonly isolated persisted report, actual published names request #1 in cumulative ledger. Reused without another paid name request."
+  },
+  "publishedChapterRequestsBeforeRepair": {
+    "translation": 2,
+    "review": 2,
+    "style": 2
+  },
+  "failedRepairRetention": {
+    "cumulativeCalls": 13,
+    "limit": 30,
+    "repairState": "failed",
+    "committedRounds": 0,
+    "errorCode": "TRUNCATED",
+    "unchangedOriginalTranscript": true,
+    "unchangedPreviouslyPublishedTranslations": true,
+    "seedReportRetained": true,
+    "segments": 2,
+    "publishedChapterRequests": {
+      "translation": 2,
+      "review": 2,
+      "style": 2
+    },
+    "retainedAttemptStates": [
+      {
+        "operation": "chapters",
+        "state": "published"
+      },
+      {
+        "operation": "translate",
+        "state": "published"
+      },
+      {
+        "operation": "translate",
+        "state": "published"
+      },
+      {
+        "operation": "review",
+        "state": "published"
+      },
+      {
+        "operation": "review",
+        "state": "published"
+      },
+      {
+        "operation": "style",
+        "state": "published"
+      },
+      {
+        "operation": "style",
+        "state": "published"
+      },
+      {
+        "operation": "translate",
+        "state": "validated"
+      },
+      {
+        "operation": "translate",
+        "state": "validated"
+      },
+      {
+        "operation": "review",
+        "state": "failed",
+        "errorCode": "TRUNCATED"
+      },
+      {
+        "operation": "review",
+        "state": "validated"
+      }
+    ],
+    "truncated": {
+      "number": 13,
+      "httpStatus": 200,
+      "reasoningDeltaCount": 8192,
+      "outputTextDeltaCount": 0,
+      "responseCompletedCount": 0,
+      "textBytes": 0
+    },
+    "segmentsFingerprint": "c4cb71b082cad1b74ab21b17cba01ae6fd721276ba949abdc2405aab90ec4636",
+    "reviewFingerprint": "ba0aede51e586d891fa42c5b91167e9c28bf92d973c4dce8440c47b2a12eeb51",
+    "chapterFingerprint": "33d04b3e23d7cb2d122176b38640e6b1ec8e99aaaccc9a790f4bcf5b1e0ca502"
+  },
+  "repairContinuation": {
+    "model": "deepseek-flash",
+    "priorFailedAttemptPreserved": true,
+    "priorSeedCaveat": "Manual medium test grades guarantee repair execution; original native single cue manually divided into two. Neither is a claim of model detection or native word alignment.",
+    "maxOutputTokenOverride": null,
+    "repair": {
+      "id": "2f192c11-e6ff-4ec0-80a1-476ce65f60fc",
+      "scope": {
+        "mode": "all"
+      },
+      "threshold": "medium",
+      "maxRounds": 1,
+      "state": "succeeded",
+      "phase": "done",
+      "round": 1,
+      "committedRounds": 1,
+      "affectedCount": 2,
+      "remainingCount": 2,
+      "effectiveIntervals": [
+        {
+          "startMs": 0,
+          "endMs": 5290
+        },
+        {
+          "startMs": 5310,
+          "endMs": 10600
+        }
+      ],
+      "startedAt": 1792231968371,
+      "completedAt": 1792232031443,
+      "reason": "max_rounds"
+    },
+    "wallTimeMs": 64059,
+    "grades": [
+      {
+        "status": "current",
+        "riskLevel": "medium"
+      },
+      {
+        "status": "current",
+        "riskLevel": "medium"
+      }
+    ],
+    "freshNativeReceipts": [
+      {
+        "backend": "cpu",
+        "gpuExecutionVerified": false
+      },
+      {
+        "backend": "cpu",
+        "gpuExecutionVerified": false
+      }
+    ],
+    "requests": [
+      {
+        "operation": "review",
+        "chapterId": "actual-first",
+        "state": "published",
+        "model": "deepseek-flash",
+        "targetCount": 1
+      },
+      {
+        "operation": "review",
+        "chapterId": "actual-second",
+        "state": "published",
+        "model": "deepseek-flash",
+        "targetCount": 1
+      },
+      {
+        "operation": "review",
+        "chapterId": "actual-second",
+        "state": "published",
+        "model": "deepseek-flash",
+        "targetCount": 1
+      },
+      {
+        "operation": "review",
+        "chapterId": "actual-first",
+        "state": "published",
+        "model": "deepseek-flash",
+        "targetCount": 1
+      },
+      {
+        "operation": "translate",
+        "chapterId": "actual-second",
+        "state": "published",
+        "model": "deepseek-flash",
+        "targetCount": 1
+      },
+      {
+        "operation": "translate",
+        "chapterId": "actual-first",
+        "state": "published",
+        "model": "deepseek-flash",
+        "targetCount": 1
+      }
+    ],
+    "cumulativeCalls": 19,
+    "cumulativeLimit": 30,
+    "observedConcurrentUpstreamRequests": 2,
+    "restartCurrentGradeCount": 2,
+    "srtExportBytes": 202
+  },
+  "budget": {
+    "notReset": true,
+    "calls": 19,
+    "validatedButNotPublished": 3,
+    "failed": 1,
+    "limit": 30,
+    "published": 15
+  },
+  "limits": [
+    "Actual risk grades remain medium for 2 subtitles at the explicitly selected one-round cap; this is not an all-clear claim.",
+    "Manual two-cue subdivision preserves native transcript but does not prove acoustic alignment.",
+    "Medium suspicion was explicitly test-seeded to guarantee full repair.",
+    "Actual service compatibility verified for the configured Responses service; other protocols use HTTP fixtures."
+  ]
+}

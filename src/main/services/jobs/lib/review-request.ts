@@ -59,6 +59,7 @@ export function createReviewRequest(
   all: Segment[],
   selected: Segment[],
   translationEnabled: boolean,
+  fullContext?: Segment[],
 ): ReviewRequest {
   if (selected.length > MAX_REVIEW_TARGETS)
     throw new AppError(
@@ -78,7 +79,7 @@ export function createReviewRequest(
     }))
     .filter((group) => group.targets.length);
   const contextIds = new Set(
-    groups.flatMap((group) => group.window.context.map((cue) => cue.id)),
+    [...groups.flatMap((group) => group.window.context.map((cue) => cue.id)), ...(fullContext?.map((cue) => cue.id) ?? [])],
   );
   const aliases = new Map(
     sorted.flatMap((cue, n) =>

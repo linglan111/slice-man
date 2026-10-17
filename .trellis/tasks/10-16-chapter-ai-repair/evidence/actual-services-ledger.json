@@ -1,0 +1,898 @@
+{
+  "version": 1,
+  "limit": 30,
+  "calls": [
+    {
+      "number": 1,
+      "operation": "names",
+      "startedAt": "2026-10-17T10:02:41.587Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 873,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 79,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 878,
+        "1": 84
+      },
+      "contentIndexes": {
+        "0": 958
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "3467867b-e59d-4486-903a-3c1cda9d831c",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 316
+    },
+    {
+      "number": 2,
+      "operation": "chapters",
+      "startedAt": "2026-10-17T10:02:48.834Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 333,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 49,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 338,
+        "1": 54
+      },
+      "contentIndexes": {
+        "0": 388
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "closedAfterTerminal": true,
+      "diagnosticId": "dbad052f-e81b-4222-bbb7-491ff1f4260a",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 205
+    },
+    {
+      "number": 3,
+      "operation": "chapters",
+      "startedAt": "2026-10-17T10:06:52.796Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 275,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 48,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 280,
+        "1": 53
+      },
+      "contentIndexes": {
+        "0": 329
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "0fbe4aff-91a5-4da6-96b1-13d35bbc0518",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 196
+    },
+    {
+      "number": 4,
+      "operation": "translate",
+      "startedAt": "2026-10-17T10:06:55.397Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 236,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 45,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 241,
+        "1": 50
+      },
+      "contentIndexes": {
+        "0": 287
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "a532578f-f7c9-4ec4-b6a2-775ce759c1c8",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 137
+    },
+    {
+      "number": 5,
+      "operation": "translate",
+      "startedAt": "2026-10-17T10:06:55.400Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 183,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 28,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 188,
+        "1": 33
+      },
+      "contentIndexes": {
+        "0": 217
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "diagnosticId": "1aea3a13-9193-450f-ba72-ea33b3b906ef",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 105
+    },
+    {
+      "number": 6,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:06:57.625Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 543,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 9,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 548,
+        "1": 14
+      },
+      "contentIndexes": {
+        "0": 558
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "f27dedeb-e0d6-4215-8cb5-529ac5821bd6",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 14
+    },
+    {
+      "number": 7,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:06:57.628Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 1222,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 9,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 1227,
+        "1": 14
+      },
+      "contentIndexes": {
+        "0": 1237
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "diagnosticId": "54da3fb7-fddc-41f3-817b-a2e5d6c40edc",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 14
+    },
+    {
+      "number": 8,
+      "operation": "style",
+      "startedAt": "2026-10-17T10:07:04.868Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 523,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 142,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 528,
+        "1": 147
+      },
+      "contentIndexes": {
+        "0": 671
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "f65ae42c-adc3-4af3-aa13-d2433b26df8b",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 434
+    },
+    {
+      "number": 9,
+      "operation": "style",
+      "startedAt": "2026-10-17T10:07:04.871Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 696,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 142,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 701,
+        "1": 147
+      },
+      "contentIndexes": {
+        "0": 844
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "diagnosticId": "5741ec28-5016-4ad4-8df0-b0a7e0a445fb",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 434
+    },
+    {
+      "number": 10,
+      "operation": "translate",
+      "startedAt": "2026-10-17T10:07:12.294Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 232,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 47,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 237,
+        "1": 52
+      },
+      "contentIndexes": {
+        "0": 285
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "ea927c72-9f5c-4ac4-8f68-e10afb712016",
+      "state": "validated",
+      "streamActual": true,
+      "textBytes": 146
+    },
+    {
+      "number": 11,
+      "operation": "translate",
+      "startedAt": "2026-10-17T10:07:12.297Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 97,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 40,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 102,
+        "1": 45
+      },
+      "contentIndexes": {
+        "0": 143
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "diagnosticId": "32d14a52-8b1a-41a6-94b2-8620afa5b6f3",
+      "state": "validated",
+      "streamActual": true,
+      "textBytes": 119
+    },
+    {
+      "number": 12,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:07:14.175Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 4453,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 149,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 4458,
+        "1": 154
+      },
+      "contentIndexes": {
+        "0": 4608
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "phase": "adjudication",
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "ad57a7fb-23c5-4d32-9175-5f0cf64a277e",
+      "state": "validated",
+      "streamActual": true,
+      "textBytes": 415
+    },
+    {
+      "number": 13,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:07:14.178Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 1,
+        "response.content_part.added": 1,
+        "response.reasoning_text.delta": 8192,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 1,
+        "response.output_item.done": 1
+      },
+      "outputIndexes": {
+        "0": 8197
+      },
+      "contentIndexes": {
+        "0": 8195
+      },
+      "itemTypes": {
+        "reasoning": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 2,
+        "text:string": 2
+      },
+      "phase": "adjudication",
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "errorCode": "TRUNCATED",
+      "diagnosticId": "d95bf8da-275d-44a6-90cf-7be451047da7",
+      "state": "failed",
+      "streamActual": true,
+      "textBytes": 0
+    },
+    {
+      "number": 14,
+      "operation": "translate",
+      "startedAt": "2026-10-17T10:12:50.727Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 117,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 45,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 122,
+        "1": 50
+      },
+      "contentIndexes": {
+        "0": 168
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "fe1cbe8e-24e2-4dc9-9f24-2e598eac0cb1",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 146
+    },
+    {
+      "number": 15,
+      "operation": "translate",
+      "startedAt": "2026-10-17T10:12:50.735Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 366,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 47,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 371,
+        "1": 52
+      },
+      "contentIndexes": {
+        "0": 419
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "diagnosticId": "bd86c002-5012-40f4-869b-c835491939f1",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 119
+    },
+    {
+      "number": 16,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:12:52.950Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 2626,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 148,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 2631,
+        "1": 153
+      },
+      "contentIndexes": {
+        "0": 2780
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "phase": "adjudication",
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "2654572a-dba3-4033-a51a-e7b72cc86a94",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 412
+    },
+    {
+      "number": 17,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:12:52.953Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 1708,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 85,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 1713,
+        "1": 90
+      },
+      "contentIndexes": {
+        "0": 1799
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "phase": "adjudication",
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "diagnosticId": "031d56f1-f53e-483d-90e1-88e81e5011b7",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 293
+    },
+    {
+      "number": 18,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:13:05.970Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 6697,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 83,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 6702,
+        "1": 88
+      },
+      "contentIndexes": {
+        "0": 6786
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 1,
+      "httpStatus": 200,
+      "diagnosticId": "92d527e3-00cb-4549-9a4d-8b32ee317dcf",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 228
+    },
+    {
+      "number": 19,
+      "operation": "review",
+      "startedAt": "2026-10-17T10:13:05.973Z",
+      "protocol": "openai",
+      "mode": "responses",
+      "model": "deepseek-flash",
+      "eventTypes": {
+        "response.created": 1,
+        "response.in_progress": 1,
+        "response.output_item.added": 2,
+        "response.content_part.added": 2,
+        "response.reasoning_text.delta": 9263,
+        "response.reasoning_text.done": 1,
+        "response.content_part.done": 2,
+        "response.output_item.done": 2,
+        "response.output_text.delta": 63,
+        "response.output_text.done": 1,
+        "response.completed": 1
+      },
+      "outputIndexes": {
+        "0": 9268,
+        "1": 68
+      },
+      "contentIndexes": {
+        "0": 9332
+      },
+      "itemTypes": {
+        "reasoning": 2,
+        "message": 2
+      },
+      "partTypes": {
+        "reasoning_text": 2,
+        "output_text": 2
+      },
+      "partMetadataKinds": {
+        "type:string": 4,
+        "text:string": 4,
+        "annotations:array": 2
+      },
+      "activeAtStart": 2,
+      "httpStatus": 200,
+      "diagnosticId": "6f67db27-4b69-4d93-a578-83988befc277",
+      "state": "published",
+      "streamActual": true,
+      "textBytes": 289
+    }
+  ]
+}

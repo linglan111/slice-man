@@ -32,20 +32,27 @@ export type MockServer = {
     review: number;
     names: number;
     chapters: number;
+    audit: number;
   };
   reviewPrompts: string[];
   namePrompts: string[];
   chapterPrompts: string[];
+  auditPrompts: string[];
   behavior: {
     translation: "ok" | "auth-error" | "slow";
     style: "ok" | "invalid";
     artifact: "ok" | "corrupt" | "slow";
     recognition: "full" | "partial";
     review: "findings" | "empty" | "slow" | "graded" | "evidence-corrected" | "evidence-invalid";
-    names: "ok" | "slow" | "empty" | "variants";
+    names: "ok" | "slow" | "empty" | "variants" | "correct-once" | "invalid";
     chapters: "ok" | "invalid";
     textStream: "json" | "sse" | "partial";
     reviewErrorAt?: number;
+    reviewErrorDelayMs?: number;
+    reviewDelayAt?: number;
+    reviewDelayMs?: number;
+    reviewHoldAt?: number;
+    audit?: "ok" | "invalid" | "slow" | "unchanged";
   };
   close: () => Promise<void>;
 };
@@ -54,6 +61,7 @@ export async function startMockServer(): Promise<MockServer> {
   const reviewPrompts: string[] = [];
   const namePrompts: string[] = [];
   const chapterPrompts: string[] = [];
+  const auditPrompts: string[] = [];
   const counters = {
     recognition: 0,
     translation: 0,
@@ -62,6 +70,7 @@ export async function startMockServer(): Promise<MockServer> {
     review: 0,
     names: 0,
     chapters: 0,
+    audit: 0,
   };
   const behavior: MockServer["behavior"] = {
     translation: "ok",
@@ -171,10 +180,26 @@ export async function startMockServer(): Promise<MockServer> {
         if (behavior.names === "slow") return;
         const payload = z.object({ translationEnabled: z.boolean() }).passthrough().parse(JSON.parse(prompt.split("\n").at(-1) ?? "{}") as unknown);
         content = { candidates: behavior.names === "empty" ? [] : [{ sourceAliases: behavior.names === "variants" ? ["Ann", "An"] : ["Ann"], translatedAliases: payload.translationEnabled ? behavior.names === "variants" ? ["安娜", "安纳"] : ["安娜"] : [], sourceName: "Anne", ...(payload.translationEnabled ? { translatedName: "安妮" } : {}), reason: "同一姓名在两条字幕中重复出现，请核对上下文后统一。" }] };
+        if (behavior.names === 'invalid' || (behavior.names === 'correct-once' && !prompt.includes('Correction 1/1:'))) content = { candidates: [{ sourceAliases: ['Ann', 'Anne'], translatedAliases: [], sourceName: 'Anne', reason: 'Fixture mixes an unobserved canonical recommendation into aliases.' }] };
+      } else if (prompt.startsWith("Audit subtitle repairs")) {
+        counters.audit++;
+        auditPrompts.push(prompt);
+        if (behavior.audit === "slow") return;
+        const payload = z.object({ targets: z.array(z.object({ id: z.string(), freshIds: z.array(z.string()) }).passthrough()), fresh: z.array(z.object({ id: z.string() }).passthrough()) }).passthrough()
+          .parse(JSON.parse(prompt.split("\n").at(-1) ?? "{}") as unknown);
+        content = behavior.audit === "invalid" ? { targets: [], segments: [] } : behavior.audit === "unchanged"
+          ? { targets: payload.targets.map((target) => ({ id: target.id, replacementIds: [target.id] })), segments: payload.targets.map(({ freshIds: _ids, suspicion: _suspicion, silenceAllowed: _silence, ...cue }) => cue) }
+          : { targets: payload.targets.map((target) => ({ id: target.id, replacementIds: target.freshIds })), segments: payload.fresh };
       } else if (prompt.startsWith("Review subtitle text and timing.")) {
         counters.review++;
         reviewPrompts.push(prompt);
-        if (behavior.reviewErrorAt === counters.review) { response.writeHead(401); response.end('{}'); return; }
+        if (behavior.reviewDelayAt === counters.review && behavior.reviewDelayMs)
+          await new Promise<void>(done => setTimeout(done, behavior.reviewDelayMs));
+        if (behavior.reviewHoldAt === counters.review) return;
+        if (behavior.reviewErrorAt === counters.review) {
+          if (behavior.reviewErrorDelayMs) await new Promise<void>(done => setTimeout(done, behavior.reviewErrorDelayMs));
+          response.writeHead(401); response.end('{}'); return;
+        }
         if (behavior.review === "slow") return;
         const line = prompt.split("\n").find(value => value.startsWith('{"cues"'));
         const batch = z.object({
@@ -279,6 +304,7 @@ export async function startMockServer(): Promise<MockServer> {
     reviewPrompts,
     namePrompts,
     chapterPrompts,
+    auditPrompts,
     behavior,
     url: `http://127.0.0.1:${address.port}/v1`,
     close: async () => {

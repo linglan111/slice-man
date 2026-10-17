@@ -1,0 +1,162 @@
+[
+  {
+    "width": 1440,
+    "name": "查看流式信息",
+    "bounds": {
+      "x": 1230,
+      "y": 783.59375,
+      "width": 66,
+      "height": 23.59375,
+      "top": 783.59375,
+      "right": 1296,
+      "bottom": 807.1875,
+      "left": 1230
+    },
+    "viewport": 921,
+    "clickable": true
+  },
+  {
+    "width": 1440,
+    "name": "取消当前处理",
+    "bounds": {
+      "x": 1306,
+      "y": 783.59375,
+      "width": 66,
+      "height": 23.59375,
+      "top": 783.59375,
+      "right": 1372,
+      "bottom": 807.1875,
+      "left": 1306
+    },
+    "viewport": 921,
+    "clickable": true
+  },
+  {
+    "width": 1440,
+    "requestRow": "第一章处理中 · 1 条字幕 · 0 秒模型思考中 · 已接收 672 字节",
+    "bounds": {
+      "x": 838,
+      "y": 817.09375,
+      "width": 537,
+      "height": 25.59375,
+      "top": 817.09375,
+      "right": 1375,
+      "bottom": 842.6875,
+      "left": 838
+    },
+    "viewport": 921,
+    "readable": true
+  },
+  {
+    "width": 1440,
+    "requestRow": "第二章处理中 · 1 条字幕 · 0 秒模型思考中 · 已接收 672 字节",
+    "bounds": {
+      "x": 838,
+      "y": 846.6875,
+      "width": 537,
+      "height": 25.59375,
+      "top": 846.6875,
+      "right": 1375,
+      "bottom": 872.28125,
+      "left": 838
+    },
+    "viewport": 921,
+    "readable": true
+  },
+  {
+    "width": 1440,
+    "requestRow": "第三章排队中 · 1 条字幕",
+    "bounds": {
+      "x": 838,
+      "y": 876.28125,
+      "width": 537,
+      "height": 25.59375,
+      "top": 876.28125,
+      "right": 1375,
+      "bottom": 901.875,
+      "left": 838
+    },
+    "viewport": 921,
+    "readable": true
+  },
+  {
+    "width": 1050,
+    "name": "查看流式信息",
+    "bounds": {
+      "x": 850,
+      "y": 580.40625,
+      "width": 66,
+      "height": 23.59375,
+      "top": 580.40625,
+      "right": 916,
+      "bottom": 604,
+      "left": 850
+    },
+    "viewport": 661,
+    "clickable": true
+  },
+  {
+    "width": 1050,
+    "name": "取消当前处理",
+    "bounds": {
+      "x": 926,
+      "y": 580.40625,
+      "width": 66,
+      "height": 23.59375,
+      "top": 580.40625,
+      "right": 992,
+      "bottom": 604,
+      "left": 926
+    },
+    "viewport": 661,
+    "clickable": true
+  },
+  {
+    "width": 1050,
+    "requestRow": "第一章处理中 · 1 条字幕 · 0 秒模型思考中 · 已接收 672 字节",
+    "bounds": {
+      "x": 625,
+      "y": 565.40625,
+      "width": 370,
+      "height": 45.1875,
+      "top": 565.40625,
+      "right": 995,
+      "bottom": 610.59375,
+      "left": 625
+    },
+    "viewport": 661,
+    "readable": true
+  },
+  {
+    "width": 1050,
+    "requestRow": "第二章处理中 · 1 条字幕 · 0 秒模型思考中 · 已接收 672 字节",
+    "bounds": {
+      "x": 625,
+      "y": 604.59375,
+      "width": 370,
+      "height": 45.1875,
+      "top": 604.59375,
+      "right": 995,
+      "bottom": 649.78125,
+      "left": 625
+    },
+    "viewport": 661,
+    "readable": true
+  },
+  {
+    "width": 1050,
+    "requestRow": "第三章排队中 · 1 条字幕",
+    "bounds": {
+      "x": 625,
+      "y": 574.78125,
+      "width": 370,
+      "height": 25.59375,
+      "top": 574.78125,
+      "right": 995,
+      "bottom": 600.375,
+      "left": 625
+    },
+    "viewport": 661,
+    "readable": true
+  }
+]

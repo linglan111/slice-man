@@ -1,0 +1,37 @@
+# Execution plan
+
+## Gates and order
+- [x] Record explicit task creation, implementation and paid existing-service test authorization.
+- [x] Inspect source, previous task design, specs and deterministic/live tests; persist planning artifacts.
+- [x] Final plan approved by the user on 2026-10-17, including final consistency checks and exemption of recognition/person-name checking from chapters. User requires teammates to implement/test/review; main session is leader only.
+- [x] Activated core/names/progress children and dispatched native Trellis implement teammates with explicit task-path fallback. Core owns backend/shared chapter scheduling and profile contracts; names owns analyzeNames/name libraries/tests; progress owns renderer/frontend/progress E2E. Repair implementation follows core contract readiness and available slot. Leader performs coordination and overall acceptance only.
+- [x] Implement/check core contracts and dependent repair; names can proceed independently of chapter core, coordinating shared limiter/job-service ownership; integrate progress/regression child.
+- [x] Dispatch Trellis check over complete final scope; fix findings and run static/unit checks. Independent final review passed with 935 tests; native/actual-service acceptance is tracked separately below.
+- [x] Complete actual-service acceptance and leader evidence review. Actual names/chapters/translation/review/style/native repair/restart/export passed across preserved attempts, cumulative19/30 calls. Final complete desktop suite:53 passed,10 explicit opt-in skips,0 failures/flaky. See research/leader-acceptance.md and evidence/runtime-verification.md.
+- [ ] Update affected specs, commit scoped work, archive completed children/parent and record journal.
+
+## Validation
+1. Core: short/multi chapter reuse/invalidation; full chapter vs sparse targets; boundary ownership; capacity-before-call; exact phase request counts; real overlap/service caps; lossless out-of-order merge; failure/cancel settlement; legacy profile persistence.
+2. Names: literal/canonical separation, wrong-field/case/word boundaries, bounded whole-request correction/terminal retention, global recurrence/identity/ambiguity safety, apply/undo/staleness/restart. Prove one whole-timeline name request with absent/stale/custom/multiple normal plans, no chapter-planning requests or plan mutation, identical name payload under chapter-only edits, preserved explicit capacity errors and shared service limit compliance.
+3. Repair: multi-chapter/multi-round checks, fresh ASR+translation, old/new audited timing/text, target coverage, unchanged-result invalidation, source-only, fixed scope/expanded overlap, ignore/threshold, convergence/cap/final reassessment, failure/cancel at every phase and continuous lease. Explicitly seed pending assessments after the final reassessment; verify an additional assessment-only chapter check drains required pending coverage regardless of threshold, preserves round count/content, yields current risk/none badges matching persisted data after restart, and honestly reports failure/cancel or non-progress without an unbounded loop.
+4. Frontend: one processing stream action, accessible label/help, API concurrency setting, phase/round during streaming, all queued/active states, run filtering/outcomes, minimum/default window scrolling/focus.
+5. Electron: extend repair-loop, person-names, contextual-review, review-one-shot, chapters-streaming, retry/stream/workspace suites. Capture local HTTP, real preload/IPC, SQLite restart and repaired exports. Replace superseded request-count expectations explicitly.
+6. Real services: reuse responses/ai-stream live helpers with isolated memory-only credentials and bounded sanitized request ledger. Verify names/review/translation/style and complete repair using existing configured AI; run actual recognition where available. Record model/outcomes/count/concurrency without secret values/reasoning. Distinguish mock integrity from linguistic/acoustic evidence.
+
+## Commands and evidence
+npm run lint; npm run typecheck; npm test (Electron ABI wrapper); npm run build; npx playwright test <affected suites>; then npx playwright test for full desktop regression. Run opt-in actual service suites/new chapter repair cases via authorized isolated credentials. Use appropriate real Whisper/media checks under native-runtime-testing.md; never rebuild SQLite for ordinary Node before Electron tests.
+
+Store sanitized ledgers/screenshots/count assertions/final review in parent evidence directory. Record external fixture/service blockers and skips honestly. Highest risks: concurrent report merging, chapter reuse through ASR edits, global name evidence recovery and repair cancellation/publication. Material design changes require refreshed planning review.
+
+## User-requested package follow-up
+- [x] operation_resize / resize_finish teammates: added temporary operation-panel height divider and capped content auto-fit on every operation identity change; preserved current AI changes, existing divider behavior and minimum video space. Lint/typecheck, hook6/6 and settings3/3 passed.
+- [x] resize_review teammate: independently accepted the small layout delta and corrected old assertions; lint/typecheck and12 focused cases passed. Independently recalculated installer/asar hashes and size/version, compared all5 packaged out files, and verified existing installed exe unchanged without installation.
+- [x] package_preview teammate: after leader release, packaged current tree as Windows x64 NSIS0.1.5-preview.10 in a fresh output folder; installer186186498bytes, hash recorded in research/package-preview10.md. Current asar/out equality and isolated packaged startup/IPC passed. No paid calls or broad regression rerun.
+- [x] Leader: reviewed evidence and final product/test delta, updated scoped commit plan and delivered installer for user's manual validation. Git commit/archival confirmation remains pending separately; task stays open for manual feedback.
+
+## Official release follow-up — explicitly authorized 2026-10-18
+- [x] guide_current: refreshed six-step informational navigation and assertions, synchronized three package/lock version values to0.1.5;11 focused tests and12 release-policy cases passed.
+- [x] readme_current: rewrote README/English usage against actual source, added0.1.5 notes and corrected the release guide;4documents/10local links/27script references checked.
+- [x] release_check: independently accepted final guide/docs/version and existing workflow; lint/typecheck/build,20unit,12policy and8native desktop cases passed. All six minimum-window guide steps and screenshots checked, no remaining findings.
+- [ ] Leader: commit only owned paths, fast-forward/push main without force, merge into release and follow automated checks/build/publication to verified installer and checksum. Existing prior pending-commit messages are superseded by the user's explicit instruction; no repeated permission gate.
+- [ ] Leader: archive this completed task and its4children, record journal and preserve unrelated active work after successful release.

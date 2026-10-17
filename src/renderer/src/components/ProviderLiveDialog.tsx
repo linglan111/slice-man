@@ -17,7 +17,7 @@ export function ProviderLiveDialog({ items, error, onClose }: { items: ProviderL
   const selected = items.find((item) => item.requestId === selectedId) ?? items[0];
   return <Modal title="AI 流式信息" className="provider-live-dialog" onClose={onClose}>
     <p className="hint">实时显示服务返回的思考与回答。思考内容仅临时保留，关闭软件后不保留；部分模型不会返回思考内容。</p>
-    {items.length > 1 && <label>查看请求<select aria-label="查看流式请求" value={selected?.requestId ?? ''} onChange={(event) => setSelectedId(event.target.value)}>{items.map((item) => <option value={item.requestId} key={item.requestId}>{OPERATIONS[item.operation]} · {item.model} · {new Date(item.startedAt).toLocaleTimeString()} · {LIVE_PHASE_LABELS[item.phase]}</option>)}</select></label>}
+    {items.length > 1 && <label>查看请求<select aria-label="查看流式请求" value={selected?.requestId ?? ''} onChange={(event) => setSelectedId(event.target.value)}>{items.map((item) => <option value={item.requestId} key={item.requestId}>{OPERATIONS[item.operation]}{item.chapterId ? ` · 章节 ${item.chapterId}` : item.operation === 'names' ? ' · 全片分析' : ''} · {item.model} · {new Date(item.startedAt).toLocaleTimeString()} · {LIVE_PHASE_LABELS[item.phase]}</option>)}</select></label>}
     {selected ? <>
       <div className="provider-live-summary" role="status"><strong>{LIVE_PHASE_LABELS[selected.phase]}</strong><span>{OPERATIONS[selected.operation]} · {selected.model} · {Math.floor(selected.elapsedMs / 1000)} 秒</span><span>已接收 {selected.wireBytes.toLocaleString()} 字节 · 回答 {selected.answerBytes.toLocaleString()} 字节</span></div>
       <div className="provider-live-content">

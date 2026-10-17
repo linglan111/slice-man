@@ -120,6 +120,57 @@ async function editCue(
   await expect(editor).not.toBeVisible();
 }
 
+test('name evidence correction is bounded, whole-timeline and preserves the prior report on terminal failure', async ({ playwright: _ }, info) => {
+  const mock = await startMockServer();
+  mock.behavior.names = 'correct-once';
+  const source = info.outputPath('name-evidence-correction.mp4');
+  await makeVideo(source);
+  const { app, page } = await launchApp(info.outputPath('name-evidence-data'), [source], []);
+  try {
+    await importVideo(page);
+    await seedNames(page);
+    await addProfile(page, 'Names correction fixture', 'openai', mock.url);
+    await page.evaluate(async () => {
+      const jobs = await window.api.jobs.list(); const profiles = await window.api.profiles.list();
+      if (!jobs.success || !jobs.data[0] || !profiles.success || !profiles.data[0]) throw new Error('Missing fixture');
+      const job = jobs.data[0];
+      const saved = await window.api.jobs.updateOptions({ jobId: job.id, options: { ...job.options, reviewProfileId: profiles.data[0].id } });
+      if (!saved.success) throw new Error(saved.error);
+    });
+    await page.reload();
+    const before = await currentJob(page);
+    const panel = await openNames(page);
+    await panel.getByRole('button', { name: 'AI 检查人名', exact: true }).click();
+    await expect(panel.getByLabel('Anne 替换原名')).toHaveValue('Anne');
+    const result = await currentJob(page);
+    expect(mock.namePrompts).toHaveLength(2);
+    expect(mock.namePrompts[1]).toContain('Correction 1/1:');
+    expect(mock.namePrompts[1]?.split('\n').at(-1)).toBe(mock.namePrompts[0]?.split('\n').at(-1));
+    expect(result.chapterPlan).toEqual(before.chapterPlan);
+    expect(result.customChapterPlan).toEqual(before.customChapterPlan);
+    expect(result.segments).toEqual(before.segments);
+    const records = await page.evaluate(async () => {
+      const response = await window.api.diagnostics.list({});
+      if (!response.success) throw new Error(response.error);
+      return response.data.filter(record => record.operation === 'names');
+    });
+    expect(records).toHaveLength(2);
+    expect(records.map(record => record.attempt).sort()).toEqual([0, 1]);
+    expect(new Set(records.map(record => record.runId)).size).toBe(1);
+    expect(records.every(record => record.chapterId === undefined)).toBe(true);
+    expect(records.map(record => record.state).sort()).toEqual(['failed', 'published']);
+    mock.behavior.names = 'invalid';
+    await panel.getByRole('button', { name: '重新检查人名', exact: true }).click();
+    await expect(page.getByText(/一次纠正仍未通过/)).toBeVisible();
+    expect(mock.namePrompts).toHaveLength(4);
+    expect((await currentJob(page)).nameReport).toEqual(result.nameReport);
+    expect(mock.counters.chapters).toBe(0);
+    expect(mock.counters.recognition).toBe(0);
+    expect(mock.counters.translation).toBe(0);
+    await page.screenshot({ path: info.outputPath('name-evidence-terminal-retention.png') });
+  } finally { await app.close(); await mock.close(); }
+});
+
 test('global name variants form one confirmed mapping and undo restores each observed spelling', async ({ playwright: _playwright }, info) => {
   const mock = await startMockServer();
   mock.behavior.names = 'variants';

@@ -355,7 +355,7 @@ test("pointer/keyboard pane resizing clamps real geometry, retains translated in
         .getByLabel("译文", { exact: true })
         .fill("长双语校对表单\n".repeat(80));
       const resultsDivider = "调整字幕校对与结果区高度";
-      await expect(page.getByRole('separator', { name: '调整预览与编辑区高度', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('separator', { name: '调整预览与操作区高度', exact: true })).toBeVisible();
       await drag(page, resultsDivider, -5000);
       await assertWorkspace(page);
       await drag(page, resultsDivider, 5000);

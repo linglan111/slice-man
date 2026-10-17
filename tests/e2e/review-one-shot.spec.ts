@@ -100,7 +100,7 @@ test("anonymous 1027-cue review uses one HTTP request per complete selected set 
       }
       expect(mock.counters.review).toBe([31, 65, 1027].indexOf(length) + 1);
       const prompt = JSON.parse(
-        mock.reviewPrompts.at(-1)?.split("\n")[1] ?? "{}",
+        mock.reviewPrompts.at(-1)?.split("\n").find(line => line.startsWith('{"cues"')) ?? "{}",
       ) as { groups: { targets: number[] }[] };
       expect(prompt.groups.flatMap((g) => g.targets)).toHaveLength(length);
     }

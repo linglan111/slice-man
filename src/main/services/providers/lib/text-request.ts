@@ -4,12 +4,14 @@ import type { ProviderDiagnostic, TextOperation } from "../../../../shared/provi
 import type { ProviderDiagnosticsRepository, DiagnosticWriter } from "../../../db/provider-diagnostics";
 import { AppError, checkAbort } from "../../../lib/errors";
 import { StreamProtocol, SseFramer, normalizedUsage } from "./stream-protocol";
+import { acquireTextSlot } from "./text-concurrency";
 
 export type TextRequestContext = {
   diagnostics: ProviderDiagnosticsRepository; operation: TextOperation; jobId?: string;
   runId?: string; chapterId?: string; targetCount?: number; attempt?: number;
   onProgress?: (record: ProviderDiagnostic) => void;
   onRequestComplete?: (requestId: string) => void;
+  onState?: (state: "queued" | "running") => void;
 };
 const pendingRequests = new Set<Promise<void>>();
 const requestControllers = new Set<AbortController>();
@@ -40,6 +42,34 @@ function aborted(signal: AbortSignal): Promise<never> {
 
 /** No transport retry after generation starts, or after deadline/network ambiguity. */
 export async function requestText(
+  profile: Profile, url: string, init: RequestInit,
+  extract: (raw: unknown) => string, signal?: AbortSignal, context?: TextRequestContext, promptBytes = 0,
+): Promise<string> {
+  const controller = new AbortController();
+  const cancel = (): void => controller.abort();
+  signal?.addEventListener("abort", cancel, { once: true });
+  if (signal?.aborted) controller.abort();
+  requestControllers.add(controller);
+  let settle: (() => void) | undefined;
+  const pending = new Promise<void>((resolve) => { settle = resolve; });
+  pendingRequests.add(pending);
+  let release: (() => void) | undefined;
+  try {
+    context?.onState?.("queued");
+    release = await acquireTextSlot(profile, controller.signal);
+    checkAbort(controller.signal);
+    context?.onState?.("running");
+    return await executeText(profile, url, init, extract, controller.signal, context, promptBytes);
+  } finally {
+    release?.();
+    signal?.removeEventListener("abort", cancel);
+    requestControllers.delete(controller);
+    pendingRequests.delete(pending);
+    settle?.();
+  }
+}
+
+async function executeText(
   profile: Profile, url: string, init: RequestInit,
   extract: (raw: unknown) => string, signal?: AbortSignal, context?: TextRequestContext, promptBytes = 0,
 ): Promise<string> {

@@ -23,9 +23,9 @@ test('reasoning-first Responses publish chapters, subtitle assessments and globa
     expect(job.nameReport?.state).toBe('current');
     expect(job.nameReport?.candidates).toHaveLength(1);
     expect(job.nameReport?.candidates[0]?.cueCount).toBe(2);
-    expect(fixture.counts).toEqual({chapters: 1, review: 1, names: 1, translate: 0, style: 0});
+    expect(fixture.counts).toEqual({chapters: 1, review: 2, names: 1, translate: 0, style: 0});
     const before = await responsesDiagnostics(page);
-    expect(before).toHaveLength(3);
+    expect(before).toHaveLength(4);
     await app.close();
     ({app, page} = await launchApp(userData, [], []));
     const restarted = await currentResponsesJob(page);
@@ -33,7 +33,7 @@ test('reasoning-first Responses publish chapters, subtitle assessments and globa
     expect(restarted.reviewReport).toEqual(job.reviewReport);
     expect(restarted.nameReport).toEqual(job.nameReport);
     await assertResponsesArtifacts(page, userData, await responsesDiagnostics(page));
-    expect(fixture.counts).toEqual({chapters: 1, review: 1, names: 1, translate: 0, style: 0});
+    expect(fixture.counts).toEqual({chapters: 1, review: 2, names: 1, translate: 0, style: 0});
     await page.screenshot({path: info.outputPath('responses-three-operations-published.png')});
   } finally {
     await app.close();

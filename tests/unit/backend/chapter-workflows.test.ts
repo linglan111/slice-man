@@ -1,12 +1,23 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+const ipcHandlers = vi.hoisted(() => new Map<string, (event: unknown, raw: unknown) => Promise<unknown>>());
+vi.mock("electron", () => ({
+  ipcMain: {
+    handle: (channel: string, handler: (event: unknown, raw: unknown) => Promise<unknown>) => ipcHandlers.set(channel, handler),
+    removeHandler: (channel: string) => ipcHandlers.delete(channel),
+  },
+  dialog: {},
+}));
+vi.mock("../../../src/main/env-setup", () => ({ isE2e: false }));
+import { registerIpc } from "../../../src/main/ipc";
 import { JobService } from "../../../src/main/services/jobs/lib/job-service";
 import {
   chapterSourceFingerprint,
   newCoveragePlan,
   refreshChapters,
+  rebindChapterPlan,
+  chapterContext,
 } from "../../../src/main/services/jobs/lib/chapters";
 import {
-  boundedChapterPieces,
   orderedChapterWorkers,
 } from "../../../src/main/services/jobs/lib/chapter-work";
 import { createReviewRequest } from "../../../src/main/services/jobs/lib/review-request";
@@ -92,6 +103,7 @@ function fixture(
     sessionOnly: true,
     hasKey: true,
     timeoutMs: 120000,
+    textConcurrency: 1,
     maxUploadBytes: 24000000,
     structuredOutput: false,
   };
@@ -107,8 +119,10 @@ function fixture(
       current = structuredClone(job);
       return job;
     },
-    getProfile: () => profile,
+    getProfile: (id: string) => ({ ...profile, id }),
     key: () => key,
+    saveProfile: vi.fn(),
+    removeProfile: vi.fn(),
   } as unknown as Store;
   const jobs = new JobService(
     store,
@@ -154,18 +168,92 @@ function goodReview(prompt: string): string {
 function goodTranslations(selected: Segment[]): { id: string; text: string }[] {
   return selected.map((cue) => ({ id: cue.id, text: `translated ${cue.id}` }));
 }
+const criterion = { id: "criterion", revision: 1, name: "criterion", instructions: "Select the provided discussion" };
+function chapterAnswer(prompt: string): string {
+  const raw = JSON.parse(prompt.split("\n")[1] ?? "{}") as { anchors: { index: number }[] };
+  return JSON.stringify({ chapters: [{ startAnchor: 0, endAnchor: raw.anchors.length - 1, title: "Topic", summary: "Grounded" }] });
+}
+function dependentOperation(f: Fixture, operation: "style" | "custom"): Promise<Job> {
+  return operation === "style"
+    ? f.jobs.designStyle("job", "readable")
+    : f.jobs.planChapters({ jobId: "job", revision: 0, kind: "custom", profileId: "p", criterionId: criterion.id }, criterion);
+}
+
+describe("chapter provider dependency publication guards", () => {
+  it.each(["style", "custom"] as const)("blocks public profile save/removal for the explicit normal-plan provider during %s", async (operation) => {
+    const f = fixture();
+    f.set((job) => { job.options.styleProfileId = "p"; });
+    const generate = vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => chapterAnswer(prompt));
+    await f.jobs.planChapters({ jobId: "job", revision: 0, kind: "normal", profileId: "plan-provider" });
+    expect(f.get().options.chapterProfileId).toBeUndefined();
+    expect(f.get().chapterPlan?.profileId).toBe("plan-provider");
+    const webContents = { mainFrame: {} };
+    const dispose = registerIpc({ jobs: f.jobs, store: f.store, download: { cancel: vi.fn() }, window: { webContents } } as unknown as Parameters<typeof registerIpc>[0]);
+    const invoke = async (channel: string, raw: unknown): Promise<unknown> => {
+      const handler = ipcHandlers.get(channel);
+      if (!handler) throw new Error(`missing ${channel}`);
+      return handler({ sender: webContents, senderFrame: webContents.mainFrame }, raw);
+    };
+    generate.mockImplementation(async (_p, _k, prompt) => {
+      expect(await invoke("profiles:save", { id: "plan-provider", name: "changed", protocol: "openai", baseUrl: "https://fixture.invalid", model: "changed", sessionOnly: true })).toMatchObject({ success: false, code: "JOB_BUSY" });
+      expect(await invoke("profiles:remove", "plan-provider")).toMatchObject({ success: false, code: "JOB_BUSY" });
+      return operation === "style" ? JSON.stringify(DEFAULT_STYLE) : chapterAnswer(prompt);
+    });
+    try {
+      await dependentOperation(f, operation);
+      expect(f.store.saveProfile).not.toHaveBeenCalled();
+      expect(f.store.removeProfile).not.toHaveBeenCalled();
+      expect(f.get().chapterPlan?.state).toBe("current");
+    } finally { dispose(); }
+    expect(() => f.jobs.assertProfileWritable("plan-provider")).not.toThrow();
+  });
+  for (const operation of ["style", "custom"] as const) {
+    it.each(["stale", "replaced"] as const)(`retains previous output when the normal plan becomes %s during ${operation}`, async (change) => {
+      const f = fixture(); normal(f);
+      f.set((job) => {
+        job.options.styleProfileId = "p";
+        if (!job.chapterPlan) throw new Error("missing plan");
+        job.customChapterPlan = { ...job.chapterPlan, id: "previous-custom", kind: "custom", criterion };
+      });
+      const before = f.get();
+      vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+        f.set((job) => {
+          if (!job.chapterPlan) throw new Error("missing plan");
+          if (change === "stale") job.chapterPlan.state = "stale";
+          else job.chapterPlan.id = "replacement-plan";
+        });
+        return operation === "style" ? JSON.stringify({ ...DEFAULT_STYLE, textColor: "#123456" }) : chapterAnswer(prompt);
+      });
+      await expect(dependentOperation(f, operation)).rejects.toMatchObject({ code: "STALE_REVISION" });
+      expect(f.get().style).toEqual(before.style);
+      expect(f.get().customChapterPlan).toEqual(before.customChapterPlan);
+      expect(f.get().revision).toBe(before.revision);
+      expect(() => f.jobs.assertIdle()).not.toThrow();
+    });
+  }
+  it("does not acquire a chapter-only provider dependency for whole-timeline names", async () => {
+    const f = fixture(); normal(f);
+    f.set((job) => { if (job.chapterPlan) job.chapterPlan.profileId = "plan-provider"; });
+    vi.spyOn(providers, "generateText").mockImplementation(async () => {
+      expect(() => f.jobs.assertProfileWritable("plan-provider")).not.toThrow();
+      return '{"candidates":[]}';
+    });
+    await f.jobs.analyzeNames({ jobId: "job", revision: 0 });
+  });
+});
 
 describe("chapter orchestration boundaries", () => {
-  it("retains one aggregate selected-set check at exactly 30 minutes", async () => {
+  it("uses canonical chapters even at the former 30 minute bypass", async () => {
     const f = fixture(1_800_000, [cue("a", 0), cue("b", 1_700_000)]);
+    normal(f);
     const generate = vi
       .spyOn(providers, "generateText")
       .mockImplementation(async (_p, _k, prompt) => goodReview(prompt));
     const result = await f.jobs.reviewSubtitles({ jobId: "job", revision: 0 });
-    expect(generate).toHaveBeenCalledTimes(1);
-    expect(result.reviewRun).toBeUndefined();
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(result.reviewRun?.state).toBe("complete");
     expect(result.reviewReport?.assessments).toHaveLength(2);
-    expect(result.chapterPlan).toBeUndefined();
+    expect(result.chapterPlan?.kind).toBe("normal");
   });
   it("retains full checked chapters on failure and retries only remaining compatible targets", async () => {
     const f = fixture();
@@ -250,18 +338,13 @@ describe("chapter orchestration boundaries", () => {
       cue("last", 3_000_000),
     ]);
     normal(f);
-    let calls = 0;
-    vi.spyOn(providers, "generateText").mockImplementation(
-      async (_p, _k, prompt) => {
-        if (++calls === 2) throw new AppError("NETWORK_ERROR", "fixture");
-        return goodReview(prompt);
-      },
-    );
+    const generate = vi.spyOn(providers, "generateText").mockRejectedValue(new AppError("NETWORK_ERROR", "fixture"));
     await expect(
       f.jobs.reviewSubtitles({ jobId: "job", revision: 0 }),
     ).rejects.toMatchObject({ code: "NETWORK_ERROR" });
     expect(f.get().reviewReport).toBeUndefined();
     expect(f.get().reviewRun?.chapters[0]?.state).toBe("failed");
+    expect(generate).toHaveBeenCalledTimes(1);
   });
   it("keeps earlier results but marks interrupted stale source runs inapplicable", async () => {
     const f = fixture();
@@ -390,7 +473,7 @@ describe("default chapter translation", () => {
     ).toHaveLength(2);
     fail = false;
     const result = await f.jobs.translate("job");
-    expect(generate).toHaveBeenCalledTimes(1);
+    expect(generate).toHaveBeenCalledTimes(3);
     expect(seen).toEqual([
       ["cue-0", "cue-1"],
       ["cue-2", "cue-3"],
@@ -424,7 +507,7 @@ describe("default chapter translation", () => {
   });
   it('retains a fast completed later chapter when an earlier concurrent chapter fails', async () => {
     const f=fixture(2_400_000,Array.from({length:4},(_,index)=>cue(`cue-${index}`,index*600_000))); normal(f);
-    f.set((job)=>{job.options.chapterConcurrency=2;});
+    f.profile({textConcurrency:2});
     vi.spyOn(providers,'translateBatch').mockImplementation(async (_p,_k,targets)=>{
       if(targets.some((cue)=>cue.id==='cue-0')) {await new Promise<void>((resolve)=>setTimeout(resolve,15)); throw new AppError('NETWORK_ERROR','earlier failed');}
       return goodTranslations(targets);
@@ -435,7 +518,7 @@ describe("default chapter translation", () => {
   });
   it('retains a later chapter saved before cancellation without publishing work completed after cancel', async () => {
     const f=fixture(2_400_000,Array.from({length:4},(_,index)=>cue(`cue-${index}`,index*600_000))); normal(f);
-    f.set((job)=>{job.options.chapterConcurrency=2;});
+    f.profile({textConcurrency:2});
     vi.spyOn(providers,'translateBatch').mockImplementation(async (_p,_k,targets,_c,_s,_t,signal)=>{
       if(targets.some((cue)=>cue.id==='cue-0')) {await new Promise<void>((resolve)=>setTimeout(resolve,20)); if(signal?.aborted) throw new AppError('CANCELLED','fixture');}
       else setTimeout(()=>f.jobs.cancel('job'),5);
@@ -445,38 +528,24 @@ describe("default chapter translation", () => {
     expect(f.get().segments.map((cue)=>cue.translatedText)).toEqual(['','','translated cue-2','translated cue-3']);
     expect(()=>f.jobs.assertIdle()).not.toThrow();
   });
-  it("keeps scoped dense retranslation atomic across bounded pieces", async () => {
+  it("sends scoped dense retranslation in one whole chapter request", async () => {
     const f = fixture(
       100000,
       Array.from({ length: 151 }, (_, index) =>
         cue(`s${index}`, index * 500, index * 500 + 500),
       ),
     );
-    let calls = 0;
-    vi.spyOn(providers, "translateBatch").mockImplementation(
-      async (_p, _k, targets) => {
-        if (++calls === 2) throw new AppError("NETWORK_ERROR", "fixture");
-        return goodTranslations(targets);
-      },
-    );
-    await expect(
-      f.jobs.translatePartial({
-        jobId: "job",
-        revision: 0,
-        target: { mode: "range", startMs: 0, endMs: 100000 },
-      }),
-    ).rejects.toMatchObject({ code: "NETWORK_ERROR" });
-    expect(f.get().revision).toBe(0);
-    expect(f.get().segments.every((cue) => cue.translatedText === "")).toBe(
-      true,
-    );
+    const translate = vi.spyOn(providers, "translateBatch").mockImplementation(async (_p, _k, targets) => goodTranslations(targets));
+    await f.jobs.translatePartial({ jobId: "job", revision: 0, target: { mode: "range", startMs: 0, endMs: 100000 } });
+    expect(translate).toHaveBeenCalledTimes(1);
+    expect(translate.mock.calls[0]?.[2]).toHaveLength(151);
+    expect(f.get().revision).toBe(1);
+    expect(f.get().segments.every((cue) => !cue.translationStale)).toBe(true);
   });
   it("settles all concurrent work before releasing its owner on cancellation", async () => {
     const f = fixture();
     normal(f);
-    f.set((job) => {
-      job.options.chapterConcurrency = 2;
-    });
+    f.profile({ textConcurrency: 2 });
     let active = 0;
     let max = 0;
     let calls = 0;
@@ -544,15 +613,103 @@ describe("default chapter translation", () => {
 });
 
 describe("chapter capacity and coordinator", () => {
-  it("enforces bounded pieces with every target owned once", () => {
-    const source = Array.from({ length: 302 }, (_, index) =>
-      cue(`s${index}`, index * 5),
-    );
-    const parts = boundedChapterPieces(source);
-    expect(parts.map((part) => part.length)).toEqual([150, 150, 2]);
-    expect(parts.flat().map((cue) => cue.id)).toEqual(
-      source.map((cue) => cue.id),
-    );
+  it("bootstraps custom analysis from normal coverage once and preserves that normal plan for later AI", async () => {
+    const f = fixture(); normal(f);
+    const original = f.get().chapterPlan;
+    const generate = vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+      const raw = JSON.parse(prompt.split("\n")[1] ?? "{}") as { kind: string; anchors: { index: number }[]; cues: Segment[]; targetIds: string[] };
+      expect(raw.kind).toBe("custom");
+      expect(raw.cues).toHaveLength(2);
+      expect(raw.targetIds).toHaveLength(2);
+      return JSON.stringify({ chapters: [{ startAnchor: 0, endAnchor: raw.anchors.length - 1, title: "Match", summary: "Grounded" }] });
+    });
+    const result = await f.jobs.planChapters({ jobId: "job", revision: 0, kind: "custom", profileId: "p", criterionId: "criterion" }, { id: "criterion", revision: 1, name: "criterion", instructions: "Select the provided discussion" });
+    expect(generate).toHaveBeenCalledTimes(3);
+    expect(result.chapterPlan).toEqual(original);
+    expect(result.customChapterPlan?.chapters).toHaveLength(3);
+    expect(result.customChapterPlan?.kind).toBe("custom");
+  });
+  it("sends all chapter timing and text when translating one selected cue", async () => {
+    const f = fixture(600_000, Array.from({ length: 302 }, (_, index) => cue(`s${index}`, index * 1000)));
+    normal(f);
+    const translate = vi.spyOn(providers, "translateBatch").mockImplementation(async (_p, _k, targets, context) => {
+      expect(context).toHaveLength(302);
+      expect(context.at(-1)).toMatchObject({ id: "s301", startMs: 301000, endMs: 306000, sourceText: "source s301", translatedText: "" });
+      return goodTranslations(targets);
+    });
+    await f.jobs.translate("job", ["s0"]);
+    expect(translate).toHaveBeenCalledTimes(1);
+    expect(translate.mock.calls[0]?.[2].map((cue) => cue.id)).toEqual(["s0"]);
+    expect(f.get().segments.filter((cue) => !cue.translationStale)).toHaveLength(1);
+  });
+  it("rebinds approved boundaries and full context for ASR drafts without mutating the original plan", () => {
+    const f = fixture(); normal(f);
+    const original = f.get();
+    const plan = original.chapterPlan;
+    if (!plan) throw new Error("missing plan");
+    const draft = { ...original, segments: [cue("new", 1_190_000, 1_210_000), cue("other", 1_220_000)] };
+    const rebound = rebindChapterPlan(plan, draft);
+    expect(rebound.chapters).toEqual(plan.chapters);
+    expect(rebound.id).toBe(plan.id);
+    expect(rebound.sourceFingerprint).toBe(chapterSourceFingerprint(draft));
+    expect(plan.sourceFingerprint).toBe(chapterSourceFingerprint(original));
+    const second = rebound.chapters[1];
+    if (!second) throw new Error("missing chapter");
+    expect(chapterContext(draft.segments, second).map((cue) => cue.id)).toEqual(["new", "other"]);
+    expect(f.get().chapterPlan).toEqual(plan);
+  });
+  it("checks a dense chapter once with all chapter context for sparse targets", async () => {
+    const segments = Array.from({ length: 302 }, (_, index) => cue(`s${index}`, index * 1000, index * 1000 + 900));
+    const f = fixture(600_000, segments); normal(f);
+    const generate = vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => goodReview(prompt));
+    await f.jobs.reviewSubtitles({ jobId: "job", revision: 0, segmentIds: ["s0", "s301"] });
+    expect(generate).toHaveBeenCalledTimes(1);
+    const request = payload(generate.mock.calls[0]?.[2] ?? "");
+    expect(request.cues).toHaveLength(302);
+    expect(request.groups.flatMap((group) => group.targets)).toEqual([0, 301]);
+    expect(f.get().reviewReport?.assessments).toHaveLength(2);
+  });
+  it("rejects oversized full chapter context before sending or silently subdividing", async () => {
+    const f = fixture(600_000, Array.from({ length: 30 }, (_, index) => ({ ...cue(`s${index}`, index * 1000), sourceText: "長".repeat(10000) })));
+    normal(f);
+    const generate = vi.spyOn(providers, "generateText");
+    await expect(f.jobs.reviewSubtitles({ jobId: "job", revision: 0, segmentIds: ["s0"] })).rejects.toMatchObject({ code: "TEXT_LIMIT" });
+    expect(generate).not.toHaveBeenCalled();
+    expect(f.get().reviewReport).toBeUndefined();
+  });
+  it("merges all assessments losslessly when chapters finish out of order", async () => {
+    const f = fixture(); normal(f); f.profile({ textConcurrency: 3 });
+    let active = 0; let peak = 0;
+    const finished: number[] = [];
+    vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+      active++; peak = Math.max(peak, active);
+      const first = payload(prompt).groups[0]?.targets[0] ?? 0;
+      await new Promise<void>((resolve) => setTimeout(resolve, first === 0 ? 25 : 1));
+      active--; finished.push(first);
+      return goodReview(prompt);
+    });
+    const result = await f.jobs.reviewSubtitles({ jobId: "job", revision: 0 });
+    expect(peak).toBe(3);
+    expect(finished[0]).not.toBe(0);
+    expect(new Set(result.reviewReport?.assessments?.map((a) => a.segmentId))).toEqual(new Set(result.segments.map((cue) => cue.id)));
+    expect(result.reviewRun?.state).toBe("complete");
+  });
+  it("designs each chapter once, chooses earliest global style, and merges only owning emphasis", async () => {
+    const f = fixture(); normal(f); f.profile({ textConcurrency: 3 });
+    f.set((job) => { job.options.styleProfileId = "p"; });
+    const generate = vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+      const raw = JSON.parse(prompt.split("\n")[1] ?? "{}") as { targetIds: string[]; subtitles: Segment[] };
+      expect(raw.subtitles).toHaveLength(2);
+      const first = raw.targetIds[0];
+      const last = raw.targetIds[1];
+      if (!first || !last) throw new Error("missing targets");
+      await new Promise<void>((resolve) => setTimeout(resolve, first === "cue-0" ? 20 : 1));
+      return JSON.stringify({ ...DEFAULT_STYLE, textColor: first === "cue-0" ? "#123456" : "#654321", emphasisBySegment: [{ segmentId: last, keywords: ["source"] }] });
+    });
+    const result = await f.jobs.designStyle("job", "readable");
+    expect(generate).toHaveBeenCalledTimes(3);
+    expect(result.style.textColor).toBe("#123456");
+    expect(result.style.emphasisBySegment.map((item) => item.segmentId)).toEqual(["cue-1", "cue-3", "cue-5"]);
   });
   it("commits in chronology even when a later worker finishes earlier", async () => {
     const seen: number[] = [];

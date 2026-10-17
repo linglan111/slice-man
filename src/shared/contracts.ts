@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { AiWorkProgress } from "./ai-work-contracts";
+export * from "./ai-work-contracts";
 import type { ProviderDiagnostic, DiagnosticsListInput, DiagnosticsLiveInput, ProviderLiveSnapshot } from './provider-diagnostics-contracts';
 import type { CriterionLibrary, SaveCriterionInput, CriterionIdentity, ChapterExportInput, ChapterExportRun } from './chapter-export-contracts';
 import type { ArtifactCacheSummary } from "./artifact-cache-contracts";
@@ -85,6 +87,7 @@ export const profileInputSchema = z
     timeoutMs: z.number().int().min(1000).max(300000).default(120000),
     streaming: z.enum(["auto", "disabled"]).optional(),
     textTimeoutMs: z.number().int().min(60000).max(3600000).optional(),
+    textConcurrency: z.number().int().min(1).max(16).default(2),
     maxUploadBytes: z
       .number()
       .int()
@@ -97,8 +100,8 @@ export const profileInputSchema = z
 export type ProfileInput = z.input<typeof profileInputSchema>;
 export type Profile = Omit<
   z.output<typeof profileInputSchema>,
-  "apiKey" | "id"
-> & { id: string; hasKey: boolean };
+  "apiKey" | "id" | "textConcurrency"
+> & { id: string; hasKey: boolean; textConcurrency?: number };
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 export const styleSchema = z
   .object({
@@ -324,6 +327,7 @@ export type ProgressEvent = {
   message: string;
   job?: Job;
   repairRunId?: string;
+  work?: AiWorkProgress;
 };
 export type Result<T> =
   | { success: true; data: T }

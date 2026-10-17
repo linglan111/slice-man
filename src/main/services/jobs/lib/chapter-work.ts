@@ -1,29 +1,5 @@
-import type { Segment } from "../../../../shared/contracts";
+import type { AiWorkProgress, AiWorkRequest, Chapter, Segment } from "../../../../shared/contracts";
 import { AppError, checkAbort } from "../../../lib/errors";
-
-/** Input and expected output are bounded independently of the 20 minute chapter cap. */
-export function boundedChapterPieces(targets: Segment[]): Segment[][] {
-  const pieces: Segment[][] = [];
-  let current: Segment[] = [];
-  let bytes = 0;
-  for (const cue of targets) {
-    const size = Buffer.byteLength(JSON.stringify(cue), "utf8");
-    if (size > 160 * 1024)
-      throw new AppError(
-        "TEXT_LIMIT",
-        "单条字幕超过章节处理容量，请缩短该条字幕",
-      );
-    if (current.length && (current.length >= 150 || bytes + size > 96 * 1024)) {
-      pieces.push(current);
-      current = [];
-      bytes = 0;
-    }
-    current.push(cue);
-    bytes += size;
-  }
-  if (current.length) pieces.push(current);
-  return pieces;
-}
 
 /** Atomic owners collect in timeline order; incremental owners retain each complete chapter immediately. */
 export async function orderedChapterWorkers<T, R>(
@@ -77,7 +53,7 @@ export async function orderedChapterWorkers<T, R>(
     await Promise.all(
       Array.from(
         {
-          length: Math.min(items.length, Math.max(1, Math.min(3, concurrency))),
+          length: Math.min(items.length, Math.max(1, Math.min(16, concurrency))),
         },
         () => worker(),
       ),
@@ -86,5 +62,47 @@ export async function orderedChapterWorkers<T, R>(
     checkAbort(signal);
   } finally {
     signal.removeEventListener("abort", abort);
+  }
+}
+
+/** A phase snapshot contains every chapter, including tasks waiting for API slots. */
+export class ChapterProgress {
+  private readonly startedAt = Date.now();
+  private readonly requests: AiWorkRequest[];
+  constructor(
+    private readonly runId: string,
+    private readonly operation: string,
+    private readonly phase: string,
+    groups: { chapter: Chapter; targets: Segment[] }[],
+    private readonly emit: (work: AiWorkProgress) => void,
+    private readonly round?: number,
+    private readonly maxRounds?: number,
+  ) {
+    this.requests = groups.map(({ chapter, targets }) => ({
+      id: `${runId}:${phase}:${chapter.id}`, chapterId: chapter.id, label: chapter.title,
+      state: "queued", targetCount: targets.length,
+    }));
+    this.publish();
+  }
+  state(index: number, state: AiWorkRequest["state"], code?: string): void {
+    const row = this.requests[index];
+    if (!row) return;
+    row.state = state;
+    if (state === "running") row.startedAt ??= Date.now();
+    if (["completed", "failed", "cancelled"].includes(state)) row.endedAt = Date.now();
+    row.code = code;
+    this.publish();
+  }
+  finish(error?: unknown): void {
+    for (const [index, row] of this.requests.entries())
+      if (["queued", "running"].includes(row.state))
+        this.state(index, error instanceof AppError && error.code === "CANCELLED" ? "cancelled" : "failed", error instanceof AppError ? error.code : "OPERATION_FAILED");
+  }
+  private publish(): void {
+    const complete = this.requests.filter((row) => row.state === "completed");
+    this.emit({ runId: this.runId, operation: this.operation, phase: this.phase, round: this.round, maxRounds: this.maxRounds,
+      startedAt: this.startedAt, targetsCompleted: complete.reduce((n, row) => n + row.targetCount, 0),
+      targetsTotal: this.requests.reduce((n, row) => n + row.targetCount, 0),
+      chaptersCompleted: complete.length, chaptersTotal: this.requests.length, requests: structuredClone(this.requests) });
   }
 }

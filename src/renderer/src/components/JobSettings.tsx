@@ -28,8 +28,7 @@ export function JobSettings({ job, profiles, runtime, isBusy, onChange, onInstal
     {profileSelect('AI 检查服务（可选）', 'reviewProfileId')}
     {profileSelect('AI 样式服务（可选）', 'styleProfileId')}
     {profileSelect('章节分析服务（可选）', 'chapterProfileId')}
-    <label>章节并发数<select aria-label="章节并发数" disabled={isBusy} value={options.chapterConcurrency ?? 2} onChange={(event) => update({chapterConcurrency: Number(event.target.value)})}><option value={1}>1 · 顺序处理</option><option value={2}>2 · 默认</option><option value={3}>3 · 并行处理</option></select></label>
-    <p className="hint">默认按不超过 20 分钟的章节翻译；超过 30 分钟的视频按章节检查。未指定章节服务时，使用本次翻译或检查所选服务；人名检查结合全片字幕。</p>
+    <p className="hint">AI 文字操作复用全文章节切分，每次请求提供整章字幕；语音识别和全片人名检查除外。并发上限在 API 服务中设置。未指定章节服务时，使用本次操作所选服务。</p>
     <button className="text-button" onClick={onProfiles}>管理 API 服务 →</button>
   </section>;
 }

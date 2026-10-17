@@ -100,21 +100,28 @@ export function repairCandidates(
         REVIEW_RISK_RANK[rule.riskLevel] >= REVIEW_RISK_RANK[input.threshold]
       );
     });
-    if (
-      qualifying.some((f) => f.category === "source" || f.category === "timing")
-    )
+    // Every qualifying cue needs fresh acoustic evidence, even a translation issue.
+    if (qualifying.length)
       recognizeIds.push(cue.id);
-    else if (
-      job.options.translationEnabled &&
-      qualifying.some((f) => f.category === "translation")
-    )
-      translateIds.push(cue.id);
   }
   return {
     recognizeIds,
     translateIds,
     count: recognizeIds.length + translateIds.length,
   };
+}
+
+/** Explicit repair invalidation also applies when adjudication keeps identical text. */
+export function invalidateRepairAssessments(job: Job, ids: string[]): void {
+  refreshReview(job);
+  const report = job.reviewReport;
+  if (!report) return;
+  const selected = new Set(ids);
+  report.assessments = report.assessments?.map((assessment) => selected.has(assessment.segmentId)
+    ? { ...assessment, status: "recheck" } : assessment);
+  report.findings = report.findings.map((finding) => selected.has(finding.segmentId)
+    ? { ...finding, status: "recheck" } : finding);
+  report.state = "stale";
 }
 
 export function planRepairRound(

@@ -1,0 +1,31 @@
+{
+  "id": "chapter-ai-repair",
+  "name": "chapter-ai-repair",
+  "title": "Chapter-batched AI workflows and repair regression",
+  "description": "Fix duplicate streaming and whole-timeline name evidence; unify chapter-batched AI excluding recognition/names, repair final grade consistency, service concurrency and complete E2E regression.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "jing",
+  "assignee": "jing",
+  "createdAt": "2026-10-16",
+  "completedAt": null,
+  "branch": "codex/ai-chapters-resumable-tools",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-16-chapter-ai-core",
+    "10-16-chapter-ai-names",
+    "10-16-chapter-ai-repair-loop",
+    "10-16-chapter-ai-progress"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

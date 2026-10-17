@@ -44,7 +44,8 @@
   .preview-heading .stage-pill { padding-inline: 5px; }
   .preview-heading .stage-strip { gap: 3px; }
 }
-.workspace-operation-card { flex: 0 0 auto; min-height: 0; max-height: var(--operation-max-height, 360px); overflow: auto; scrollbar-gutter: stable; border: 1px solid #37594c; border-radius: 10px; background: #172c26; padding: 10px 12px; }
+.workspace-operation-card { flex: 0 0 var(--operation-height, auto); min-height: 0; max-height: var(--operation-max-height, 360px); overflow: auto; scrollbar-gutter: stable; border: 1px solid #37594c; border-radius: 10px; background: #172c26; padding: 10px 12px; }
+.workspace-operation-content { display: flow-root; }
 .work-grid__content:has(> .workspace-operation-card) .preview-media, .work-grid__content:has(> .workspace-operation-card) .video-stage { min-height: 110px; }
 .workspace-operation-card .operation-panel, .workspace-operation-card .preview-editor, .workspace-operation-card .reprocessing-panel { flex: 0 0 auto; min-height: 0; overflow: visible; margin: 0; border: 0; border-radius: 0; }
 .operation-panel { padding: 10px 12px; }

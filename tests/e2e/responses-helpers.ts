@@ -31,12 +31,13 @@ function operationOf(payload: JsonObject): Operation {
   if (prompt.startsWith('Divide the video into content chapters')) return 'chapters';
   if (prompt.startsWith('Analyze recurring PERSON names')) return 'names';
   if (prompt.startsWith('Review subtitle')) return 'review';
+  if (prompt.startsWith('Audit subtitle repairs')) return 'review';
   if (prompt.startsWith('Translate subtitle text')) return 'translate';
   if (prompt.startsWith('Design subtitle style')) return 'style';
   throw new Error('Only recognized synthetic text operations are allowed');
 }
-async function listen(server: Server): Promise<string> {
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+async function listen(server: Server, port = 0): Promise<string> {
+  await new Promise<void>((resolve, reject) => {server.once('error', reject); server.listen(port, '127.0.0.1', () => {server.off('error', reject); resolve();});});
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Responses fixture failed to bind');
   return `http://127.0.0.1:${address.port}/v1`;
@@ -196,6 +197,8 @@ export type LiveCall = {
   state?: string; errorCode?: string; streamActual?: boolean; textBytes?: number;
   diagnosticId?: string;
   closedAfterTerminal?: boolean;
+  phase?: 'adjudication';
+  activeAtStart?: number;
 };
 type Ledger = {version: 1; limit: number; calls: LiveCall[]};
 
@@ -235,10 +238,11 @@ function observer(call: LiveCall): (bytes: Uint8Array, final?: boolean) => void 
   };
 }
 
-export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: string; ledgerPath: string; requestLimit?: number; maxOutputTokens?: number | null}): Promise<{url: string; finish(records: ProviderDiagnostic[]): void; close(): Promise<void>}> {
+export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: string; ledgerPath: string; requestLimit?: number; maxOutputTokens?: number | null; listenPort?: number}): Promise<{url: string; finish(records: ProviderDiagnostic[]): void; close(): Promise<void>}> {
   const limit = input.requestLimit ?? 3;
-  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 16) throw new Error('Invalid explicit live request allowance');
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 30) throw new Error('Invalid explicit live request allowance');
   if (!isAbsolute(input.ledgerPath)) throw new Error('Live ledger must be an explicit absolute path');
+  if (input.listenPort !== undefined && (!Number.isSafeInteger(input.listenPort) || input.listenPort < 1 || input.listenPort > 65535)) throw new Error('Invalid pinned live proxy port');
   await mkdir(dirname(input.ledgerPath), {recursive: true});
   // An interrupted process deliberately leaves this lock behind. A human must
   // inspect it; never auto-reset the cumulative authorization count on restart.
@@ -260,6 +264,7 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
     renameSync(temporary, input.ledgerPath);
   };
   try {persist();} catch (error) {releaseLock(); throw error;}
+  let active = 0;
   const server = createServer((request, response) => {
     void (async () => {
       if (request.method !== 'POST' || request.url !== '/v1/responses') throw new Error('Only Responses text endpoint authorized');
@@ -272,6 +277,8 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
       }
       if (typeof payload.model !== 'string' || payload.model.length > 200) throw new Error('Synthetic model identifier absent');
       const call: LiveCall = {number: ledger.calls.length + 1, operation, startedAt: new Date().toISOString(), protocol: 'openai', mode: 'responses', model: payload.model, eventTypes: {}, outputIndexes: {}, contentIndexes: {}, itemTypes: {}, partTypes: {}, partMetadataKinds: {}};
+      if (typeof payload.input === 'string' && payload.input.startsWith('Audit subtitle repairs')) call.phase = 'adjudication';
+      call.activeAtStart = ++active;
       ledger.calls.push(call); persist(); // Durable reservation BEFORE the first network byte.
       const controller = new AbortController();
       const deadline = setTimeout(() => controller.abort(), 310000);
@@ -296,11 +303,11 @@ export async function startLiveResponsesProxy(input: {baseUrl: string; apiKey: s
         if (call.eventTypes['response.completed']) call.closedAfterTerminal = true;
         else call.errorCode ??= 'HARNESS_UPSTREAM_INTERRUPTED';
         persist(); failure(response);
-      } finally {clearTimeout(deadline);}
+      } finally {clearTimeout(deadline); active--;}
     })().catch(() => failure(response));
   });
   let url: string;
-  try {url = await listen(server);} catch (error) {releaseLock(); throw error;}
+  try {url = await listen(server, input.listenPort);} catch (error) {releaseLock(); throw error;}
   return {
     url,
     finish: records => {

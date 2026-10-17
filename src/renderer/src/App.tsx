@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { AppApi, Job, Profile, RuntimeStatus, Segment, StageName, ReprocessTarget, RepairLoopInput } from '../../shared/contracts';
+import type { AppApi, Job, Profile, RuntimeStatus, Segment, StageName, ReprocessTarget, RepairLoopInput, AiWorkProgress } from '../../shared/contracts';
 import { requireResult } from './lib/api-result';
 import { formatTime, STAGE_LABELS, STATE_LABELS } from './lib/presentation';
 import { PaneDivider } from './components/PaneDivider';
@@ -26,7 +26,7 @@ import type { ChapterExportRun } from '../../shared/chapter-export-contracts';
 import type { ProviderDiagnostic } from '../../shared/provider-diagnostics-contracts';
 import { ChapterPanel } from './components/ChapterPanel';
 import { DiagnosticsDialog } from './components/DiagnosticsDialog';
-import { LIVE_PHASE_LABELS, ProviderLiveDialog } from './components/ProviderLiveDialog';
+import { ProviderLiveDialog } from './components/ProviderLiveDialog';
 import { ReviewScopeDialog } from './components/ReviewScopeDialog';
 import { useProviderLive } from './hooks/useProviderLive';
 import { ChapterExportResults } from './components/ChapterExportResults';
@@ -34,7 +34,7 @@ import { ChapterReviewStatus } from './components/ChapterReviewStatus';
 import { Icon } from './components/Icon';
 import { FeatureGuide } from './components/FeatureGuide';
 import { hasSeenFeatureGuide, markFeatureGuideSeen } from './lib/onboarding-preferences';
-import { repairRunSummary } from './components/RepairLoopControls';
+import { ProcessingProgress } from './components/ProcessingProgress';
 import appIcon from './assets/app-icon.svg';
 
 type Dialog = 'profiles' | 'profile-edit' | 'runtime' | 'export' | 'export-subtitle' | 'export-settings' | 'downloader' | 'online-import' | 'local-import' | 'guide' | 'generation-settings' | 'style-settings' | 'review-service' | 'review-scope' | 'diagnostics' | 'live-stream' | null;
@@ -48,6 +48,9 @@ function sidebarPreference(): boolean { try { return localStorage.getItem('slice
 export function App(): ReactNode {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(sidebarPreference);
   const [activeOperation, setActiveOperation] = useState<'generate' | 'style' | 'export' | 'names' | 'chapters' | null>(null);
+  const [workProgress, setWorkProgress] = useState<AiWorkProgress>();
+  const operationStartedAt = useRef(0);
+  const workRef = useRef<AiWorkProgress | undefined>(undefined);
   const [chapterProgress, setChapterProgress] = useState<{progress: number; message: string} | null>(null);
   const [servicePurpose, setServicePurpose] = useState<'review' | 'names'>('review');
   const [reviewSelection, setReviewSelection] = useState<string[] | undefined>();
@@ -84,10 +87,11 @@ export function App(): ReactNode {
   useEffect(() => { selectedJobRef.current = selectedJobId; }, [selectedJobId]);
   const job = jobs.find((item) => item.id === selectedJobId);
   const hasResults = Boolean(error || notice || busy || chapterProgress || job?.chapterPlan || job?.customChapterPlan || job?.reviewRun || job?.repairRun?.state === 'running' || job?.outputs.length || (job && Object.entries(job.stages).some(([name, stage]) => name !== 'preview' && (name !== 'translate' || job.options.translationEnabled) && stage.message && stage.state !== 'idle')));
-  const layout = useWorkspaceLayout(isSidebarCollapsed, job?.id ?? '', Boolean(activeOperation || partialOperation || editingSegment?.location === 'preview'), hasResults);
+  const operationKey = activeOperation ?? (partialOperation ? `partial-${partialOperation}` : editingSegment?.location === 'preview' ? `editor-${editingSegment.segment.id}` : null);
+  const layout = useWorkspaceLayout(isSidebarCollapsed, job?.id ?? '', operationKey, hasResults);
   const isRunning = Boolean(busy) || Boolean(job && (job.repairRun?.state === 'running' || Object.values(job.stages).some((stage) => stage.state === 'running')));
   const live = useProviderLive(job?.id, isRunning || dialog === 'live-stream');
-  const activeLive = live.items.find((item) => item.phase === 'waiting' || item.phase === 'thinking' || item.phase === 'answer');
+  const currentLive = live.items.filter((item) => !isRunning || item.startedAt >= operationStartedAt.current);
   const canRecognize = Boolean(job && (job.options.recognition === 'cloud' ? job.options.recognitionProfileId : runtime?.cpuReady && runtime.installedModels.includes(job.options.modelId)));
   const canGenerate = Boolean(job && (job.options.translationEnabled ? job.options.translationProfileId && (job.segments.length > 0 ? job.stages.recognize.state === 'succeeded' : job.stages.recognize.state !== 'succeeded' && canRecognize) : !job.segments.length && job.stages.recognize.state !== 'succeeded' && canRecognize));
   const visibleStages = WORKFLOW_STAGES.filter((name) => name !== 'translate' || job?.options.translationEnabled);
@@ -107,6 +111,9 @@ export function App(): ReactNode {
     let isMounted = true;
     const unsubscribe = window.api.onProgress((event) => {
       if (!isMounted) return;
+      if (event.work && event.jobId === selectedJobRef.current && event.work.startedAt >= operationStartedAt.current && (!workRef.current || event.work.startedAt >= workRef.current.startedAt) && (event.stage !== 'repair' || (event.repairRunId === event.work.runId && (!event.job || event.job.repairRun?.id === event.repairRunId)))) {
+        workRef.current = event.work; setWorkProgress(event.work);
+      }
       if (event.stage === 'names' && event.jobId === selectedJobRef.current) setNamesProgress({ progress: event.progress, message: event.message, jobId: event.jobId });
       if (event.stage === 'review' && event.jobId === selectedJobRef.current) setReviewProgress({ progress: event.progress, message: event.message });
       if (event.stage === 'install') setInstallProgress({ progress: event.progress, message: event.message });
@@ -126,6 +133,7 @@ export function App(): ReactNode {
 
   useEffect(() => {
     let isCurrent = true;
+    workRef.current = undefined; setWorkProgress(undefined); operationStartedAt.current = 0;
     setPlaybackUrl(''); setPlaybackError(''); setCurrentTimeMs(0); setSelectedIds([]); setActiveIds([]); setPartialOperation(null); setActiveOperation(null); setPartialRange(undefined); setReviewProgress(null); setNamesProgress(null); setChapterProgress(null); setFailedOperation(undefined); setError('');
     if (selectedJobId) {
       void requireResult(window.api.jobs.playback(selectedJobId)).then((result) => { if (isCurrent) setPlaybackUrl(result.url); }).catch((cause: unknown) => { if (isCurrent) setPlaybackError(cause instanceof Error ? cause.message : '无法创建视频预览。'); });
@@ -149,6 +157,8 @@ export function App(): ReactNode {
   }
 
   async function perform(label: string, action: () => Promise<void>, shouldRethrow = false, retryContext?: { job: Job; operation: RetryOperation; setupOnly?: boolean }): Promise<void> {
+    operationStartedAt.current = Date.now(); workRef.current = undefined; setWorkProgress(undefined);
+    setReviewProgress(null); setNamesProgress(null); setChapterProgress(null);
     setBusy(label); setError(''); setNotice(''); setFailedOperation(undefined);
     try { await action(); }
     catch (cause) {
@@ -299,7 +309,8 @@ export function App(): ReactNode {
   const workspaceStatuses = <>
     {error && <div className="banner banner--error" role="alert"><div><strong>需要处理的问题</strong><p>{error}</p>{failedOperation && failedOperation.jobId === job?.id && <button className="button" disabled={isRunning} onClick={() => void retryFailedOperation()}>{canRetryFailure ? '重试本次操作' : '重新设置并重试'}</button>}</div><button className="icon-button" aria-label="关闭错误提示" onClick={() => { setError(''); setFailedOperation(undefined); }}>×</button></div>}
     {notice && <div className="banner banner--success" role="status">{notice}<button className="icon-button" aria-label="关闭成功提示" onClick={() => setNotice('')}>×</button></div>}
-    {isRunning && job && <div className="processing-strip" role="status"><span>{activeLive ? `${LIVE_PHASE_LABELS[activeLive.phase]} · ${Math.floor(activeLive.elapsedMs / 1000)} 秒 · 已接收 ${activeLive.wireBytes.toLocaleString()} 字节` : job.repairRun?.state === 'running' ? repairRunSummary(job.repairRun) : `${busy || '正在处理'}${busy === 'AI 检查字幕' && reviewProgress ? ` · ${reviewProgress.message}` : namesProgress?.jobId === job.id && (busy === 'AI 检查人名' || busy === '保存检查服务') ? ` · ${namesProgress.message}` : '…'}`}</span><button className="text-button stream-info-trigger" aria-haspopup="dialog" onClick={() => setDialog('live-stream')}>查看流式信息</button><button className="text-button" onClick={cancelJob}>取消当前处理</button></div>}
+    {isRunning && job && <ProcessingProgress job={job} label={busy} work={workProgress} message={namesProgress?.jobId === job.id && (busy === 'AI 检查人名' || busy === '保存检查服务') ? namesProgress.message : reviewProgress?.message ?? chapterProgress?.message} items={currentLive} isRunning={isRunning} onView={() => setDialog('live-stream')} onCancel={cancelJob} />}
+    {!isRunning && currentLive.length > 0 && <div className="processing-viewer"><button className="text-button stream-info-trigger" aria-haspopup="dialog" onClick={() => setDialog('live-stream')}>查看流式信息</button></div>}
 </>;
   return <div data-onboarding-state={dialog === 'guide' ? 'open' : guideDecided ? 'settled' : 'pending'} ref={layout.rootRef} style={layout.style} className={`app-shell ${isSidebarCollapsed ? 'app-shell--collapsed' : ''}`}><aside className="sidebar"><div className="brand"><img className="brand__mark" src={appIcon} alt="" /><div className="sidebar__label"><strong>Slice Man</strong><small>识别、翻译、校对，一站完成</small></div></div>
     <nav className="sidebar__utilities" aria-label="工作区快捷操作">
@@ -330,7 +341,7 @@ export function App(): ReactNode {
           <button className="button" disabled={isRunning || !job.segments.length} aria-label="导出作品" aria-pressed={activeOperation === 'export'} onClick={() => openOperation('export')}><Icon name="export" />导出</button>
         </div><p className="hint">全屏仅播放，退出全屏后可校对。</p>
       </section>
-      {(activeOperation || partialOperation || editingSegment?.location === 'preview') && <div className="workspace-operation-card">
+      {operationKey && <><PaneDivider label="调整预览与操作区高度" orientation="horizontal" {...layout.operation} onChange={layout.operation.update} className="pane-divider--operation" /><div ref={layout.operationRef} className="workspace-operation-card"><div ref={layout.operationContentRef} className="workspace-operation-content">
         {partialOperation && <ReprocessingPanel key={`${job.id}-${partialOperation}-${partialRange?.startMs ?? 'selection'}`} initialRange={partialRange} job={job} operation={partialOperation} selectedIds={selectedIds} currentTimeMs={currentTimeMs} isBusy={isRunning} onClose={() => setPartialOperation(null)} onExecute={executePartial} />}
         {editingSegment?.location === 'preview' && <div className="preview-editor" hidden={Boolean(partialOperation || activeOperation)}>{editor}</div>}
         {activeOperation && <section className={`operation-panel ${activeOperation === 'names' ? 'operation-panel--names' : ''}`} aria-label={`${activeOperation === 'generate' ? '生成' : activeOperation === 'style' ? '样式' : activeOperation === 'export' ? '导出' : activeOperation === 'chapters' ? '章节' : '人名检查'}操作面板`}>
@@ -341,10 +352,10 @@ export function App(): ReactNode {
           {activeOperation === 'chapters' && <ChapterPanel key={job.id} job={job} profiles={profiles} isBusy={isRunning} onClose={() => setActiveOperation(null)} onSeek={seek} onPlan={async (input) => perform('AI 切分章节', async () => commitJob(await requireResult(window.api.jobs.planChapters(input))), true, { job, operation: 'chapters', setupOnly: input.kind === 'custom' })} onUpdate={async (input) => perform('保存章节', async () => commitJob(await requireResult(window.api.jobs.updateChapters(input))), true)} onExport={async (input) => {let run: ChapterExportRun | null = null; await perform('分章节导出', async () => {run = await requireResult(window.api.chapterExports.export(input)); if (run) setNotice(`章节导出完成：${run.clips.filter((clip) => clip.state === 'complete').length} 个文件`);}, true); return run;}} />}
           {activeOperation === 'names' && <PersonNamePanel job={job} isBusy={isRunning} onAnalyze={() => void analyzeNames()} onApply={(input) => void perform('应用人名修改', async () => commitJob(await requireResult(window.api.jobs.applyNames(input))))} onUndo={(input) => void perform('撤销人名修改', async () => commitJob(await requireResult(window.api.jobs.undoNames(input))))} onCancel={() => { if (isRunning) cancelJob(); else setActiveOperation(null); }} onChooseProfile={() => { setServicePurpose('names'); setReviewService(''); setDialog('review-service'); }} />}
         </section>}
-      </div>}
+      </div></div></>}
       </div>
       <PaneDivider label="调整预览与校对区宽度" orientation="vertical" {...layout.columns} onChange={layout.columns.update} position={layout.columns.position} className="pane-divider--columns" />
-      <div ref={layout.rightRef} className="work-grid__proofreading"><SubtitleList key={job.id} onRepairLoop={(input) => void startRepairLoop(input)} onCancelRepair={cancelJob} job={job} selectedIds={selectedIds} activeIds={activeIds} isBusy={isRunning} isEditing={Boolean(editor)} editingId={editingSegment?.location === 'list' && !editingSegment.isNew ? editingSegment.segment.id : undefined} draftStartMs={editingSegment?.location === 'list' && editingSegment.isNew ? editingSegment.segment.startMs : undefined} editor={editingSegment?.location === 'list' ? editor : null} onAdd={() => addSegment('list')} onRemove={(segment) => void perform('删除字幕', async () => removeSegment(segment))} onSelectMany={(ids) => { videoRef.current?.pause(); setSelectedIds(ids); }} onSelect={(id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id])} onEdit={(segment) => editSegment(segment, 'list')} onSeek={seek} onPlay={(ms) => { seek(ms); void videoRef.current?.play().catch(() => setPlaybackError('暂时无法播放，请使用播放器播放按钮。')); }} onRepair={openPartial} onRepairRange={(range) => { videoRef.current?.pause(); setSelectedIds([]); setPartialRange(range); setActiveOperation(null); setPartialOperation('recognize'); }} onReview={(ids) => void review(ids ?? (selectedIds.length ? selectedIds : undefined))} onReviewScope={() => setDialog('review-scope')} onIgnore={(finding) => { const report = job.reviewReport; if (report) void perform('忽略提示', async () => commitJob(await requireResult(window.api.jobs.acknowledgeFinding({ jobId: job.id, reportId: report.id, findingId: finding.id, status: 'ignored' })))); }} onRetranslate={() => openPartial(selectedIds, 'translate')} />{hasResults && <><PaneDivider label="调整字幕校对与结果区高度" orientation="horizontal" {...layout.results} onChange={layout.results.update} className="pane-divider--results" /><section ref={layout.resultsRef} className="workspace-results" aria-label="处理信息与结果"><div className="section-heading"><h2>处理信息与结果</h2>{live.items.length > 0 && <button className="text-button" aria-haspopup="dialog" onClick={() => setDialog('live-stream')}>流式信息</button>}<button className="text-button" onClick={() => setDialog('diagnostics')}>AI 请求日志</button></div>{workspaceStatuses}{chapterProgress && <div className="stage-detail"><strong>章节处理</strong><p>{chapterProgress.message}</p>{isRunning && <progress max={1} value={chapterProgress.progress} />}</div>}{job.reviewRun && <ChapterReviewStatus run={job.reviewRun} isBusy={isRunning} onResume={(ids) => void review(ids)} />}
+      <div ref={layout.rightRef} className="work-grid__proofreading"><SubtitleList key={job.id} onRepairLoop={(input) => void startRepairLoop(input)} onCancelRepair={cancelJob} job={job} selectedIds={selectedIds} activeIds={activeIds} isBusy={isRunning} isEditing={Boolean(editor)} editingId={editingSegment?.location === 'list' && !editingSegment.isNew ? editingSegment.segment.id : undefined} draftStartMs={editingSegment?.location === 'list' && editingSegment.isNew ? editingSegment.segment.startMs : undefined} editor={editingSegment?.location === 'list' ? editor : null} onAdd={() => addSegment('list')} onRemove={(segment) => void perform('删除字幕', async () => removeSegment(segment))} onSelectMany={(ids) => { videoRef.current?.pause(); setSelectedIds(ids); }} onSelect={(id) => setSelectedIds((ids) => ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id])} onEdit={(segment) => editSegment(segment, 'list')} onSeek={seek} onPlay={(ms) => { seek(ms); void videoRef.current?.play().catch(() => setPlaybackError('暂时无法播放，请使用播放器播放按钮。')); }} onRepair={openPartial} onRepairRange={(range) => { videoRef.current?.pause(); setSelectedIds([]); setPartialRange(range); setActiveOperation(null); setPartialOperation('recognize'); }} onReview={(ids) => void review(ids ?? (selectedIds.length ? selectedIds : undefined))} onReviewScope={() => setDialog('review-scope')} onIgnore={(finding) => { const report = job.reviewReport; if (report) void perform('忽略提示', async () => commitJob(await requireResult(window.api.jobs.acknowledgeFinding({ jobId: job.id, reportId: report.id, findingId: finding.id, status: 'ignored' })))); }} onRetranslate={() => openPartial(selectedIds, 'translate')} />{hasResults && <><PaneDivider label="调整字幕校对与结果区高度" orientation="horizontal" {...layout.results} onChange={layout.results.update} className="pane-divider--results" /><section ref={layout.resultsRef} className="workspace-results" aria-label="处理信息与结果"><div className="section-heading"><h2>处理信息与结果</h2><button className="text-button" onClick={() => setDialog('diagnostics')}>AI 请求日志</button></div>{workspaceStatuses}{job.reviewRun && <ChapterReviewStatus run={job.reviewRun} isBusy={isRunning} onResume={(ids) => void review(ids)} />}
       {Object.entries(job.stages).filter(([name, stage]) => name !== 'preview' && (name !== 'translate' || job.options.translationEnabled) && stage.message && stage.state !== 'idle').map(([name, stage]) => <div key={name} className={`stage-detail stage-detail--${stage.state}`}><strong>{STAGE_LABELS[name as StageName]}</strong><p>{stage.message}</p>{stage.state === 'running' && <progress max={1} value={stage.progress} />}</div>)}
       <ChapterExportResults job={job} isBusy={isRunning} onResume={async (input) => perform('继续章节导出', async () => {await requireResult(window.api.chapterExports.export(input)); setNotice('所选章节已全部导出。');}, true)} />
       {job.outputs.length > 0 && <section className="outputs-panel"><h2>已导出文件</h2>{job.outputs.map((path, index) => <p key={`${path}-${index}`} title={path}>✓ <span>{path}</span></p>)}</section>}

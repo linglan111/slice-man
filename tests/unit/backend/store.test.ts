@@ -79,6 +79,21 @@ function job(): Job {
   };
 }
 describe("SQLite migration/persistence and credentials", () => {
+  it("persists API-service concurrency and defaults legacy profile payloads without changing jobs", async () => {
+    const s = await store();
+    const profile = s.saveProfile({ name: "service", protocol: "openai", baseUrl: "https://fixture.invalid", model: "fixture", textConcurrency: 5 });
+    expect(s.getProfile(profile.id).textConcurrency).toBe(5);
+    const path = s.sqlite.name;
+    s.close();
+    stores.splice(stores.indexOf(s), 1);
+    const reopened = new Store(path, secret);
+    stores.push(reopened);
+    expect(reopened.getProfile(profile.id).textConcurrency).toBe(5);
+    const { textConcurrency: _limit, ...legacy } = reopened.getProfile(profile.id);
+    reopened.sqlite.prepare("UPDATE profiles SET payload = ? WHERE id = ?").run(JSON.stringify(legacy), profile.id);
+    expect(reopened.getProfile(profile.id).textConcurrency).toBe(2);
+    expect(reopened.listJobs()).toEqual([]);
+  });
   it("marks persisted automatic repair interrupted on restart, retaining committed content without resuming", async () => {
     const s = await store();
     const value = job();

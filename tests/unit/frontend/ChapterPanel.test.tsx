@@ -16,6 +16,17 @@ function fixture(): {props: Parameters<typeof ChapterPanel>[0]; api: ReturnType<
   return {props,api};
 }
 describe('chapter panel explicit operations', () => {
+  it('explains full chapter reuse and recognition/name exceptions without starting work', async () => {
+    const { props } = fixture(); render(<ChapterPanel {...props} />);
+    await screen.findByRole('option', { name: '全文章节切分' });
+    fireEvent.click(screen.getByRole('button', { name: '了解全文章节切分' }));
+    const dialog = screen.getByRole('dialog', { name: '全文章节切分说明' });
+    expect(dialog.textContent).toContain('整章字幕的时轴、原文和已启用的译文');
+    expect(dialog.textContent).toContain('语音识别与人名检查不使用全文章节切分');
+    fireEvent.click(screen.getByRole('button', { name: '知道了' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(props.onPlan).not.toHaveBeenCalled();
+  });
   it('only reads when opened, seeks and selects without AI or export', async () => {
     const {props,api}=fixture(); render(<ChapterPanel {...props} />);
     await waitFor(() => expect(api.chapterCriteria.list).toHaveBeenCalledOnce());

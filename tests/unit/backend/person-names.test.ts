@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_STYLE, optionsSchema, type Job, nameBatchSchema, nameReportSchema, applyNamesInputSchema } from '../../../src/shared/contracts';
 import { draftNameApply, draftNameUndo, groundNames, literalNameSpans, nameTimelineFingerprint, refreshNameReport } from '../../../src/main/services/jobs/lib/person-names';
-import { createPersonNameRequest } from '../../../src/main/services/jobs/lib/person-name-request';
+import { createPersonNameRequest, personNameCorrectionPrompt } from '../../../src/main/services/jobs/lib/person-name-request';
+import { AppError } from '../../../src/main/lib/errors';
 function job(texts = ['Ann and Bob', 'Ann met Bob']): Job {
   const stage = { state: 'succeeded' as const, progress: 1, message: '' };
   return { id: 'job', inputPath: 'anonymous.mp4', name: 'anonymous', media: { durationMs: 9000, width: 640, height: 360, hasAudio: true, audioOffsetMs: 0, rotation: 0, sampleAspectRatio: '1:1' }, options: optionsSchema.parse({ reviewProfileId: 'profile' }), segments: texts.map((sourceText, n) => ({ id: `cue${n}`, sourceText, translatedText: sourceText.replaceAll('Ann', '安娜').replaceAll('Bob', '鲍勃'), startMs: n * 1000, endMs: (n + 1) * 1000, translationStale: false })), style: structuredClone(DEFAULT_STYLE), revision: 1, createdAt: 1, updatedAt: 1, outputs: [], stages: { recognize: stage, translate: stage, style: stage, preview: stage, export: stage } };
@@ -11,6 +12,59 @@ function report(value: Job, candidates = [{ sourceAliases: ['Ann'], translatedAl
 }
 function mappings(value: NonNullable<Job['nameReport']>): Parameters<typeof draftNameApply>[2] { return value.candidates.map((c) => ({ candidateId: c.id, sourceName: c.sourceName, translatedName: c.translatedName, enabled: true })); }
 describe('literal name grounding and simultaneous replacement', () => {
+  it.each([
+    ['Annが来た', 'Ann'], ['とAnnは帰った', 'Ann'],
+    ['安娜与Ann见面', 'Ann'], ['とアンAは帰った', 'アンA'],
+    ['アンA君が来た', 'アンA'], ['和Ann先生再见', 'Ann先生'],
+    ['とΑνναは帰った', 'Αννα'], ['和Анна见面', 'Анна'],
+    ['김Ann과 만났다', 'Ann'],
+  ])('grounds exact mixed-script aliases in unspaced CJK dialogue: %s / %s', (text, alias) => {
+    const start = text.indexOf(alias);
+    expect(literalNameSpans(text, alias)).toEqual([{ start, end: start + alias.length }]);
+  });
+  it.each([
+    ['Anna', 'Ann'], ['éAnn', 'Ann'], ['AnnА', 'Ann'], ['عAnn', 'Ann'],
+    ['1Ann', 'Ann'], ['Ann1', 'Ann'], ['_Ann', 'Ann'], ['Ann_', 'Ann'],
+    ['\u0301Ann', 'Ann'], ['Ann\u0301', 'Ann'], ['アンAnna', 'アンAnn'],
+    ['Αννακι', 'Αννα'], ['Аннушка', 'Анн'], ['ann', 'Ann'],
+  ])('still rejects word fragments, protected continuations and case mismatch: %s / %s', (text, alias) => {
+    expect(literalNameSpans(text, alias)).toEqual([]);
+  });
+  it('grounds, applies and undoes exact mixed Katakana/Latin aliases without touching distinct longer names', () => {
+    const value = job(['とアンAは戻った。アンAnnaは別人だ。', 'アンA君とアンBが会った。']);
+    value.options.sourceLanguage = 'ja'; value.options.targetLanguage = 'zh-CN';
+    value.segments[0] = { ...value.segments[0] as Job['segments'][number], translatedText: '和Ann先生一起，Ann来了。Anna是另一个人。' };
+    value.segments[1] = { ...value.segments[1] as Job['segments'][number], translatedText: '看见Ann先生和An见面。' };
+    const r = report(value, [{ sourceAliases: ['アンA', 'アンB'], translatedAliases: ['Ann', 'Ann先生', 'An'], sourceName: 'アンC', translatedName: '安妮', reason: '向导在两句出现，保留另一个相近人名' }]);
+    expect(r.candidates[0]).toMatchObject({ cueCount: 2, sourceCount: 3, translatedCount: 4 });
+    const applied = draftNameApply(value, r, mappings(r));
+    expect(applied.segments.map(cue => cue.sourceText)).toEqual(['とアンCは戻った。アンAnnaは別人だ。', 'アンC君とアンCが会った。']);
+    expect(applied.segments.map(cue => cue.translatedText)).toEqual(['和安妮一起，安妮来了。Anna是另一个人。', '看见安妮和安妮见面。']);
+    const undone = draftNameUndo({ ...value, segments: applied.segments, style: applied.style }, applied.batch);
+    expect(undone.segments.map(cue => [cue.sourceText, cue.translatedText])).toEqual(value.segments.map(cue => [cue.sourceText, cue.translatedText]));
+    expect(() => groundNames(value, { candidates: [{ sourceAliases: ['\uD800'], translatedAliases: [], sourceName: 'Ann', reason: 'invalid Unicode' }] })).toThrow('格式');
+    expect(literalNameSpans('😀Ann', '\uDE00')).toEqual([]);
+  });
+  it.each([
+    ['unobserved canonical spelling mixed into aliases', ['Ann', 'Anne'], []],
+    ['wrong field', ['安娜'], []],
+    ['wrong case', ['ANN'], []],
+    ['partial word', ['Anna'], []],
+  ])('reproduces missing literal evidence: %s and preserves the exact timeline in correction', (_reason, sourceAliases, translatedAliases) => {
+    const value = job();
+    let failure: unknown;
+    try { groundNames(value, { candidates: [{ sourceAliases, translatedAliases, sourceName: 'Anne', reason: 'fixture' }] }); } catch (error) { failure = error; }
+    expect(failure).toMatchObject({ code: 'NAMES_EVIDENCE', diagnostic: { candidateOrdinal: 1, field: 'sourceText', reason: 'missing_literal' } });
+    const prompt = createPersonNameRequest(value);
+    const correction = personNameCorrectionPrompt(prompt, failure);
+    expect(correction).toContain('Correction 1/1');
+    expect(correction).toContain('Trusted local validation:');
+    expect(correction?.split('\n').at(-1)).toBe(prompt.split('\n').at(-1));
+    expect(groundNames(value, { candidates: [{ sourceAliases: ['Ann'], translatedAliases: [], sourceName: 'Anne', reason: 'fixture' }] })[0]?.sourceName).toBe('Anne');
+  });
+  it.each(['AUTH_ERROR', 'RATE_LIMIT', 'PROVIDER_HTTP', 'NETWORK_ERROR', 'PROVIDER_TIMEOUT', 'STREAM_TRUNCATED', 'CANCELLED', 'TEXT_LIMIT'])('never content-corrects %s', (code) => {
+    expect(personNameCorrectionPrompt(createPersonNameRequest(job()), new AppError(code, 'untrusted provider message'))).toBeUndefined();
+  });
   it('sends every cue with chronological identity context and keeps original-only translation data out', () => {
     const value = job(['Ann the guide arrived.', 'The group crossed the valley.', 'An the guide returned.']);
     value.segments[2] = { ...value.segments[2] as Job['segments'][number], startMs: 8000, endMs: 9000 };

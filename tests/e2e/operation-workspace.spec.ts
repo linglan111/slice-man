@@ -6,13 +6,15 @@ import { selectReviewFilters } from './helpers';
 
 async function visibleAction(page: Page, action: Locator): Promise<void> {
   await expect(action).toBeVisible();
+  // Capped operation cards expose longer forms through their own scroller.
+  await action.scrollIntoViewIfNeeded();
   const bounds = await action.evaluate((node) => {
     const rect = node.getBoundingClientRect();
-    const parent = node.closest('.operation-panel, .reprocessing-panel, .preview-editor, dialog');
+    const parent = node.closest('dialog') ?? node.closest('.workspace-operation-card');
     if (!parent) throw new Error('Action must belong to a bounded operation');
     const clip = parent.getBoundingClientRect();
     const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-    return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, clipTop: clip.top, clipBottom: clip.bottom, clipLeft: clip.left, clipRight: clip.right, hit: Boolean(hit && (hit === node || node.contains(hit))), scrollTop: parent.scrollTop };
+    return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, clipTop: clip.top, clipBottom: clip.bottom, clipLeft: clip.left, clipRight: clip.right, hit: Boolean(hit && (hit === node || node.contains(hit))) };
   });
   const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
   expect(bounds.top).toBeGreaterThanOrEqual(Math.max(0, bounds.clipTop));
@@ -20,10 +22,9 @@ async function visibleAction(page: Page, action: Locator): Promise<void> {
   expect(bounds.left).toBeGreaterThanOrEqual(bounds.clipLeft);
   expect(bounds.right).toBeLessThanOrEqual(Math.min(viewport.width, bounds.clipRight) + 1);
   expect(bounds.hit).toBe(true);
-  expect(bounds.scrollTop, 'Opening an operation should require no form scrolling').toBe(0);
 }
 
-test('each operation has a compact content-sized bottom card and visible actions at native sizes', async ({ playwright: _playwright }, info) => {
+test('each operation auto-fits a capped bottom card with reachable actions at native sizes', async ({ playwright: _playwright }, info) => {
   test.setTimeout(120000);
   const mock = await startMockServer();
   const input = info.outputPath('operations.mp4'); await makeVideo(input);
@@ -74,14 +75,13 @@ test('each operation has a compact content-sized bottom card and visible actions
           const rect = node.getBoundingClientRect();
           const left = node.closest('.work-grid__content')?.getBoundingClientRect();
           const preview = document.querySelector('.preview-panel')?.getBoundingClientRect();
-          const content = [...node.querySelectorAll('button, input, select, textarea, p, h3')].map((element) => element.getBoundingClientRect()).filter((bounds) => bounds.height > 0 && bounds.top >= rect.top && bounds.bottom <= rect.bottom + 1);
-          return { bottom: rect.bottom, leftBottom: left?.bottom, top: rect.top, previewBottom: preview?.bottom, blankBelow: rect.bottom - Math.max(...content.map((bounds) => bounds.bottom)), scrollTop: node.scrollTop };
+          return { bottom: rect.bottom, height: rect.height, leftHeight: left?.height, leftBottom: left?.bottom, top: rect.top, previewBottom: preview?.bottom, scrollTop: node.scrollTop };
         });
         expect(geometry.previewBottom).toBeLessThan(geometry.top);
         expect(Math.abs(geometry.bottom - (geometry.leftBottom ?? 0))).toBeLessThanOrEqual(1);
-        expect(geometry.blankBelow, 'Content-sized panels leave no large empty area below their final action').toBeLessThanOrEqual(24);
+        expect(geometry.height, 'Automatic fitting respects the middle-column height cap').toBeLessThanOrEqual((geometry.leftHeight ?? 0) * .45 + 1);
         expect(geometry.scrollTop).toBe(0);
-        await expect(page.getByRole('separator', { name: '调整预览与编辑区高度', exact: true })).toHaveCount(0);
+        await expect(page.getByRole('separator', { name: '调整预览与操作区高度', exact: true })).toBeVisible();
         await visibleAction(page, panel.getByRole('button', { name: operation.primary, exact: true }));
         await visibleAction(page, panel.getByRole('button', { name: operation.cancel, exact: true }));
         if (operation.label === '导出作品') {

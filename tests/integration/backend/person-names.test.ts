@@ -9,6 +9,8 @@ import * as providers from '../../../src/main/services/providers/lib/text-provid
 import { AppError } from '../../../src/main/lib/errors';
 import { draftNameApply, groundNames, nameTimelineFingerprint } from '../../../src/main/services/jobs/lib/person-names';
 import type { Job, ApplyNamesInput } from '../../../src/shared/contracts';
+import { newCoveragePlan } from '../../../src/main/services/jobs/lib/chapters';
+import { createPersonNameRequest } from '../../../src/main/services/jobs/lib/person-name-request';
 
 const fixtures: { root: string; store: Store }[] = [];
 afterEach(async () => { vi.restoreAllMocks(); for (const f of fixtures.splice(0)) { f.store.close(); await rm(f.root, { recursive: true, force: true }); } });
@@ -33,6 +35,84 @@ function applyInput(job: Job): ApplyNamesInput {
 }
 async function analyzed(f: Awaited<ReturnType<typeof fixture>>): Promise<Job> { return f.service.analyzeNames({ jobId: f.job.id, revision: f.store.getJob(f.job.id).revision }); }
 describe('grounded names service and persistent field undo', () => {
+  it('publishes actual-shape ja-to-zh mixed-script aliases on the first response and safely applies and undoes them', async () => {
+    const f = await fixture(); const value = f.store.getJob(f.job.id);
+    value.options.sourceLanguage = 'ja'; value.options.targetLanguage = 'zh-CN';
+    value.segments = [
+      { id: 'a', startMs: 100, endMs: 1800, sourceText: 'とアンAは帰った。', translatedText: '和Ann见面。', translationStale: false },
+      { id: 'b', startMs: 2000, endMs: 3800, sourceText: 'アンB君とアンAが来た。', translatedText: '看见Ann先生回来了。Anna是另一个人。', translationStale: false },
+    ];
+    f.store.saveJob(value);
+    f.generate.mockResolvedValue(JSON.stringify({ candidates: [{ sourceAliases: ['アンA', 'アンB'], translatedAliases: ['Ann', 'Ann先生'], sourceName: 'アンC', translatedName: '安妮', reason: '两句的向导为同一人，另一人Anna不合并' }] }));
+    const result = await analyzed(f);
+    expect(f.generate).toHaveBeenCalledTimes(1);
+    expect(result.nameReport?.candidates[0]).toMatchObject({ cueCount: 2, sourceCount: 3, translatedCount: 2 });
+    const applied = f.service.applyNames(applyInput(result));
+    expect(applied.segments.map(cue => [cue.sourceText, cue.translatedText])).toEqual([
+      ['とアンCは帰った。', '和安妮见面。'],
+      ['アンC君とアンCが来た。', '看见安妮回来了。Anna是另一个人。'],
+    ]);
+    if (!applied.nameBatch) throw new Error('Missing mixed-script batch');
+    const undone = f.service.undoNames({ jobId: applied.id, revision: applied.revision, batchId: applied.nameBatch.id });
+    expect(undone.segments.map(cue => [cue.sourceText, cue.translatedText])).toEqual(value.segments.map(cue => [cue.sourceText, cue.translatedText]));
+    expect(f.generate).toHaveBeenCalledTimes(1);
+    expect(f.transcribe).not.toHaveBeenCalled(); expect(f.translate).not.toHaveBeenCalled();
+  });
+  it.each(['canonical', 'wrong-field', 'case', 'boundary', 'json', 'shape'] as const)('corrects %s once over the identical whole timeline', async (failure) => {
+    const f = await fixture();
+    const first = await analyzed(f);
+    const invalid = failure === 'json' ? '{"candidates":' : failure === 'shape' ? '{"candidates":[{}]}' : JSON.stringify({ candidates: [{ ...proposed.candidates[0], sourceAliases: failure === 'canonical' ? ['Ann', 'Anne'] : failure === 'wrong-field' ? ['安娜'] : failure === 'case' ? ['ANN'] : ['An'] }] });
+    f.generate.mockClear().mockResolvedValueOnce(invalid).mockResolvedValueOnce(JSON.stringify(proposed));
+    const result = await analyzed(f);
+    expect(f.generate).toHaveBeenCalledTimes(2);
+    expect(f.generate.mock.calls[1]?.[2]).toContain('Correction 1/1');
+    expect(f.generate.mock.calls[1]?.[2].split('\n').at(-1)).toBe(f.generate.mock.calls[0]?.[2].split('\n').at(-1));
+    expect(result.nameReport?.id).not.toBe(first.nameReport?.id);
+    expect(result.nameReport?.candidates[0]?.sourceCount).toBe(2);
+    expect(result.segments).toEqual(first.segments);
+    expect(result.revision).toBe(first.revision);
+  });
+  it.each(['AUTH_ERROR', 'RATE_LIMIT', 'NETWORK_ERROR', 'PROVIDER_TIMEOUT', 'STREAM_TRUNCATED', 'CANCELLED'])('retains prior report without content correction after %s', async (code) => {
+    const f = await fixture(); const first = await analyzed(f);
+    f.generate.mockClear().mockRejectedValue(new AppError(code, 'fixture failure'));
+    await expect(analyzed(f)).rejects.toMatchObject({ code });
+    expect(f.generate).toHaveBeenCalledTimes(1);
+    expect(f.store.getJob(first.id).nameReport).toEqual(first.nameReport);
+  });
+  it('retains the prior report on a second invalid response and cancels a held correction under the same lease', async () => {
+    const f = await fixture(); const first = await analyzed(f);
+    f.generate.mockClear().mockResolvedValue('{"candidates":[{}]}');
+    await expect(analyzed(f)).rejects.toThrow('一次纠正仍未通过');
+    expect(f.generate).toHaveBeenCalledTimes(2);
+    expect(f.store.getJob(first.id).nameReport).toEqual(first.nameReport);
+    f.generate.mockClear().mockResolvedValueOnce('{"candidates":[{}]}').mockImplementationOnce(async (_p, _k, _t, signal) => new Promise<string>((_resolve, reject) => signal?.addEventListener('abort', () => reject(new AppError('CANCELLED', 'fixture cancel')), { once: true })));
+    const pending = analyzed(f);
+    await vi.waitFor(() => expect(f.generate).toHaveBeenCalledTimes(2));
+    expect(() => f.service.applyNames(applyInput(first))).toThrow('已有任务');
+    f.service.cancel(first.id);
+    await expect(pending).rejects.toMatchObject({ code: 'CANCELLED' });
+    expect(f.store.getJob(first.id).nameReport).toEqual(first.nameReport);
+  });
+  it.each(['absent', 'stale', 'custom', 'multiple'] as const)('ignores %s chapter plans, never plans or mutates chapters, and keeps chapter-only edits applicable', async (kind) => {
+    const f = await fixture(); const current = f.store.getJob(f.job.id);
+    const plan = newCoveragePlan(current);
+    if (kind === 'stale') current.chapterPlan = { ...plan, state: 'stale', sourceFingerprint: 'old-source' };
+    if (kind === 'custom') current.customChapterPlan = { ...plan, kind: 'custom', criterion: { id: 'fixture', revision: 1, name: 'fixture', instructions: 'fixture' } };
+    if (kind === 'multiple') current.chapterPlan = { ...plan, chapters: [{ id: 'one', startMs: 0, endMs: 1900, title: 'one', summary: '' }, { id: 'two', startMs: 1900, endMs: 5000, title: 'two', summary: '' }] };
+    f.store.saveJob(current);
+    const before = f.store.getJob(current.id); const prompt = createPersonNameRequest(before);
+    const result = await analyzed(f);
+    expect(f.generate).toHaveBeenCalledTimes(1);
+    expect(f.generate.mock.calls[0]?.[2]).toBe(prompt);
+    expect(result.chapterPlan).toEqual(before.chapterPlan);
+    expect(result.customChapterPlan).toEqual(before.customChapterPlan);
+    const changed = f.store.getJob(result.id);
+    changed.chapterPlan = { ...plan, revision: 1, chapters: [{ id: 'changed', startMs: 0, endMs: 5000, title: 'changed boundaries', summary: '' }] };
+    f.store.saveJob(changed);
+    expect(createPersonNameRequest(f.store.getJob(result.id))).toBe(prompt);
+    expect(f.store.getJob(result.id).nameReport?.state).toBe('current');
+    expect(() => f.service.applyNames(applyInput(f.store.getJob(result.id)))).not.toThrow();
+  });
   it('uses one complete global request for distant once-only variants and safely applies and undoes a combined identity', async () => {
     const f = await fixture();
     const value = f.store.getJob(f.job.id);

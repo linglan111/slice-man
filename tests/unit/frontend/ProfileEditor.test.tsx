@@ -12,6 +12,22 @@ afterEach(cleanup);
 const PROFILE: Profile = { id: 'p', name: '我的服务', protocol: 'openai', mode: 'chat', baseUrl: 'https://example.com/v1', model: 'test-model', hasKey: true, sessionOnly: false, timeoutMs: 120000, maxUploadBytes: 24000000, structuredOutput: false };
 
 describe('ProfileEditor configuration and credential behavior', () => {
+  it('loads the legacy concurrency default and saves a bounded per-service limit', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<ProfileEditor profile={PROFILE} onSave={onSave} onClose={vi.fn()} />);
+    expect((screen.getByLabelText('文字请求并发上限') as HTMLInputElement).value).toBe('2');
+    fireEvent.change(screen.getByLabelText('文字请求并发上限'), { target: { value: '4' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存配置' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ textConcurrency: 4 })));
+  });
+  it.each(['', '0', '17', '1.5'])('rejects invalid service concurrency %s before save', (value) => {
+    const onSave = vi.fn();
+    render(<ProfileEditor profile={PROFILE} onSave={onSave} onClose={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('文字请求并发上限'), { target: { value } });
+    fireEvent.submit(screen.getByRole('button', { name: '保存配置' }).closest('form') as HTMLFormElement);
+    expect(screen.getByRole('alert').textContent).toContain('文字请求并发上限');
+    expect(onSave).not.toHaveBeenCalled();
+  });
   it('exposes streaming compatibility and saves a separate bounded overall generation deadline', async () => {
     const onSave=vi.fn().mockResolvedValue(undefined); render(<ProfileEditor profile={PROFILE} onSave={onSave} onClose={vi.fn()} />);
     expect((screen.getByLabelText('文字生成总时限（分钟）') as HTMLInputElement).value).toBe('30');

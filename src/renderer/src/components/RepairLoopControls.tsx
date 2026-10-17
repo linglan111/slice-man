@@ -9,7 +9,7 @@ export function createRepairLoopDraft(job: Job): RepairLoopDraft {
   return { mode: run?.scope.mode ?? 'all', threshold: run?.threshold ?? 'medium', maxRounds: String(run?.maxRounds ?? 3), start: ((run?.scope.mode === 'range' ? run.scope.startMs : 0) / 1000).toFixed(3), end: ((run?.scope.mode === 'range' ? run.scope.endMs : job.media.durationMs) / 1000).toFixed(3) };
 }
 type Props = { job: Job; isBusy: boolean; onStart: (input: RepairLoopInput) => void; onCancel: () => void } & ({ draft?: undefined; onDraftChange?: undefined } | { draft: RepairLoopDraft; onDraftChange: (draft: RepairLoopDraft) => void });
-const PHASE_LABELS: Record<RepairRun['phase'], string> = { analysis: '分析可疑字幕', recognize: '重新识别', translate: '重新翻译', commit: '保存本轮', reassessment: '复查本轮结果', done: '已停止' };
+const PHASE_LABELS: Record<string, string> = { analysis: '按章检查待复查字幕', recognize: '重新识别', translate: '重新翻译', adjudication: '结合整章综合审核新旧字幕', commit: '保存本轮', reassessment: '复查本轮结果', final_consistency: '结束前一致性补查（仅检查，不增加修复轮数）', done: '已停止' };
 export function repairRunSummary(run: RepairRun): string {
   const scope = run.scope.mode === 'range' ? '指定范围' : '全部字幕';
   const count = run.remainingCount === undefined ? '复查未完成，剩余疑点未知' : `${scope}剩余 ${run.remainingCount} 条${REVIEW_RISK_LABELS[run.threshold]}及以上未忽略疑点`;
@@ -36,7 +36,7 @@ export function RepairLoopControls({ job, isBusy, onStart, onCancel, draft, onDr
       <label>最大轮数<input aria-label="自动修复最大轮数" type="number" min={1} max={20} step={1} disabled={isBusy} value={maxRounds} onChange={(event) => updateDraft({ maxRounds: event.target.value })} /></label>
     </div>
     {mode === 'range' && <div className="repair-loop__range"><label>开始（秒）<input aria-label="自动修复开始（秒）" inputMode="decimal" disabled={isBusy} value={start} onChange={(event) => updateDraft({ start: event.target.value })} /></label><label>结束（秒）<input aria-label="自动修复结束（秒）" inputMode="decimal" disabled={isBusy} value={end} onChange={(event) => updateDraft({ end: event.target.value })} /></label></div>}
-    <div className="repair-loop__actions"><span className="hint">按问题类型修复，每轮复查</span>{running ? <button className="button" onClick={onCancel}>取消自动修复</button> : <button className="button button--primary" disabled={isBusy || !job.options.reviewProfileId || !parsed.success || Boolean(validation)} onClick={() => { if (parsed.success && !validation) onStart(parsed.data); }}>自动循环修复</button>}</div>
+    <div className="repair-loop__actions"><span className="hint">按章节检查 → 重新识别与翻译 → 综合审核 → 复查；结束前补查待复查字幕</span>{running ? <button className="button" onClick={onCancel}>取消自动修复</button> : <button className="button button--primary" disabled={isBusy || !job.options.reviewProfileId || !parsed.success || Boolean(validation)} onClick={() => { if (parsed.success && !validation) onStart(parsed.data); }}>自动循环修复</button>}</div>
     {validation && <p className="error-message" role="alert">{validation}</p>}
     {!job.options.reviewProfileId && <p className="hint">请在生成设置中选择 AI 检查服务。</p>}
     {mode === 'range' && <p className="repair-loop__boundary hint">识别会扩展至完整字幕及重叠区间；忽略提示不锁定字幕。</p>}

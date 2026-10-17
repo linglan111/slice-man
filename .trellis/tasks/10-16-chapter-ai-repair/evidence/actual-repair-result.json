@@ -1,0 +1,103 @@
+{
+  "model": "deepseek-flash",
+  "priorFailedAttemptPreserved": true,
+  "priorSeedCaveat": "Manual medium test grades guarantee repair execution; original native single cue manually divided into two. Neither is a claim of model detection or native word alignment.",
+  "maxOutputTokenOverride": null,
+  "repair": {
+    "id": "2f192c11-e6ff-4ec0-80a1-476ce65f60fc",
+    "scope": {
+      "mode": "all"
+    },
+    "threshold": "medium",
+    "maxRounds": 1,
+    "state": "succeeded",
+    "phase": "done",
+    "round": 1,
+    "committedRounds": 1,
+    "affectedCount": 2,
+    "remainingCount": 2,
+    "effectiveIntervals": [
+      {
+        "startMs": 0,
+        "endMs": 5290
+      },
+      {
+        "startMs": 5310,
+        "endMs": 10600
+      }
+    ],
+    "startedAt": 1792231968371,
+    "completedAt": 1792232031443,
+    "reason": "max_rounds"
+  },
+  "wallTimeMs": 64059,
+  "grades": [
+    {
+      "status": "current",
+      "riskLevel": "medium"
+    },
+    {
+      "status": "current",
+      "riskLevel": "medium"
+    }
+  ],
+  "freshNativeReceipts": [
+    {
+      "backend": "cpu",
+      "gpuExecutionVerified": false
+    },
+    {
+      "backend": "cpu",
+      "gpuExecutionVerified": false
+    }
+  ],
+  "requests": [
+    {
+      "operation": "review",
+      "chapterId": "actual-first",
+      "state": "published",
+      "model": "deepseek-flash",
+      "targetCount": 1
+    },
+    {
+      "operation": "review",
+      "chapterId": "actual-second",
+      "state": "published",
+      "model": "deepseek-flash",
+      "targetCount": 1
+    },
+    {
+      "operation": "review",
+      "chapterId": "actual-second",
+      "state": "published",
+      "model": "deepseek-flash",
+      "targetCount": 1
+    },
+    {
+      "operation": "review",
+      "chapterId": "actual-first",
+      "state": "published",
+      "model": "deepseek-flash",
+      "targetCount": 1
+    },
+    {
+      "operation": "translate",
+      "chapterId": "actual-second",
+      "state": "published",
+      "model": "deepseek-flash",
+      "targetCount": 1
+    },
+    {
+      "operation": "translate",
+      "chapterId": "actual-first",
+      "state": "published",
+      "model": "deepseek-flash",
+      "targetCount": 1
+    }
+  ],
+  "cumulativeCalls": 19,
+  "cumulativeLimit": 30,
+  "observedConcurrentUpstreamRequests": 2,
+  "restartCurrentGradeCount": 2,
+  "srtExportBytes": 202
+}

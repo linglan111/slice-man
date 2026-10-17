@@ -1,3 +1,5 @@
+import { createRepairAudit, mergeRepairAudits, validateRepairAudit } from "../../../src/main/services/jobs/lib/repair-adjudication";
+import { newCoveragePlan } from "../../../src/main/services/jobs/lib/chapters";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -435,11 +437,15 @@ describe("atomic partial processing and optional translation", () => {
   it("late translation-batch failure publishes none of the previous successful batches", async () => {
     const f = await fixture();
     const job = f.store.getJob(f.job.id);
-    // Dense chapter pieces are now 150 cues; still exercise a successful piece
-    // followed by failure without publishing any selected translation.
+    // A selected operation spans two explicit canonical chapters; a failed
+    // second chapter must not publish the successful first chapter.
     job.segments = Array.from({ length: 151 }, (_, index) =>
       cue(`batch-${index}`, index * 40, index * 40 + 30),
     );
+    job.chapterPlan = newCoveragePlan(job);
+    const first = job.chapterPlan.chapters[0];
+    if (!first) throw new Error("missing coverage");
+    job.chapterPlan.chapters = [{ ...first, endMs: 3000 }, { ...first, id: "second", startMs: 3000 }];
     f.store.saveJob(job);
     f.translate
       .mockImplementationOnce(async (_profile, _key, selected) =>
@@ -504,7 +510,15 @@ function parseReviewPrompt(prompt: string): ReviewFixturePrompt {
     selected: context.filter((c) => targets.has(c.n)),
   };
 }
+function auditResponse(prompt: string): string | undefined {
+  if (!prompt.startsWith("Audit subtitle repairs")) return undefined;
+  const data = JSON.parse(prompt.split("\n").at(-1) ?? "{}") as {
+    targets: { id: string; freshIds: string[] }[]; fresh: Segment[];
+  };
+  return JSON.stringify({ targets: data.targets.map((target) => ({ id: target.id, replacementIds: target.freshIds })), segments: data.fresh });
+}
 function reviewResponse(prompt: string, flagged = new Set<string>()): string {
+  const audit = auditResponse(prompt); if (audit) return audit;
   const data = parseReviewPrompt(prompt);
   return JSON.stringify({
     a: data.selected.map((s) => [
@@ -525,6 +539,7 @@ function repairResponse(
   prompt: string,
   rule: (cue: Segment) => ReviewRuleId[],
 ): string {
+  const audit = auditResponse(prompt); if (audit) return audit;
   const data = parseReviewPrompt(prompt);
   return JSON.stringify({
     a: data.selected.map((s) => [
@@ -653,6 +668,9 @@ describe("main-owned bounded automatic repair", () => {
       cue("c", 5000, 6000),
     ];
     f.store.saveJob(job);
+    // The merged acoustic cue covers both overlapping originals; unrelated
+    // evidence near only A must never stand in for B's repair coverage.
+    f.transcribe.mockResolvedValueOnce({ segments: [{ start: 0, end: 1.9, text: "replacement" }] });
     vi.spyOn(providers, "generateText").mockImplementation(
       async (_p, _k, prompt) =>
         repairResponse(prompt, (s) =>
@@ -674,14 +692,11 @@ describe("main-owned bounded automatic repair", () => {
         { startMs: 5000, endMs: 6000 },
       ],
     });
-    expect(f.transcribe).toHaveBeenCalledTimes(1);
+    expect(f.transcribe).toHaveBeenCalledTimes(2);
     expect(f.translate).toHaveBeenCalledTimes(1);
-    expect(f.translate.mock.calls[0]?.[2].map((s) => s.id)).toEqual([
-      result.segments[0]?.id,
-      "c",
-    ]);
+    expect(f.translate.mock.calls[0]?.[2].map((s) => s.id)).toEqual(result.segments.map((s) => s.id));
     expect(result.segments.some((s) => s.id === "b")).toBe(false);
-    expect(result.segments.find((s) => s.id === "c")?.translatedText).toBe(
+    expect(result.segments.find((s) => s.startMs >= 5000)?.translatedText).toBe(
       "replacement translated",
     );
     expect(new Set(save.mock.calls.map(([j]) => j.revision))).toEqual(
@@ -749,7 +764,7 @@ describe("main-owned bounded automatic repair", () => {
       committedRounds: 1,
       remainingCount: 0,
     });
-    expect(review).toHaveBeenCalledTimes(1);
+    expect(review).toHaveBeenCalledTimes(2);
     expect(f.translate).not.toHaveBeenCalled();
   });
   it("validates caps and range before any provider call, including empty exact-touching scope", async () => {
@@ -818,7 +833,7 @@ describe("main-owned bounded automatic repair", () => {
       committedRounds: 0,
       reason: "no_eligible",
     });
-    expect(review).toHaveBeenCalledTimes(2);
+    expect(review).toHaveBeenCalledTimes(3);
   });
   it("reassesses fresh cues throughout expanded coverage without promoting outside issues into scope", async () => {
     const f = await fixture();
@@ -832,6 +847,7 @@ describe("main-owned bounded automatic repair", () => {
     const selectedIds: string[][] = [];
     vi.spyOn(providers, "generateText").mockImplementation(
       async (_p, _k, prompt) => {
+        const audit = auditResponse(prompt); if (audit) return audit;
         const data = parseReviewPrompt(prompt) as {
           selected: { id: string }[];
         };
@@ -877,6 +893,7 @@ describe("main-owned bounded automatic repair", () => {
     const seen: string[][] = [];
     vi.spyOn(providers, "generateText").mockImplementation(
       async (_p, _k, prompt) => {
+        const audit = auditResponse(prompt); if (audit) return audit;
         const data = parseReviewPrompt(prompt) as {
           selected: { id: string }[];
         };
@@ -927,37 +944,16 @@ describe("main-owned bounded automatic repair", () => {
     expect(f.transcribe).toHaveBeenCalledTimes(1);
     expect(f.translate).not.toHaveBeenCalled();
   });
-  it("translation-only repair needs no recognition readiness and preserves timing/source", async () => {
+  it("translation issues also require fresh recognition and translation", async () => {
     const f = await fixture();
-    const job = f.jobs.updateOptions(f.job.id, {
-      ...f.job.options,
-      recognitionProfileId: "missing",
-    });
-    vi.spyOn(providers, "generateText").mockImplementation(
-      async (_p, _k, prompt) =>
-        repairResponse(prompt, (s) =>
-          s.id === "a" && s.translatedText.startsWith("译文")
-            ? ["translation.meaning_problem"]
-            : [],
-        ),
-    );
-    const result = await f.jobs.repairLoop(loopInput(job));
-    expect(result.repairRun).toMatchObject({
-      committedRounds: 1,
-      reason: "no_eligible",
-    });
-    expect(
-      result.segments.map(
-        ({ translatedText: _t, translationStale: _s, ...cue }) => cue,
-      ),
-    ).toEqual(
-      job.segments.map(
-        ({ translatedText: _t, translationStale: _s, ...cue }) => cue,
-      ),
-    );
-    expect(f.transcribe).not.toHaveBeenCalled();
-    expect(f.runtime.executable).not.toHaveBeenCalled();
+    vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) =>
+      repairResponse(prompt, (s) => s.id === "a" ? ["translation.meaning_problem"] : []));
+    const result = await f.jobs.repairLoop(loopInput(f.job));
+    expect(result.repairRun).toMatchObject({ committedRounds: 1, reason: "no_eligible" });
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
     expect(f.translate).toHaveBeenCalledTimes(1);
+    expect(result.segments[0]?.sourceText).toBe("replacement");
+    expect(result.segments[0]?.translatedText).toBe("replacement translated");
   });
   it("mixed recognition and translation failure never publishes half a round", async () => {
     const f = await fixture();
@@ -984,7 +980,7 @@ describe("main-owned bounded automatic repair", () => {
       committedRounds: 0,
       remainingCount: 2,
     });
-    expect(f.transcribe).toHaveBeenCalledTimes(1);
+    expect(f.transcribe).toHaveBeenCalledTimes(2);
   });
   it("preflights combined translation before costly ASR", async () => {
     const f = await fixture();
@@ -1006,6 +1002,7 @@ describe("main-owned bounded automatic repair", () => {
     let analyses = 0;
     vi.spyOn(providers, "generateText").mockImplementation(
       async (_p, _k, prompt) => {
+        const audit = auditResponse(prompt); if (audit) return audit;
         analyses++;
         const current = f.store.getJob(f.job.id);
         expect(() => f.jobs.setStyle(current.id, current.style)).toThrowError(
@@ -1058,6 +1055,7 @@ describe("main-owned bounded automatic repair", () => {
       .mockImplementationOnce(async (_p, _k, prompt) =>
         reviewResponse(prompt, new Set(["a"])),
       );
+    review.mockImplementationOnce(async (_p, _k, prompt) => auditResponse(prompt) ?? "{}");
     review.mockRejectedValueOnce(new Error("reassessment fixture failed"));
     await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toThrow();
     const result = f.store.getJob(f.job.id);
@@ -1111,6 +1109,247 @@ describe("main-owned bounded automatic repair", () => {
     expect(f.translate).not.toHaveBeenCalled();
   });
 });
+describe("chapter repair adjudication and final consistency", () => {
+  it("continues within the repair budget when final consistency discovers a newly eligible scoped cue", async () => {
+    const f = await fixture(); const phases: string[] = [];
+    const generated = vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => reviewResponse(prompt));
+    const initial = await f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision });
+    let injected = false;
+    const save = f.store.saveJob.bind(f.store);
+    vi.spyOn(f.store, "saveJob").mockImplementation((value) => {
+      if (value.repairRun?.phase === "final_consistency" && !injected) {
+        const assessment = value.reviewReport?.assessments?.find((a) => a.segmentId === "b");
+        if (!assessment) throw new Error("Scoped assessment missing");
+        assessment.status = "recheck"; injected = true;
+      }
+      return save(value);
+    });
+    generated.mockImplementation(async (_p, _k, prompt) => {
+      const audit = auditResponse(prompt); if (audit) return audit;
+      const current = f.store.getJob(initial.id); phases.push(current.repairRun?.phase ?? "");
+      return repairResponse(prompt, (s) => current.repairRun?.phase === "final_consistency" && s.id === "b" ? ["source.meaning_problem"] : []);
+    });
+    const result = await f.jobs.repairLoop(loopInput(initial, { maxRounds: 2 }));
+    expect(phases).toEqual(["final_consistency", "reassessment"]);
+    expect(result.repairRun).toMatchObject({ state: "succeeded", reason: "no_eligible", committedRounds: 1, round: 1, maxRounds: 2, remainingCount: 0 });
+    expect(result.revision).toBe(initial.revision + 1);
+    expect(result.segments.filter((s) => ["a", "c"].includes(s.id))).toEqual([initial.segments[0], initial.segments[2]]);
+    expect(result.segments.some((s) => s.sourceText === "replacement")).toBe(true);
+    expect(f.transcribe).toHaveBeenCalledTimes(1); expect(f.translate).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not widen paid checks to an unrelated pre-existing outside-scope pending cue", async () => {
+    const f = await fixture(); const selected: string[][] = [];
+    const generated = vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => repairResponse(prompt, (s) => s.id === "a" ? ["source.meaning_problem"] : []));
+    const initial = await f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision });
+    const staleOutside = initial.reviewReport?.assessments?.find((a) => a.segmentId === "c");
+    if (!staleOutside) throw new Error("Outside assessment missing");
+    staleOutside.status = "recheck";
+    f.store.saveJob(initial);
+    generated.mockImplementation(async (_p, _k, prompt) => {
+      if (!prompt.startsWith("Audit subtitle repairs")) selected.push(parseReviewPrompt(prompt).selected.map((s) => s.id));
+      return repairResponse(prompt, (s) => s.id === "a" ? ["source.meaning_problem"] : []);
+    });
+    const result = await f.jobs.repairLoop(loopInput(initial, { scope: { mode: "range", startMs: 1300, endMs: 1600 } }));
+    expect(result.repairRun?.state).toBe("succeeded");
+    expect(selected.flat()).not.toContain("c");
+    expect(result.reviewReport?.assessments?.find((a) => a.segmentId === "c")?.status).toBe("recheck");
+    expect(result.segments.find((s) => s.id === "c")).toEqual(initial.segments[2]);
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("explicitly audits a silent target beside speech in the same merged ASR interval", async () => {
+    const f = await fixture();
+    const payloads: { targets: { id: string; silenceAllowed: boolean; freshIds: string[] }[] }[] = [];
+    vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+      if (prompt.startsWith("Audit subtitle repairs")) payloads.push(JSON.parse(prompt.split("\n").at(-1) ?? "{}") as typeof payloads[number]);
+      return repairResponse(prompt, (s) => ["a", "b"].includes(s.id) ? ["source.meaning_problem"] : []);
+    });
+    const result = await f.jobs.repairLoop(loopInput(f.job));
+    expect(result.repairRun).toMatchObject({ committedRounds: 1, reason: "no_eligible", effectiveIntervals: [{ startMs: 1100, endMs: 3000 }] });
+    expect(payloads[0]?.targets).toEqual([
+      expect.objectContaining({ id: "a", silenceAllowed: false, freshIds: [expect.any(String)] }),
+      expect.objectContaining({ id: "b", silenceAllowed: true, freshIds: [] }),
+    ]);
+    expect(result.segments).toHaveLength(2);
+    expect(result.segments[0]?.sourceText).toBe("replacement");
+    expect(result.segments[1]).toEqual(f.job.segments[2]);
+    expect(f.transcribe).toHaveBeenCalledTimes(1);
+    expect(result.reviewReport?.assessments?.every((a) => a.status === "current")).toBe(true);
+  });
+
+  for (const outcome of ["merged", "conflict", "duplicate"] as const) it(`cross-chapter merged acoustic evidence ${outcome}`, async () => {
+    const f = await fixture();
+    const job = f.store.getJob(f.job.id);
+    job.segments = [cue("a", 1000, 2000), cue("b", 2000, 3000), cue("c", 5000, 6000)];
+    job.chapterPlan = newCoveragePlan(job);
+    job.chapterPlan.chapters = [
+      { id: "one", title: "One", summary: "", startMs: 0, endMs: 2000 },
+      { id: "two", title: "Two", summary: "", startMs: 2000, endMs: job.media.durationMs },
+    ];
+    f.store.saveJob(job);
+    f.transcribe.mockResolvedValueOnce({ segments: [{ start: 0, end: 2, text: "merged acoustic phrase" }] });
+    const payloads: { targets: { id: string; freshIds: string[] }[]; fresh: Segment[]; chapter: { id: string } }[] = [];
+    vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+      if (!prompt.startsWith("Audit subtitle repairs"))
+        return repairResponse(prompt, (s) => ["a", "b"].includes(s.id) ? ["source.meaning_problem"] : []);
+      const data = JSON.parse(prompt.split("\n").at(-1) ?? "{}") as typeof payloads[number];
+      payloads.push(data);
+      const fresh = data.fresh[0]; if (!fresh) throw new Error("Missing cross-boundary evidence");
+      if (outcome === "duplicate" && data.chapter.id === "two") {
+        const retained = job.segments[1]; if (!retained) throw new Error("Missing retained cue");
+        return JSON.stringify({ targets: [{ id: retained.id, replacementIds: [retained.id] }], segments: [retained] });
+      }
+      return JSON.stringify({ targets: data.targets.map((target) => ({ id: target.id, replacementIds: [fresh.id] })),
+        segments: [{ ...fresh, sourceText: outcome === "conflict" && data.chapter.id === "two" ? "conflicting acoustic phrase" : fresh.sourceText }] });
+    });
+    const task = f.jobs.repairLoop(loopInput(job));
+    if (outcome !== "merged") await expect(task).rejects.toMatchObject({ code: "REPAIR_AUDIT_CONFLICT" });
+    else await task;
+    const result = f.store.getJob(job.id);
+    expect(payloads).toHaveLength(2);
+    expect(payloads.every((payload) => payload.targets.every((target) => target.freshIds.length === 1))).toBe(true);
+    expect(new Set(payloads.flatMap((payload) => payload.fresh.map((s) => s.id))).size).toBe(1);
+    expect(result.repairRun?.committedRounds).toBe(outcome === "merged" ? 1 : 0);
+    if (outcome !== "merged") expect(result.segments).toEqual(job.segments);
+    else {
+      expect(result.segments).toHaveLength(2);
+      expect(result.segments[0]).toMatchObject({ startMs: 1000, endMs: 3000, sourceText: "merged acoustic phrase" });
+      expect(result.segments[1]).toEqual(job.segments[2]);
+      expect(result.reviewReport?.assessments?.every((a) => a.status === "current")).toBe(true);
+    }
+  });
+
+  it("concurrently audits two complete chapters across two unchanged rounds, invalidating retained IDs", async () => {
+    const f = await fixture();
+    const job = f.store.getJob(f.job.id);
+    job.chapterPlan = newCoveragePlan(job);
+    job.chapterPlan.chapters = [
+      { id: "chapter-one", title: "One", summary: "", startMs: 0, endMs: 4000 },
+      { id: "chapter-two", title: "Two", summary: "", startMs: 4000, endMs: job.media.durationMs },
+    ];
+    f.store.saveJob(job);
+    let active = 0; let peak = 0; const auditPayloads: { oldChapter: Segment[]; newChapter: Segment[]; targets: { id: string; suspicion: unknown[] }[] }[] = [];
+    const reviews: string[][] = [];
+    vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+      if (prompt.startsWith("Audit subtitle repairs")) {
+        const data = JSON.parse(prompt.split("\n").at(-1) ?? "{}") as { targets: (Segment & { freshIds: string[]; suspicion: unknown[]; silenceAllowed: boolean })[]; oldChapter: Segment[]; newChapter: Segment[] };
+        auditPayloads.push(data); peak = Math.max(peak, ++active);
+        await new Promise((resolve) => setTimeout(resolve, 30)); active--;
+        return JSON.stringify({ targets: data.targets.map((s) => ({ id: s.id, replacementIds: [s.id] })), segments: data.targets.map(({ freshIds: _f, suspicion: _p, silenceAllowed: _s, ...cue }) => cue) });
+      }
+      const data = parseReviewPrompt(prompt); reviews.push(data.selected.map((s) => s.id));
+      return repairResponse(prompt, (s) => ["a", "c"].includes(s.id) ? ["source.meaning_problem"] : []);
+    });
+    const pendingSnapshots: Job[] = [];
+    const save = f.store.saveJob.bind(f.store);
+    vi.spyOn(f.store, "saveJob").mockImplementation((value) => { if (value.repairRun?.phase === "commit" && value.revision > job.revision) pendingSnapshots.push(structuredClone(value)); return save(value); });
+    const result = await f.jobs.repairLoop(loopInput(job, { maxRounds: 2 }));
+    expect(result.segments).toEqual(job.segments);
+    expect(result.repairRun).toMatchObject({ committedRounds: 2, reason: "max_rounds", remainingCount: 2 });
+    expect(peak).toBe(2); expect(auditPayloads).toHaveLength(4);
+    expect(auditPayloads[0]?.oldChapter.map((s) => s.id)).toEqual(["a", "b"]);
+    expect(auditPayloads[1]?.oldChapter.map((s) => s.id)).toEqual(["c"]);
+    expect(auditPayloads.every((p) => p.newChapter.length && p.targets.every((s) => s.suspicion.length))).toBe(true);
+    expect(reviews).toHaveLength(6);
+    expect(pendingSnapshots.some((snapshot) => snapshot.reviewReport?.assessments?.some((a) => a.segmentId === "a" && a.status === "recheck"))).toBe(true);
+    expect(result.reviewReport?.assessments?.every((a) => a.status === "current")).toBe(true);
+    expect(f.transcribe).toHaveBeenCalledTimes(4); expect(f.translate).toHaveBeenCalledTimes(4);
+    expect(result.chapterPlan?.chapters).toEqual(job.chapterPlan.chapters);
+  });
+
+  for (const outcome of ["success", "fail", "cancel", "nonprogress"] as const) it(`final assessment-only consistency ${outcome} covers run-dependent outside cues without another round`, async () => {
+    const f = await fixture(); const targets: string[][] = [];
+    const generated = vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => repairResponse(prompt, (s) => s.id === "a" ? ["source.meaning_problem"] : []));
+    const initial = await f.jobs.reviewSubtitles({ jobId: f.job.id, revision: f.job.revision });
+    generated.mockImplementation(async (_p, _k, prompt) => {
+      const audit = auditResponse(prompt); if (audit) return audit;
+      const current = f.store.getJob(f.job.id);
+      if (current.repairRun?.phase === "final_consistency") {
+        targets.push(parseReviewPrompt(prompt).selected.map((s) => s.id));
+        if (outcome === "fail") throw new AppError("AUTH_FAILED", "fixture final check failed");
+        if (outcome === "cancel") { f.jobs.cancel(current.id); throw new AppError("CANCELLED", "cancelled"); }
+      }
+      return repairResponse(prompt, (s) => s.id === "a" ? ["source.meaning_problem"] : []);
+    });
+    let injected = false;
+    const save = f.store.saveJob.bind(f.store);
+    vi.spyOn(f.store, "saveJob").mockImplementation((value) => {
+      if (value.repairRun?.phase === "final_consistency" && (!injected || outcome === "nonprogress")) {
+        injected = true;
+        const assessment = value.reviewReport?.assessments?.find((a) => a.segmentId === "b");
+        if (!assessment) throw new Error("dependent fixture missing");
+        assessment.status = "recheck";
+      }
+      return save(value);
+    });
+    const task = f.jobs.repairLoop(loopInput(initial, { maxRounds: 1, scope: { mode: "range", startMs: 1300, endMs: 1600 } }));
+    if (outcome === "success") await task;
+    else await expect(task).rejects.toMatchObject({ code: outcome === "fail" ? "AUTH_FAILED" : outcome === "cancel" ? "CANCELLED" : "REPAIR_INCOMPLETE" });
+    const result = f.store.getJob(f.job.id);
+    expect(targets).toEqual([["b"]]);
+    expect(result.repairRun?.committedRounds).toBe(1); expect(result.revision).toBe(initial.revision + 1);
+    expect(f.transcribe).toHaveBeenCalledTimes(1); expect(f.translate).toHaveBeenCalledTimes(1);
+    expect(result.segments.find((s) => s.id === "b")).toEqual(initial.segments[1]);
+    expect(result.reviewReport?.assessments?.find((a) => a.segmentId === "b")).toMatchObject({ status: outcome === "success" ? "current" : "recheck", riskLevel: "none" });
+    expect(result.repairRun?.state).toBe(outcome === "success" ? "succeeded" : outcome === "cancel" ? "cancelled" : "failed");
+    if (outcome !== "success") expect(result.repairRun?.remainingCount).toBeUndefined();
+  });
+
+  for (const outcome of ["invalid", "cancel", "stale"] as const) it(`failed audit ${outcome} preserves the whole prior round and neighbours`, async () => {
+    const f = await fixture();
+    vi.spyOn(providers, "generateText").mockImplementation(async (_p, _k, prompt) => {
+      if (!prompt.startsWith("Audit subtitle repairs")) return reviewResponse(prompt, new Set(["a"]));
+      if (outcome === "cancel") f.jobs.cancel(f.job.id);
+      if (outcome === "stale") { const changed = f.store.getJob(f.job.id); changed.style.textColor = "#FF0000"; changed.revision++; f.store.saveJob(changed); }
+      return outcome === "invalid" ? JSON.stringify({ targets: [], segments: [] }) : auditResponse(prompt) ?? "{}";
+    });
+    await expect(f.jobs.repairLoop(loopInput(f.job))).rejects.toMatchObject({ code: outcome === "invalid" ? "REPAIR_AUDIT_COVERAGE" : outcome === "cancel" ? "CANCELLED" : "STALE_REVISION" });
+    const result = f.store.getJob(f.job.id);
+    expect(result.segments).toEqual(f.job.segments); expect(result.repairRun?.committedRounds).toBe(0);
+    if (outcome === "stale") expect(result.style.textColor).toBe("#FF0000");
+  });
+
+  it("validates complete split/merge/silence mappings and rejects disjoint loss, duplicate IDs and neighbour changes", async () => {
+    const f = await fixture(); const a = f.job.segments[0] as Segment; const b = f.job.segments[1] as Segment; const c = f.job.segments[2] as Segment;
+    const fresh = [{ ...a, id: "fresh1", endMs: 1500 }, { ...a, id: "fresh2", startMs: 1500 }];
+    const intervals = [{ startMs: 1100, endMs: 3000 }, { startMs: 5000, endMs: 6000 }];
+    const split = { targets: [{ id: a.id, replacementIds: fresh.map((s) => s.id) }], segments: fresh };
+    expect(validateRepairAudit(split, f.job, [a], fresh, intervals)).toEqual(fresh);
+    const merged = { ...a, id: "merged", endMs: b.endMs };
+    expect(validateRepairAudit({ targets: [a, b].map((s) => ({ id: s.id, replacementIds: [merged.id] })), segments: [merged] }, f.job, [a, b], [merged], intervals)).toEqual([merged]);
+    expect(validateRepairAudit({ targets: [{ id: a.id, replacementIds: [] }], segments: [] }, f.job, [a], [], intervals)).toEqual([]);
+    expect(() => validateRepairAudit({ targets: [a, c].map((s) => ({ id: s.id, replacementIds: [c.id] })), segments: [c] }, f.job, [a, c], [], intervals)).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_COVERAGE" }));
+    const distant = { ...c, id: "distant-fresh" };
+    expect(() => validateRepairAudit({ targets: [a, c].map((s) => ({ id: s.id, replacementIds: [distant.id] })), segments: [distant] }, f.job, [a, c], [distant], [{ startMs: 1100, endMs: 6000 }])).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_COVERAGE" }));
+    expect(() => validateRepairAudit({ targets: [{ id: a.id, replacementIds: [distant.id] }], segments: [{ ...distant, startMs: a.startMs, endMs: a.endMs }] }, f.job, [a], [distant], [{ startMs: 1100, endMs: 6000 }])).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_COVERAGE" }));
+    expect(() => validateRepairAudit({ targets: [{ id: a.id, replacementIds: [fresh[0]?.id] }], segments: [{ ...fresh[0], startMs: 5000, endMs: 5500 }] }, f.job, [a], fresh, [{ startMs: 1100, endMs: 6000 }])).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_COVERAGE" }));
+    expect(() => validateRepairAudit({ ...split, segments: [fresh[0], fresh[0], fresh[1]] }, f.job, [a], fresh, intervals)).toThrow();
+    expect(() => validateRepairAudit({ targets: [{ id: a.id, replacementIds: [b.id] }], segments: [b] }, f.job, [a], fresh, intervals)).toThrow();
+    expect(validateRepairAudit({ targets: [{ id: a.id, replacementIds: [] }], segments: [] }, f.job, [a], [{ ...b, id: "shifted" }], intervals)).toEqual([]);
+    expect(() => validateRepairAudit({ targets: [{ id: a.id, replacementIds: [] }], segments: [] }, f.job, [a], fresh, intervals)).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_COVERAGE" }));
+    for (const translationEnabled of [true, false]) {
+      const before = { ...f.job, options: { ...f.job.options, translationEnabled } };
+      expect(() => validateRepairAudit({ targets: [{ id: a.id, replacementIds: [a.id] }], segments: [{ ...a, sourceText: " ", translatedText: translationEnabled ? "translated" : "" }] }, before, [a], fresh, intervals)).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_IDS" }));
+    }
+    expect(() => validateRepairAudit({ targets: [{ id: a.id, replacementIds: [a.id] }], segments: [{ ...a, translationStale: true }] }, f.job, [a], fresh, intervals)).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_IDS" }));
+    const chapter = newCoveragePlan(f.job).chapters[0]; if (!chapter) throw new Error("chapter missing");
+    const prompt = createRepairAudit(f.job, f.job, chapter, [a], fresh, intervals).prompt;
+    expect(prompt).toContain('"oldChapter"'); expect(prompt).toContain('"newChapter"'); expect(prompt).toContain('"suspicion"'); expect(prompt).toContain(c.sourceText);
+  });
+
+  it("retains proven original and fresh ASR overlap while rejecting invented or mixed overlap", () => {
+    const originals = [cue("a", 1000, 2100), cue("b", 2000, 3000)];
+    const fresh = originals.map((s) => ({ ...s, id: `fresh-${s.id}` }));
+    expect(mergeRepairAudits(originals, fresh, originals)).toEqual(originals);
+    expect(mergeRepairAudits(originals, fresh, fresh)).toEqual(fresh);
+    const left = fresh[0]; const right = fresh[1]; const oldRight = originals[1];
+    if (!left || !right || !oldRight) throw new Error("Overlap fixture missing");
+    expect(() => mergeRepairAudits(originals, fresh, [{ ...left, endMs: 2200 }, right])).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_CONFLICT" }));
+    expect(() => mergeRepairAudits(originals, fresh, [left, oldRight])).toThrowError(expect.objectContaining({ code: "REPAIR_AUDIT_CONFLICT" }));
+  });
+});
+
 describe("text-only review metadata lifecycle", () => {
   it("uses exactly the same actual context and rubric in full and sparse selected scans, then merges every explicit grade", async () => {
     const f = await fixture();
@@ -1596,7 +1835,7 @@ describe("single-request review and bounded correction", () => {
       },
       f.root,
       (event) => {
-        if (event.message.startsWith("已校验")) jobs.cancel(f.job.id);
+        if (event.message.includes("已校验")) jobs.cancel(f.job.id);
       },
       (path) => path,
     );

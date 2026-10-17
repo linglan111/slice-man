@@ -32,8 +32,8 @@ describe("session-only bounded provider content", () => {
     streams.start(ended); streams.update({ ...ended, state: "cancelled" }); streams.start(active);
     expect(streams.list()[1]?.phase).toBe("cancelled");
     expect(streams.list({}, Date.now() + 600001).map((entry) => entry.requestId)).toEqual([active.id]);
-    for (let index = 0; index < 12; index++) streams.start(record());
-    expect(streams.list()).toHaveLength(8);
+    for (let index = 0; index < 140; index++) streams.start(record());
+    expect(streams.list()).toHaveLength(128);
   });
   it("destroys ended content on its timer even without another list request", () => {
     vi.useFakeTimers();

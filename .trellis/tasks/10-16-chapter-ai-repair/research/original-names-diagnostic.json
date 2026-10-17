@@ -1,0 +1,112 @@
+{
+  "readonly": true,
+  "paidRequests": 0,
+  "results": [
+    {
+      "requestId": "bc0adc51-38cb-4c8f-b53c-1efc6dd51b64",
+      "candidates": 8,
+      "sourceLanguage": "ja",
+      "targetLanguage": "zh-CN",
+      "currentRevision": 44,
+      "requestStartedAt": 1792163702553,
+      "currentUpdatedAt": 1792163426016,
+      "revisionCaveat": "Diagnostic does not store request revision; current timeline may differ from request snapshot",
+      "issues": [
+        {
+          "candidateOrdinal": 2,
+          "aliasOrdinal": 3,
+          "field": "sourceText",
+          "classification": "word_boundary",
+          "matchesCanonical": false,
+          "boundaryKinds": [
+            "Katakana / Hiragana -> Latin / Han",
+            "Katakana / edge -> Latin / Hiragana",
+            "Katakana / Hiragana -> Latin / Hiragana"
+          ]
+        },
+        {
+          "candidateOrdinal": 2,
+          "aliasOrdinal": 4,
+          "field": "sourceText",
+          "classification": "word_boundary",
+          "matchesCanonical": false,
+          "boundaryKinds": [
+            "Katakana / Hiragana -> Latin / Hiragana"
+          ]
+        },
+        {
+          "candidateOrdinal": 2,
+          "aliasOrdinal": 5,
+          "field": "translatedText",
+          "classification": "word_boundary",
+          "matchesCanonical": false,
+          "boundaryKinds": [
+            "Latin / Han -> Latin / Han"
+          ]
+        },
+        {
+          "candidateOrdinal": 2,
+          "aliasOrdinal": 6,
+          "field": "translatedText",
+          "classification": "word_boundary",
+          "matchesCanonical": false,
+          "boundaryKinds": [
+            "Latin / Han -> Han / Han"
+          ]
+        }
+      ],
+      "fixedFullResponseReplay": {
+        "success": true,
+        "groundedCandidates": 8
+      }
+    },
+    {
+      "requestId": "186d63d7-2185-4733-9d5a-559d66b65dc9",
+      "candidates": 7,
+      "sourceLanguage": "ja",
+      "targetLanguage": "zh-CN",
+      "currentRevision": 44,
+      "requestStartedAt": 1792163493522,
+      "currentUpdatedAt": 1792163426016,
+      "revisionCaveat": "Diagnostic does not store request revision; current timeline may differ from request snapshot",
+      "issues": [
+        {
+          "candidateOrdinal": 2,
+          "aliasOrdinal": 3,
+          "field": "sourceText",
+          "classification": "word_boundary",
+          "matchesCanonical": false,
+          "boundaryKinds": [
+            "Katakana / Hiragana -> Latin / Han",
+            "Katakana / edge -> Latin / Hiragana",
+            "Katakana / Hiragana -> Latin / Hiragana"
+          ]
+        },
+        {
+          "candidateOrdinal": 2,
+          "aliasOrdinal": 4,
+          "field": "sourceText",
+          "classification": "word_boundary",
+          "matchesCanonical": false,
+          "boundaryKinds": [
+            "Katakana / Hiragana -> Latin / Hiragana"
+          ]
+        },
+        {
+          "candidateOrdinal": 2,
+          "aliasOrdinal": 1,
+          "field": "translatedText",
+          "classification": "word_boundary",
+          "matchesCanonical": false,
+          "boundaryKinds": [
+            "Latin / Han -> Latin / Han"
+          ]
+        }
+      ],
+      "fixedFullResponseReplay": {
+        "success": true,
+        "groundedCandidates": 7
+      }
+    }
+  ]
+}

@@ -251,7 +251,7 @@ test('one-click real CPU installation, real Whisper inference and failed/cancell
     await page.getByRole('button', { name: /本地引擎/, exact: false }).first().click();
     await page.getByLabel('安装并验证 NVIDIA 加速（若可用）', { exact: true }).uncheck();
     await page.getByRole('button', { name: '一键安装所选模型', exact: true }).click();
-    await expect(page.getByText('CPU 识别已通过实际测试。', { exact: true })).toBeVisible({ timeout: 90000 });
+    await expect(page.getByRole('dialog').locator('.device-card').getByText('CPU 识别已通过实际测试。', { exact: true })).toBeVisible({ timeout: 90000 });
     await expect(page.getByRole('button', { name: '继续安装所选模型', exact: true })).toBeEnabled();
     const stateBefore = await readText(resolve(userData, 'runtime-state.json'));
     // Verified downloads are deliberately reusable. Clear only their cache before

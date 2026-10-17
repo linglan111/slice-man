@@ -6,6 +6,11 @@
 .chapter-panel > :not(.chapter-panel__list):not(dialog) { flex-shrink: 0; }
 .chapter-panel__setup { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; }
 .chapter-panel__setup label { flex: 1 1 140px; min-width: 0; margin: 0; }
+.chapter-panel__type { flex: 1 1 140px; min-width: 0; }
+.chapter-panel__type-label { display: flex; align-items: center; gap: 6px; }
+.chapter-panel__setup .chapter-panel__type-label label { flex: 0 1 auto; }
+.chapter-help { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; padding: 0; border: 1px solid var(--color-muted); border-radius: 50%; background: transparent; color: var(--color-muted); font-size: 11px; }
+.chapter-help:hover, .chapter-help:focus-visible { color: var(--color-primary); border-color: var(--color-primary); }
 .chapter-panel__setup > .button { min-height: 32px; }
 .chapter-panel > .hint { margin: 0; }
 .chapter-panel__selection { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; }

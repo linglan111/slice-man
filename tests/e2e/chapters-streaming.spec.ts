@@ -13,6 +13,11 @@ async function seed(page: Page, long = false): Promise<void> {
     const jobs = await window.api.jobs.list(); const profiles = await window.api.profiles.list();
     if (!jobs.success || !jobs.data[0] || !profiles.success || !profiles.data[0]) throw new Error('Fixture missing');
     let job = jobs.data[0]; const id = profiles.data[0].id;
+    if (long) {
+      const {hasKey, ...profile} = profiles.data[0]; void hasKey;
+      const saved = await window.api.profiles.save({...profile, textConcurrency: 1});
+      if (!saved.success) throw new Error(saved.error);
+    }
     const configured = await window.api.jobs.updateOptions({jobId: job.id, options: {...job.options, reviewProfileId: id, chapterProfileId: id, translationProfileId: id}});
     if (!configured.success) throw new Error(configured.error); job = configured.data;
     const starts = long ? [100, 901000, 1700000] : [100, 2000];
@@ -97,8 +102,8 @@ test('streamed chapter planning, title exports, standards and diagnostics surviv
     await page.getByLabel('切分标准', {exact: true}).selectOption({label: 'Native criteria'});
     await page.getByRole('button', {name: 'AI 切分章节', exact: true}).click();
     await expect(page.getByLabel('章节 1 标题', {exact: true})).toBeVisible();
-    expect(mock.counters.chapters).toBe(2);
-    const records = await diagnostics(page); expect(records).toHaveLength(2);
+    expect(mock.counters.chapters).toBe(3);
+    const records = await diagnostics(page); expect(records).toHaveLength(3);
     expect(records.every(r => r.state === 'published' && r.streamActual)).toBe(true);
     for (const record of records) {
       const answer = await page.evaluate(id => window.api.diagnostics.readAnswer(id), record.id);
@@ -111,7 +116,7 @@ test('streamed chapter planning, title exports, standards and diagnostics surviv
     await expect(logs.getByLabel('已接收的 AI 回答')).toContainText('chapters');
     await page.screenshot({path:info.outputPath('diagnostics.png')});
     await app.close(); ({app,page}=await launchApp(userData,[],[]));
-    expect(await diagnostics(page)).toHaveLength(2);
+    expect(await diagnostics(page)).toHaveLength(3);
     const library=await page.evaluate(()=>window.api.chapterCriteria.list());
     expect(library.success && library.data.items.some(item=>item.name==='Native criteria')).toBe(true);
   } finally {await app.close(); await mock.close();}
@@ -141,7 +146,7 @@ test('cancelled partial AI answer stays on disk without publishing names or repl
 
 test('long video review retains completed chapters and resumes only remaining targets',async({playwright:_},info)=>{
   test.setTimeout(180000);
-  const mock=await startMockServer();mock.behavior.textStream='sse';mock.behavior.review='empty';mock.behavior.reviewErrorAt=2;
+  const mock=await startMockServer();mock.behavior.textStream='sse';mock.behavior.review='empty';mock.behavior.reviewErrorAt=2;mock.behavior.reviewErrorDelayMs=1500;
   const input=info.outputPath('long.mp4');
   await promisify(execFile)(FFMPEG,['-y','-f','lavfi','-i','color=c=black:s=320x180:r=1','-f','lavfi','-i','sine=frequency=400:sample_rate=16000','-t','1801','-c:v','libx264','-preset','ultrafast','-c:a','aac','-b:a','8k',input],{windowsHide:true});
   const {app,page}=await launchApp(info.outputPath('long-user-data'),[input],[]);
@@ -155,7 +160,7 @@ test('long video review retains completed chapters and resumes only remaining ta
     mock.behavior.reviewErrorAt=undefined;
     await page.getByRole('button',{name:'继续检查剩余章节',exact:true}).click();
     await expect.poll(async()=>(await run())?.state).toBe('complete');
-    expect(mock.counters.review).toBe(3);expect(mock.counters.chapters).toBe(1);
+    expect(mock.counters.review).toBe(1 + ((await run())?.chapters.length ?? 0));expect(mock.counters.chapters).toBe(2);
     await page.screenshot({path:info.outputPath('chapter-review-complete.png')});
   }finally{await app.close();await mock.close();}
 });

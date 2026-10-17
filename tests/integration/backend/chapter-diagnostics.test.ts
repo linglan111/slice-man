@@ -78,6 +78,7 @@ async function fixture(
     sessionOnly: true,
     apiKey: "not-in-logs",
     timeoutMs: 1000,
+    textConcurrency: 1,
   });
   const diagnostics = new ProviderDiagnosticsRepository(store.sqlite, root);
   const jobs = new JobService(
@@ -169,7 +170,7 @@ describe("actual streamed chapter diagnostics and SQLite publication", () => {
     f.store.saveJob(job);
     await f.jobs.designStyle("job", "clean readable");
     const records = f.diagnostics.list({ jobId: "job" });
-    expect(records).toHaveLength(5);
+    expect(records).toHaveLength(7);
     expect(records.every((record) => record.state === "published")).toBe(true);
     expect(
       records.filter((record) => record.operation === "translate"),

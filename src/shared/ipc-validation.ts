@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { aiWorkProgressSchema } from "./ai-work-contracts";
 import { providerDiagnosticSchema, providerLiveSnapshotSchema } from './provider-diagnostics-contracts';
 import { criterionLibrarySchema, chapterExportRunSchema } from './chapter-export-contracts';
 import { artifactCacheSummarySchema } from "./artifact-cache-contracts";
@@ -52,10 +53,11 @@ export const progressSchema: z.ZodType<ProgressEvent> = z
     message: z.string(),
     job: jobSchema.optional(),
     repairRunId: z.string().min(1).max(100).optional(),
+    work: aiWorkProgressSchema.optional(),
   })
   .strict();
 const outputSchemas: Record<string, z.ZodType> = {
-  "diagnostics:live": z.array(providerLiveSnapshotSchema).max(8),
+  "diagnostics:live": z.array(providerLiveSnapshotSchema).max(128),
   "diagnostics:list": z.array(providerDiagnosticSchema).max(100),
   "diagnostics:detail": providerDiagnosticSchema,
   "diagnostics:readAnswer": z.object({ text: z.string().max(20000), truncated: z.boolean() }).strict(),

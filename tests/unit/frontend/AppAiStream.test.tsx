@@ -17,7 +17,7 @@ describe('AI stream and review scope navigation', () => {
     let finish: (() => void) | undefined;
     vi.mocked(api.jobs.reviewSubtitles).mockImplementation(() => new Promise((resolve) => { finish = () => resolve({ success: true, data: job }); }));
     await act(async () => { render(<App />); });
-    vi.mocked(api.diagnostics.live).mockResolvedValue({ success: true, data: [liveSnapshot({ jobId: job.id })] });
+    vi.mocked(api.diagnostics.live).mockImplementation(async () => ({ success: true, data: [liveSnapshot({ jobId: job.id, startedAt: Date.now() })] }));
     fireEvent.click(screen.getByRole('button', { name: 'AI 检查字幕' }));
     expect(api.jobs.reviewSubtitles).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: '检查范围' })).toBeNull();
@@ -33,7 +33,9 @@ describe('AI stream and review scope navigation', () => {
     vi.mocked(api.diagnostics.live).mockResolvedValue({ success: true, data: [liveSnapshot({ jobId: job.id, phase: 'complete', state: 'published', answerText: '{}' })] });
     await act(async () => finish?.());
     await waitFor(() => expect(screen.queryByRole('button', { name: '取消当前处理' })).toBeNull());
-    fireEvent.click(screen.getByRole('button', { name: '流式信息' }));
+    expect(screen.queryByRole('button', { name: '流式信息' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: '查看流式信息' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: '查看流式信息' }));
     await screen.findByText('输出已完成');
     expect(screen.getByLabelText('流式回答内容').textContent).toBe('{}');
   });

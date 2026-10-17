@@ -5,9 +5,27 @@ import { primarySubtitleText } from '../../../../shared/subtitle-content';
 import { AppError } from '../../../lib/errors';
 
 type Span = { start: number; end: number };
+/** Model strings are deliberately excluded from correction diagnostics. */
+export class NameEvidenceError extends AppError {
+  constructor(message: string, public readonly diagnostic: {
+    candidateOrdinal: number;
+    reason: 'missing_aliases' | 'missing_literal' | 'insufficient_cues';
+    field?: NameField;
+    aliasOrdinal?: number;
+  }) {
+    super('NAMES_EVIDENCE', message);
+  }
+}
 const continuation = /[\p{L}\p{N}\p{M}_]/u;
+const protectedContinuation = /[\p{N}\p{M}_]/u;
 const boundedEdge = /[\p{Script=Latin}\p{Script=Greek}\p{Script=Cyrillic}\p{N}\p{M}_]/u;
 const cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+function continuesBoundedName(point: string): boolean {
+  // CJK dialogue naturally has no spaces around Latin names (or mixed-script
+  // names ending in Latin). Other letters, digits, marks and underscores still
+  // protect word fragments; do not reinterpret spelling or normalize the text.
+  return continuation.test(point) && (!cjk.test(point) || protectedContinuation.test(point));
+}
 function previousPoint(text: string, at: number): string | undefined {
   if (at === 0) return undefined;
   const last = text.charCodeAt(at - 1);
@@ -24,7 +42,7 @@ export function literalNameSpans(text: string, alias: string): Span[] {
     // UTF-16 positions must also be complete code-point boundaries.
     if (at > 0 && /[\uDC00-\uDFFF]/u.test(text[at] ?? '')) continue;
     if (end < text.length && /[\uDC00-\uDFFF]/u.test(text[end] ?? '')) continue;
-    if ((boundedEdge.test(first) && before && continuation.test(before)) || (boundedEdge.test(last) && after && continuation.test(after))) continue;
+    if ((boundedEdge.test(first) && before && continuesBoundedName(before)) || (boundedEdge.test(last) && after && continuesBoundedName(after))) continue;
     if ((before && /\p{M}/u.test(first)) || (after && /\p{M}/u.test(after))) continue;
     result.push({ start: at, end });
   }
@@ -56,7 +74,7 @@ export function groundNames(job: Job, raw: unknown): NameCandidate[] {
   if (!parsed.success) throw new AppError('NAMES_INVALID', '人名结果格式不正确，请重新分析');
   const claims = new Map<string, number>();
   return parsed.data.candidates.map((candidate, index) => {
-    if (!candidate.sourceAliases.length && !candidate.translatedAliases.length) throw new AppError('NAMES_EVIDENCE', '人名缺少字幕中的实际别名');
+    if (!candidate.sourceAliases.length && !candidate.translatedAliases.length) throw new NameEvidenceError('人名缺少字幕中的实际别名', { candidateOrdinal: index + 1, reason: 'missing_aliases' });
     if (candidate.translatedAliases.length && !candidate.translatedName) throw new AppError('NAMES_INVALID', '人名结果缺少推荐译名');
     if (!job.options.translationEnabled && (candidate.translatedAliases.length || candidate.translatedName)) throw new AppError('NAMES_INVALID', '原语言项目不接受译名结果');
     const fields: NameField[] = job.options.translationEnabled ? ['sourceText', 'translatedText'] : ['sourceText'];
@@ -64,17 +82,17 @@ export function groundNames(job: Job, raw: unknown): NameCandidate[] {
     for (const field of fields) {
       const names = field === 'sourceText' ? candidate.sourceAliases : candidate.translatedAliases;
       if (new Set(names).size !== names.length) throw new AppError('NAMES_INVALID', '人名别名重复');
-      for (const alias of names) {
+      for (const [aliasIndex, alias] of names.entries()) {
         if (Array.from(alias).length === 1 && cjk.test(alias)) throw new AppError('NAMES_INVALID', '不接受单字中日韩人名别名，请使用完整姓名');
         const key = `${field}:${alias}`;
         if (claims.has(key) && claims.get(key) !== index) throw new AppError('NAMES_CONFLICT', '不同人名使用了相同别名');
         claims.set(key, index);
-        if (!job.segments.some((cue) => literalNameSpans(cue[field], alias).length)) throw new AppError('NAMES_EVIDENCE', '推荐的人名别名没有字幕证据');
+        if (!job.segments.some((cue) => literalNameSpans(cue[field], alias).length)) throw new NameEvidenceError(`第 ${index + 1} 个人名的${field === 'sourceText' ? '原文' : '译文'}别名没有字幕证据（需逐字一致且符合词边界）`, { candidateOrdinal: index + 1, field, aliasOrdinal: aliasIndex + 1, reason: 'missing_literal' });
       }
       for (const cue of job.segments) for (const span of longestSpans(names.flatMap((alias) => literalNameSpans(cue[field], alias)))) occurrences.push({ segmentId: cue.id, field, ...span });
     }
     const cueCount = new Set(occurrences.map((o) => o.segmentId)).size;
-    if (cueCount < 2) throw new AppError('NAMES_EVIDENCE', '关键人名须在至少两条字幕中出现');
+    if (cueCount < 2) throw new NameEvidenceError('关键人名须在至少两条字幕中出现', { candidateOrdinal: index + 1, reason: 'insufficient_cues' });
     if (occurrences.length > 100000) throw new AppError('TEXT_LIMIT', '人名出现次数超出容量，请缩小字幕内容');
     return { ...candidate, id: randomUUID(), occurrences, cueCount, sourceCount: occurrences.filter((o) => o.field === 'sourceText').length, translatedCount: occurrences.filter((o) => o.field === 'translatedText').length };
   });

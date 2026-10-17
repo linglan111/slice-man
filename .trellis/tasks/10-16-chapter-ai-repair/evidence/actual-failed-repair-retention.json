@@ -1,0 +1,74 @@
+{
+  "cumulativeCalls": 13,
+  "limit": 30,
+  "repairState": "failed",
+  "committedRounds": 0,
+  "errorCode": "TRUNCATED",
+  "unchangedOriginalTranscript": true,
+  "unchangedPreviouslyPublishedTranslations": true,
+  "seedReportRetained": true,
+  "segments": 2,
+  "publishedChapterRequests": {
+    "translation": 2,
+    "review": 2,
+    "style": 2
+  },
+  "retainedAttemptStates": [
+    {
+      "operation": "chapters",
+      "state": "published"
+    },
+    {
+      "operation": "translate",
+      "state": "published"
+    },
+    {
+      "operation": "translate",
+      "state": "published"
+    },
+    {
+      "operation": "review",
+      "state": "published"
+    },
+    {
+      "operation": "review",
+      "state": "published"
+    },
+    {
+      "operation": "style",
+      "state": "published"
+    },
+    {
+      "operation": "style",
+      "state": "published"
+    },
+    {
+      "operation": "translate",
+      "state": "validated"
+    },
+    {
+      "operation": "translate",
+      "state": "validated"
+    },
+    {
+      "operation": "review",
+      "state": "failed",
+      "errorCode": "TRUNCATED"
+    },
+    {
+      "operation": "review",
+      "state": "validated"
+    }
+  ],
+  "truncated": {
+    "number": 13,
+    "httpStatus": 200,
+    "reasoningDeltaCount": 8192,
+    "outputTextDeltaCount": 0,
+    "responseCompletedCount": 0,
+    "textBytes": 0
+  },
+  "segmentsFingerprint": "c4cb71b082cad1b74ab21b17cba01ae6fd721276ba949abdc2405aab90ec4636",
+  "reviewFingerprint": "ba0aede51e586d891fa42c5b91167e9c28bf92d973c4dce8440c47b2a12eeb51",
+  "chapterFingerprint": "33d04b3e23d7cb2d122176b38640e6b1ec8e99aaaccc9a790f4bcf5b1e0ca502"
+}

@@ -1,0 +1,78 @@
+{
+  "command": "npx playwright test --reporter=line,json --output=.native-smoke/chapter-ai-20261017/e2e-full-acceptance-output",
+  "environment": "Independent default process with APP_LIVE*, RESPONSES_E2E*, DEEPSEEK_E2E*, CHAPTER_PROJECT_LIVE* removed; no real key supplied",
+  "stats": {
+    "startTime": "2026-10-17T10:14:24.471Z",
+    "duration": 324912.604,
+    "expected": 53,
+    "skipped": 10,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "skips": [
+    {
+      "title": "authorized actual Responses service: thinking popup, ranged/full review, names, chapters, translation, style and exports",
+      "reasons": [
+        "Requires explicit authorization and isolated in-memory credentials"
+      ]
+    },
+    {
+      "title": "actual local partial ASR precheck observes fresh temporary CPU receipts without AI",
+      "reasons": [
+        "Opt-in real CPU receipt-observer verification, no paid provider calls"
+      ]
+    },
+    {
+      "title": "authorized actual chapter AI and native JFK repair preserve persisted current grades",
+      "reasons": [
+        "Requires explicit paid-service authorization and durable cumulative ledger"
+      ]
+    },
+    {
+      "title": "actual repair checkpoint identity preflight without AI",
+      "reasons": [
+        "Opt-in no-AI persisted failed-repair identity verification"
+      ]
+    },
+    {
+      "title": "authorized actual repair continuation retains failed attempt and persists current grades",
+      "reasons": [
+        "Requires authorized cumulative ledger and independently verified failed-repair checkpoint"
+      ]
+    },
+    {
+      "title": "authorized failing-project copy produces strictly grounded chapters through actual native UI and provider",
+      "reasons": [
+        "Requires explicit authorization, readonly source bridge and isolated credentials"
+      ]
+    },
+    {
+      "title": "live DeepSeek text translation/style over actual local Whisper and real desktop media export",
+      "reasons": [
+        "Explicit live gate and session-only user key are required."
+      ]
+    },
+    {
+      "title": "live DeepSeek compatibility-only Responses and Anthropic desktop probes with exact auth forwarding",
+      "reasons": [
+        "Explicit live gate and session-only user key are required."
+      ]
+    },
+    {
+      "title": "authorized real YouTube and Bilibili complete download/probe/import/decoded playback via production Electron UI",
+      "reasons": [
+        "Explicitly gated live user-supplied video downloads"
+      ]
+    },
+    {
+      "title": "authorized live Responses chapter planning, subtitle review and global names publish synthetic results",
+      "reasons": [
+        "Requires explicit user authorization and a durable three-request ledger"
+      ]
+    }
+  ],
+  "report": ".native-smoke/chapter-ai-20261017/e2e-full-acceptance.json",
+  "log": ".native-smoke/chapter-ai-20261017/e2e-full-acceptance.log",
+  "paidCallsBefore": 19,
+  "paidCallsAfter": 19
+}

@@ -1,0 +1,6 @@
+{"file":".trellis/spec/shared/subtitle-contracts.md","reason":"Shared subtitle IPC, data and rendering invariants"}
+{"file":".trellis/spec/shared/subtitle-review-reprocessing.md","reason":"Existing review and repair safety; update superseded batching and category routing"}
+{"file":".trellis/spec/shared/native-runtime-testing.md","reason":"Electron ABI, isolated credentials and accurate evidence"}
+{"file":".trellis/spec/shared/code-quality.md","reason":"Quality requirements"}
+{"file":".trellis/spec/frontend/ipc-electron.md","reason":"Renderer/preload/main boundaries"}
+{"file":".trellis/tasks/10-16-chapter-ai-repair/research/source-findings.md","reason":"Source diagnosis and regression coverage"}

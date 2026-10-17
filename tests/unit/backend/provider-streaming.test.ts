@@ -45,6 +45,33 @@ function chat(content: string, finish: string | null = null): string { return ev
 function sse(res: ServerResponse): void { res.writeHead(200, { "Content-Type": "text/event-stream" }); res.flushHeaders(); }
 
 describe("streamed text protocol integrity and diagnostics", () => {
+  it("limits real HTTP chapter and whole-timeline operations together and cancels queued work before POST", async () => {
+    const repo = await diagnostics();
+    const responses: ServerResponse[] = [];
+    const url = await fixture((res) => { responses.push(res); sse(res); });
+    const service = { ...profile(url), textConcurrency: 2 };
+    const states: string[] = [];
+    const first = generateText(service, "key", "chapter1", undefined, { diagnostics: repo, operation: "review", runId: "run", chapterId: "c1", onState: (state) => states.push(`one:${state}`) });
+    const names = generateText(service, "key", "whole timeline", undefined, { diagnostics: repo, operation: "names", runId: "names", onState: (state) => states.push(`names:${state}`) });
+    const controller = new AbortController();
+    const cancelled = generateText(service, "key", "queued", controller.signal, { diagnostics: repo, operation: "style", onState: (state) => states.push(`cancelled:${state}`) });
+    const failure = expect(cancelled).rejects.toMatchObject({ code: "CANCELLED" });
+    const third = generateText(service, "key", "chapter2", undefined, { diagnostics: repo, operation: "translate", runId: "run", chapterId: "c2", onState: (state) => states.push(`three:${state}`) });
+    await vi.waitFor(() => expect(responses).toHaveLength(2));
+    expect(states).not.toContain("three:running");
+    controller.abort(); await failure;
+    expect(states).not.toContain("cancelled:running");
+    const one = responses[0];
+    if (!one) throw new Error("missing response");
+    one.end(chat("{}", "stop") + "data: [DONE]\n\n");
+    await vi.waitFor(() => expect(responses).toHaveLength(3));
+    expect(states).toContain("three:running");
+    for (const response of responses.slice(1)) response.end(chat("{}", "stop") + "data: [DONE]\n\n");
+    await Promise.all([first, names, third]);
+    expect(repo.list()).toHaveLength(3);
+    expect(repo.live().filter((live) => live.runId === "run").map((live) => live.chapterId).sort()).toEqual(["c1", "c2"]);
+    await waitForTextRequestsIdle();
+  });
   it("exposes live thinking before answer bytes without persisting it or restoring it after restart", async () => {
     const repo = await diagnostics();
     let release: (() => void) | undefined;
@@ -247,7 +274,7 @@ describe("streamed text protocol integrity and diagnostics", () => {
       const messages = body.messages as { content: string }[]; const prompt = messages[0]?.content ?? "";
       const payload = JSON.parse(prompt.split("\n")[1] ?? "{}") as Record<string, unknown>;
       expect(payload.chapter).toEqual({ title: "章节", summary: "章节摘要" });
-      expect(payload.context).toEqual([{ id: "context", text: "上下文" }]);
+      expect(payload.context).toEqual([{ id: "context", text: "上下文", startMs: 0, endMs: 1000, sourceText: "上下文", translatedText: "" }]);
       sse(res); res.end(chat(JSON.stringify({ translations: requests === 1 ? [] : [{ id: "target", text: "译文" }] }), "stop") + "data: [DONE]\n\n");
     });
     expect(await translateBatch(profile(url), "key", [cue], [cue, neighbour, neighbour], "ja", "zh", undefined, { diagnostics: repo, operation: "translate", onRequestComplete: (id) => ids.push(id) }, { title: "章节", summary: "章节摘要" })).toEqual([{ id: "target", text: "译文" }]);

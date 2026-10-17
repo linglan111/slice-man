@@ -1,7 +1,7 @@
 import { diagnosticsLiveInputSchema } from "../../../../shared/provider-diagnostics-contracts";
 import type { DiagnosticsLiveInput, ProviderDiagnostic, ProviderLiveSnapshot } from "../../../../shared/provider-diagnostics-contracts";
 
-const CAPACITY = 8;
+const CAPACITY = 128;
 const TEXT_LIMIT = 32000;
 const RETENTION_MS = 10 * 60 * 1000;
 type Entry = { snapshot: ProviderLiveSnapshot; endedAt?: number; expiryTimer?: ReturnType<typeof setTimeout> };
@@ -23,6 +23,7 @@ export class LiveProviderStreams {
     }
     this.entries.set(record.id, { snapshot: {
       requestId: record.id, jobId: record.jobId, operation: record.operation, model: record.model,
+      runId: record.runId, chapterId: record.chapterId,
       state: record.state, phase: "waiting", startedAt: record.startedAt, updatedAt: record.startedAt,
       elapsedMs: 0, wireBytes: 0, answerBytes: 0, thinkingText: "", answerText: "",
       thinkingTruncated: false, answerTruncated: false,

@@ -43,6 +43,7 @@ export const diagnosticsLiveInputSchema = z.object({
 export type DiagnosticsLiveInput = z.infer<typeof diagnosticsLiveInputSchema>;
 export const providerLiveSnapshotSchema = z.object({
   requestId: z.string().uuid(), jobId: z.string().max(100).optional(), operation: textOperationSchema,
+  runId: z.string().max(100).optional(), chapterId: z.string().max(100).optional(),
   model: z.string().max(200), state: diagnosticStateSchema,
   phase: z.enum(["waiting", "thinking", "answer", "complete", "failed", "cancelled"]),
   startedAt: time, updatedAt: time, elapsedMs: count, wireBytes: count, answerBytes: count,

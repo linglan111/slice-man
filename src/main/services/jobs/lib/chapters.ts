@@ -138,6 +138,17 @@ export function newCoveragePlan(job: Job): ChapterPlan {
   );
 }
 
+/** Rebind a run's approved boundaries to an unpublished ASR draft without replanning. */
+export function rebindChapterPlan(plan: ChapterPlan, job: Job): ChapterPlan {
+  return validateChapterPlan({ ...structuredClone(plan), sourceFingerprint: chapterSourceFingerprint(job), state: "current" }, job.media.durationMs);
+}
+
+/** Full owning chapter plus crossing boundary cues; target selection never narrows context. */
+export function chapterContext(all: Segment[], chapter: Chapter): Segment[] {
+  return all.filter((cue) => cue.startMs < chapter.endMs && cue.endMs > chapter.startMs)
+    .sort((a, b) => a.startMs - b.startMs || a.endMs - b.endMs || a.id.localeCompare(b.id));
+}
+
 const wireSchema = z
   .object({
     chapters: z
@@ -159,8 +170,11 @@ export function createChapterRequest(
   job: Job,
   kind: ChapterPlan["kind"],
   criterion?: ChapterCriterionSnapshot,
+  chapter?: Chapter,
 ): { prompt: string; anchors: number[] } {
-  const anchors = chapterAnchors(job.segments, job.media.durationMs);
+  const fullAnchors = chapterAnchors(job.segments, job.media.durationMs);
+  const anchors = chapter ? [...new Set([chapter.startMs, chapter.endMs, ...fullAnchors.filter((ms) => ms > chapter.startMs && ms < chapter.endMs)])].sort((a, b) => a - b) : fullAnchors;
+  const cues = chapter ? chapterContext(job.segments, chapter) : job.segments;
   const lastAnchorIndex = anchors.length - 1;
   const anchorIndices = new Map(
     anchors.map((timeMs, index) => [timeMs, index]),
@@ -178,17 +192,21 @@ export function createChapterRequest(
     JSON.stringify({
       kind,
       criterion,
+      chapter,
+      targetIds: cues.filter((cue) => !chapter || (cue.startMs >= chapter.startMs && cue.startMs < chapter.endMs)).map((cue) => cue.id),
       anchorIndexMin: 0,
       anchorIndexMax: lastAnchorIndex,
       maxChapterDurationMs: MAX_CHAPTER_MS,
       anchors: anchors.map((timeMs, index) => ({ index, timeMs })),
-      cues: job.segments.map((cue, n) => ({
+      cues: cues.map((cue, n) => ({
+        id: cue.id,
         n,
         startMs: cue.startMs,
         endMs: cue.endMs,
-        startAnchor: anchorIndices.get(cue.startMs),
-        endAnchor: anchorIndices.get(cue.endMs),
+        startAnchor: anchorIndices.get(Math.max(chapter?.startMs ?? 0, cue.startMs)),
+        endAnchor: anchorIndices.get(Math.min(chapter?.endMs ?? job.media.durationMs, cue.endMs)),
         sourceText: cue.sourceText,
+        translatedText: job.options.translationEnabled ? cue.translatedText : "",
       })),
     });
   if (
@@ -210,6 +228,7 @@ export function groundChapterResponse(
   profileId: string,
   providerFingerprint: string,
   criterion?: ChapterCriterionSnapshot,
+  bounds?: Chapter,
 ): ChapterPlan {
   const parsed = wireSchema.safeParse(raw);
   if (!parsed.success)
@@ -269,8 +288,7 @@ export function groundChapterResponse(
       "CHAPTER_INVALID",
       `AI 普通章节未覆盖视频结尾：末章终点应为 ${lastAnchorIndex}，实际为 ${previousEnd}，已保留原章节，请重试`,
     );
-  return validateChapterPlan(
-    {
+  const plan: ChapterPlan = {
       version: 1,
       id: randomUUID(),
       revision: 0,
@@ -280,11 +298,11 @@ export function groundChapterResponse(
       providerFingerprint,
       createdAt: Date.now(),
       state: "current",
-      chapters,
+      chapters: bounds ? chapters.map((chapter) => ({ ...chapter, startMs: chapter.startMs - bounds.startMs, endMs: chapter.endMs - bounds.startMs })) : chapters,
       criterion,
-    },
-    job.media.durationMs,
-  );
+    };
+  const validated = validateChapterPlan(plan, bounds ? bounds.endMs - bounds.startMs : job.media.durationMs);
+  return bounds ? { ...validated, chapters } : validated;
 }
 
 export function chapterTargets(
