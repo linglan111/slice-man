@@ -8,7 +8,7 @@
 - [x] Implement/check core contracts and dependent repair; names can proceed independently of chapter core, coordinating shared limiter/job-service ownership; integrate progress/regression child.
 - [x] Dispatch Trellis check over complete final scope; fix findings and run static/unit checks. Independent final review passed with 935 tests; native/actual-service acceptance is tracked separately below.
 - [x] Complete actual-service acceptance and leader evidence review. Actual names/chapters/translation/review/style/native repair/restart/export passed across preserved attempts, cumulative19/30 calls. Final complete desktop suite:53 passed,10 explicit opt-in skips,0 failures/flaky. See research/leader-acceptance.md and evidence/runtime-verification.md.
-- [ ] Update affected specs, commit scoped work, archive completed children/parent and record journal.
+- [x] Updated affected specs, committed scoped work, archived the four completed children and parent, and recorded journal session8 with the three work commits. Official v0.1.5 release and downloaded artifact integrity independently accepted.
 
 ## Validation
 1. Core: short/multi chapter reuse/invalidation; full chapter vs sparse targets; boundary ownership; capacity-before-call; exact phase request counts; real overlap/service caps; lossless out-of-order merge; failure/cancel settlement; legacy profile persistence.
@@ -34,4 +34,4 @@ Store sanitized ledgers/screenshots/count assertions/final review in parent evid
 - [x] readme_current: rewrote README/English usage against actual source, added0.1.5 notes and corrected the release guide;4documents/10local links/27script references checked.
 - [x] release_check: independently accepted final guide/docs/version and existing workflow; lint/typecheck/build,20unit,12policy and8native desktop cases passed. All six minimum-window guide steps and screenshots checked, no remaining findings.
 - [x] Leader: committed only owned paths, preserved history and pushed main/release without force. Official v0.1.5 published from0914fbc after Actions39090822196 passed936unit tests and52desktop tests (11explicit skips). Independent reviewer downloaded the installer and verified its SHA-256 against both manifest and GitHub digest; see research/official-release-verification.md.
-- [ ] Leader: archive this completed task and its4children, record journal and preserve unrelated active work after successful release.
+- [x] Leader: archived this completed task and its4children, recorded jing journal session8 and preserved unrelated active work after successful release. Release/tag remain on tested0914fbc; main additionally carries only Trellis closure records.

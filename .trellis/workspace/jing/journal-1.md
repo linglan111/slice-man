@@ -235,3 +235,40 @@ No task created per continuing user preference. Merged AI review into one scope-
 ### Status
 
 [OK] **Completed**
+
+
+## Session 8: Chapter AI workflows and official v0.1.5 release
+<!-- trellis-session: v=2 fp=ba7a9fafa9f279ae -->
+
+**Date**: 2026-10-18
+**Task**: Chapter AI workflows and official v0.1.5 release
+**Branch**: `main`
+
+### Summary
+
+Implemented chapter-batched AI and audited subtitle repair, global name evidence fixes, concurrent progress and operation height resizing; refreshed guide/README, pushed main/release and published verified stable v0.1.5.
+
+### Main Changes
+
+- Archived the parent and four completed child tasks; preserved unrelated work and original failed CI evidence.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `df6f0c0` | feat(ai): batch chapter workflows and audit subtitle repair |
+| `c9c2e9a` | chore(release): align guides and prepare v0.1.5 |
+| `0914fbc` | test(e2e): wait for native resize layout before hit checks |
+
+### Testing
+
+- [OK] Official Actions39090822196: lint/typecheck/build pass; 85files/936unit tests pass; 52desktop pass,11explicit gated skips; Windows NSIS and isolated packaged startup/IPC/resource checks pass.
+- [OK] Independent reviewer downloaded the186188441byte official installer: SHA2565f17d57d403eb193355914fffdc74a12b1009822c9087d0e53456b8693dc97bb matches manifest and server digest; v0.1.5 tag/target exactly0914fbc.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- User validates installation and interactive behavior; release/tag remain on CI-tested0914fbc while main carries only additional Trellis bookkeeping.
