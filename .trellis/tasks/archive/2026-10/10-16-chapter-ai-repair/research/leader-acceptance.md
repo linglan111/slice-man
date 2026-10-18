@@ -14,6 +14,12 @@ resize_review 进一步只读独立复算了安装器/asar哈希、大小/版本
 
 ## 已核实的交付
 
+### Official release follow-up — 2026-10-18
+
+用户明确授权更新功能导航与README后提交、推送main并合并release发布新版。guide_current、readme_current完成六步导航、README、英文使用指南、发布说明和稳定0.1.5版本元数据；release_check独立检查lint/typecheck/build、20单元、12发布策略和8原生桌面用例通过，最小窗口全部导航步骤可读且操作可达。正式工作提交为df6f0c0、c9c2e9a，已保留既有开发历史并正常推送main/release。
+
+首个正式Actions运行39049675537通过936单元/集成测试，但桌面回归为51通过/11门控跳过/1失败，因此未打包发布。失败属于原生缩窗与ResizeObserver布局更新的取样时序，已通过20次真实切换复现并保留云端截图及几何记录。仅修正测试等待，不改产品、不滚动/强制点击或降低直接命中要求。五次重复及独立最终复测通过，修正提交0914fbc0f8553ddd8fd21bfba4ac4cec589a1bb7已正常推送两分支。新的Actions运行39090822196正在执行完整云端检查；正式产物核验由独立teammate负责，完成前不声称发布成功。最终结果将保存在research/official-release-verification.md并在此追加。
+
 | 验收项 | 结果与证据 |
 | --- | --- |
 | A1：流式入口、命名、帮助和窗口布局 | 移除标题处重复入口，保留查看/重开/取消/日志；“全文章节切分”及可访问说明就位。原生 1050/1440 窗口回归通过；leader 已查看并发进度及滚动截图。 |
@@ -43,6 +49,14 @@ resize_review 进一步只读独立复算了安装器/asar哈希、大小/版本
 - `evidence/actual-repair-result.json`、`actual-final-ui-inspection.json`、`actual-repair-final-status.png`：成功修复、持久化评级、界面与导出结果。
 
 ## 收尾状态
+
+### 最终正式发布验收 — 2026-10-18
+
+以上历史待确认/待发布说明已由用户明确发布授权及以下实际结果替代。Actions39090822196的plan、build、publish全部成功；85文件/936单元测试通过，52桌面测试通过、11明确门控跳过、0失败，原缩窗取样失败用例本次通过。Windows NSIS打包及隔离打包应用启动、IPC持久化和资源检查通过。
+
+独立teammate release_resume_check核验正式稳定版v0.1.5已公开发布，标签和target均精确指向经CI验证的0914fbc0f8553ddd8fd21bfba4ac4cec589a1bb7。官方安装包实际下载186188441字节，SHA-256为5f17d57d403eb193355914fffdc74a12b1009822c9087d0e53456b8693dc97bb，与校验文件及GitHub服务端digest一致；校验文件自身大小及hash亦吻合。无剩余检查发现。安装/实际升级留给用户验证，不将隔离启动误称为完整安装测试。
+
+发布页：https://github.com/linglan111/slice-man/releases/tag/v0.1.5；完整云端运行：https://github.com/linglan111/slice-man/actions/runs/39090822196。独立报告research/official-release-verification.md及evidence/official-release-verification.json已审阅接受。四个完成子任务已归档；父任务归档及journal仅形成main上的Trellis收尾记录，release/tag保持经CI验证的0914fbc。无关脏文件继续保留，不整体暂存。
 
 完整原始报告与 `evidence/desktop-final-summary.json` 一致：53 通过、10 明确 opt-in 跳过、0 失败/不稳定，进程 exit0。所有非门控默认桌面用例已通过；完整回归前后实际付费计数均为19。门控项包括已另外执行的本次真实服务/CPU预检，以及未重复执行的旧真实服务、协议兼容和外部下载套件；GPU及所有服务商的真实兼容性不在本次结论内。
 

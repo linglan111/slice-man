@@ -1,0 +1,239 @@
+{
+  "verifiedAt": "2026-10-18T02:54:44.060298+00:00",
+  "reviewer": "release_resume_check",
+  "repository": "linglan111/slice-man",
+  "commit": "0914fbc0f8553ddd8fd21bfba4ac4cec589a1bb7",
+  "tag": {
+    "name": "v0.1.5",
+    "sha": "0914fbc0f8553ddd8fd21bfba4ac4cec589a1bb7",
+    "type": "commit"
+  },
+  "workflow": {
+    "id": 39090822196,
+    "url": "https://github.com/linglan111/slice-man/actions/runs/39090822196",
+    "status": "completed",
+    "conclusion": "success",
+    "headSha": "0914fbc0f8553ddd8fd21bfba4ac4cec589a1bb7",
+    "createdAt": "2026-10-18T02:38:40Z",
+    "updatedAt": "2026-10-18T02:52:27Z",
+    "jobs": [
+      {
+        "id": 117567008875,
+        "name": "plan",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "conclusion": "success"
+          },
+          {
+            "name": "Test release policy",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check version and existing release",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 117567053794,
+        "name": "build",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm ci",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm run setup:resources",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm run setup:whisper-fixtures",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm run setup:download-fixtures",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm run lint",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm run typecheck",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm test",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run npm run test:e2e",
+            "conclusion": "success"
+          },
+          {
+            "name": "Preserve failed end-to-end diagnostics",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Build Windows installer without publishing",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify packaged application startup",
+            "conclusion": "success"
+          },
+          {
+            "name": "Prepare installer and checksum",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 117569287932,
+        "name": "publish",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify checksum, create draft, upload, then publish",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ]
+  },
+  "release": {
+    "id": 416198581,
+    "url": "https://github.com/linglan111/slice-man/releases/tag/v0.1.5",
+    "draft": false,
+    "prerelease": false,
+    "publishedAt": "2026-10-18T02:52:23Z",
+    "targetCommitish": "0914fbc0f8553ddd8fd21bfba4ac4cec589a1bb7"
+  },
+  "assets": [
+    {
+      "name": "Slice-Man-Setup-0.1.5.exe",
+      "id": 652284125,
+      "size": 186188441,
+      "sha256": "5f17d57d403eb193355914fffdc74a12b1009822c9087d0e53456b8693dc97bb",
+      "serverDigest": "sha256:5f17d57d403eb193355914fffdc74a12b1009822c9087d0e53456b8693dc97bb",
+      "state": "uploaded",
+      "downloadUrl": "https://github.com/linglan111/slice-man/releases/download/v0.1.5/Slice-Man-Setup-0.1.5.exe",
+      "localPath": "F:\\Code\\slice man\\dist\\github-v0.1.5-verified\\Slice-Man-Setup-0.1.5.exe"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "id": 652284377,
+      "size": 92,
+      "sha256": "dc9385a8e540dcda27fda77abb807a38277f2cc992b7c6911d1c0945e67cdf5d",
+      "serverDigest": "sha256:dc9385a8e540dcda27fda77abb807a38277f2cc992b7c6911d1c0945e67cdf5d",
+      "state": "uploaded",
+      "downloadUrl": "https://github.com/linglan111/slice-man/releases/download/v0.1.5/SHA256SUMS.txt",
+      "localPath": "F:\\Code\\slice man\\dist\\github-v0.1.5-verified\\SHA256SUMS.txt"
+    }
+  ],
+  "checksumManifest": "5f17d57d403eb193355914fffdc74a12b1009822c9087d0e53456b8693dc97bb  Slice-Man-Setup-0.1.5.exe\n",
+  "testResultsFromBuildLog": {
+    "unitFilesPassed": 85,
+    "unitTestsPassed": 936,
+    "desktopPassed": 52,
+    "desktopSkipped": 11,
+    "desktopFailed": 0,
+    "desktopDuration": "7.4m",
+    "chapterProgressCase": "passed in 6.7s",
+    "packagedStartup": "passed; isolated unpacked app, IPC persistence and bundled resources"
+  },
+  "firstAttempt": {
+    "id": 39049675537,
+    "sha": "c9c2e9a51580ac84e692b9d3e143d69cec8e8845",
+    "conclusion": "failure",
+    "desktopPassed": 51,
+    "desktopSkipped": 11,
+    "desktopFailed": 1,
+    "evidenceRetained": true
+  },
+  "limits": [
+    "Skipped opt-in tests are not passes.",
+    "Fixture-backed desktop tests do not establish paid-service linguistic/acoustic accuracy.",
+    "Independent download audit did not install or launch the installed user application.",
+    "Packaged startup is not a clean Windows install or upgrade test."
+  ]
+}
