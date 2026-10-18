@@ -2,7 +2,9 @@
 
 面向 Windows 的视频字幕工作台：在一个桌面应用中完成视频导入、语音识别、可选翻译、字幕校对、AI 检查与导出。界面为中文，支持只制作原语言字幕。
 
-![Slice Man 字幕工作台](docs/screenshots/workspace.png)
+![Slice Man v0.1.5 字幕工作台与全文章节切分](docs/screenshots/workspace-v0.1.5.png)
+
+*v0.1.5 实际界面；视频、字幕与可疑度评级为演示数据，评级由本地模拟服务返回。*
 
 ## 下载与安装
 
