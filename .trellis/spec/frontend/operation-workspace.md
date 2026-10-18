@@ -55,6 +55,7 @@ Read when moving subtitle actions/settings, changing measured pane allocation or
 - App tests await successful initialization before opening panel; never let initial job-selection effect erase a test's premature interaction and hide it with weakened assertions.
 - Open the actual generation panel for empty and populated failed/cancelled jobs; verify retry availability/execution or its intentional absence, not only the default closed panel.
 - Full Electron suite after final production build; mock providers establish routing/integrity rather than AI accuracy. Separate external paid/download gates are reported explicitly.
+- Native `BrowserWindow.setSize` completion and an already-visible child do not prove renderer resize/ResizeObserver allocation has settled. Before direct geometry/hit tests, wait for the expected content viewport and poll the original bounds plus center-hit predicate; keep useful failure geometry. Do not replace accessibility checks with scrolling, force clicks or arbitrary sleeps. CI can briefly have the new viewport with the old panel positions even when the eventual screenshot is correct.
 
 ## 7. Wrong vs Correct
 Wrong: reserve85px for every inline form, let long export help wrap, and consider visible sticky buttons proof of usable layout.

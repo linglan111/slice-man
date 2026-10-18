@@ -13,6 +13,7 @@ test('native chapter help, persisted service concurrency and every queued or str
   const userData = info.outputPath('progress-user-data');
   await makeVideo(source);
   let {app, page} = await launchApp(userData, [source], []);
+  const geometry: unknown[] = [];
   try {
     await importVideo(page);
     await seedResponses(page, {baseUrl: fixture.url, model: 'progress-fixture', apiKey: 'nonsecret-loopback'});
@@ -63,19 +64,29 @@ test('native chapter help, persisted service concurrency and every queued or str
     await expect(progress).toContainText('模型思考中 2');
     await expect(page.getByRole('button', {name: '查看流式信息', exact: true})).toHaveCount(1);
     await expect(page.getByRole('button', {name: '流式信息', exact: true})).toHaveCount(0);
-    const geometry: unknown[] = [];
     for (const [width, height] of [[1440, 960], [1050, 700]] as const) {
-      await app.evaluate(({BrowserWindow}, size) => BrowserWindow.getAllWindows()[0]?.setSize(size.width, size.height), {width, height});
+      const contentSize = await app.evaluate(({BrowserWindow}, size) => {
+        const window = BrowserWindow.getAllWindows()[0];
+        if (!window) throw new Error('Application window absent');
+        window.setSize(size.width, size.height);
+        return window.getContentSize();
+      }, {width, height});
+      await expect.poll(() => page.evaluate(() => [innerWidth, innerHeight])).toEqual(contentSize);
       await expect(rows).toBeVisible();
       for (const name of ['查看流式信息', '取消当前处理']) {
         const action = page.getByRole('button', {name, exact: true});
-        const measurement = await action.evaluate(node => {
-          const bounds = node.getBoundingClientRect();
-          const target = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
-          return {bounds: bounds.toJSON(), viewport: innerHeight, clickable: bounds.top >= 0 && bounds.bottom <= innerHeight && Boolean(target && node.contains(target))};
-        });
-        geometry.push({width, name, ...measurement});
-        expect(measurement.clickable, `${name} remains directly clickable at ${width} without scrolling`).toBe(true);
+        // Native resize reaches the renderer before ResizeObserver reallocates the panes.
+        // Wait on the same unscrolled hit-test rather than sampling that transitional frame.
+        await expect.poll(async () => {
+          const measurement = await action.evaluate(node => {
+            const bounds = node.getBoundingClientRect();
+            const target = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+            const results = node.closest('.workspace-results');
+            return {bounds: bounds.toJSON(), viewport: innerHeight, viewportWidth: innerWidth, resultsBounds: results?.getBoundingClientRect().toJSON(), resultsScrollTop: results?.scrollTop, clickable: bounds.top >= 0 && bounds.bottom <= innerHeight && Boolean(target && node.contains(target))};
+          });
+          geometry.push({width, name, ...measurement});
+          return measurement.clickable;
+        }, {message: `${name} remains directly clickable at ${width} without scrolling`}).toBe(true);
       }
       await page.screenshot({path: info.outputPath(`concurrent-progress-${width}.png`)});
       await rows.focus(); await expect(rows).toBeFocused();
@@ -93,7 +104,6 @@ test('native chapter help, persisted service concurrency and every queued or str
       await page.screenshot({path: info.outputPath(`concurrent-requests-scrolled-${width}.png`)});
       await page.locator('.workspace-results').evaluate(node => {node.scrollTop = 0;});
     }
-    await writeFile(info.outputPath('progress-hit-testing.json'), JSON.stringify(geometry, null, 2));
     release?.(); hold = false;
     await expect.poll(async () => (await currentResponsesJob(page)).reviewRun?.state).toBe('complete');
     expect(fixture.counts.review).toBe(before + 3);
@@ -102,5 +112,12 @@ test('native chapter help, persisted service concurrency and every queued or str
     const profiles = await page.evaluate(() => window.api.profiles.list());
     expect(profiles.success && profiles.data[0]?.textConcurrency).toBe(2);
     expect((await currentResponsesJob(page)).reviewReport?.assessments?.filter(a => a.status === 'current')).toHaveLength(3);
-  } finally {release?.(); await app.close(); await fixture.close();}
+  } finally {
+    release?.();
+    try { await writeFile(info.outputPath('progress-hit-testing.json'), JSON.stringify(geometry, null, 2)); }
+    finally {
+      try { await app.close(); }
+      finally { await fixture.close(); }
+    }
+  }
 });

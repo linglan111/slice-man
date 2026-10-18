@@ -147,6 +147,21 @@ The user explicitly authorized commit/push main, merge release and GitHub packag
 
 Both work commits include the existing27-commit development history by fast-forwarding main; do not cherry-pick only the last commit. Push main normally, fast-forward release to main and push it to trigger the existing workflow. Track plan/build/publish and verify stablev0.1.5 installer/checksum assets. After success, archive these4children and parent, record journal and push bookkeeping to main. No unrelated tasks are archived.
 
+### Executed integration and CI correction
+Work commits `df6f0c0` and `c9c2e9a` were committed and pushed normally to main, then release was fast-forwarded and pushed. First official Actions run39049675537 completed unit tests936pass but failed one of63desktop cases (51pass/11skip/1fail) before packaging. A precisely reproduced native resize/ResizeObserver sampling race is corrected only in the test, retaining the same unscrolled center-hit requirement. No application behavior is changed, and0.1.5 has not yet been published. Additional authorized work commit:
+
+`test(e2e): wait for native resize layout before hit checks`
+
+- `tests/e2e/chapter-ai-progress.spec.ts`
+- `.trellis/spec/frontend/operation-workspace.md`
+- `.trellis/tasks/10-16-chapter-ai-repair/research/ci-progress-fix.md`
+- `.trellis/tasks/10-16-chapter-ai-repair/research/coordination.md`
+- `.trellis/tasks/10-16-chapter-ai-repair/research/commit-plan.md`
+- `.trellis/tasks/10-16-chapter-ai-repair/evidence/ci-progress-resize-samples.json`
+- `.trellis/tasks/10-16-chapter-ai-repair/evidence/ci-progress-first-failure.png`
+
+After independent final acceptance, commit/push the correction normally and fast-forward release again to obtain a new complete official CI run; no existing tag or release is overwritten.
+
 ## Excluded unrelated status entries
 
 - `.trellis/spec/backend/index.md`
